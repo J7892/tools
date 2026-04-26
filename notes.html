@@ -138,8 +138,9 @@
         modules: {
             toolbar: {
                 container: [
-                    [{ 'size': ['small', false, 'large', 'huge'] }],
+                    [{ 'header': [1, 2, 3, false] }], // Added semantic headers
                     ['bold', 'italic', 'underline', 'link'], 
+                    ['blockquote'], // Added blockquote
                     ['highlight'], 
                     [{ 'background': ['#ffff00', '#ced4da', '#d4edda', '#f8d7da', false] }], 
                     [{ 'color': [] }],
@@ -147,6 +148,9 @@
                     ['clean']
                 ],
                 handlers: { 'highlight': highlightHandler }
+            },
+            clipboard: {
+                matchVisual: false // The smart paste fix
             },
             keyboard: {
                 bindings: {
