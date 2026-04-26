@@ -5,85 +5,132 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tools</title>
     <style>
+        :root {
+            --bg: #ffffff;
+            --text: #1a1a1a;
+            --subtle: #71717a;
+            --border: #e4e4e7;
+            --hover-bg: #fafafa;
+        }
+
         * { box-sizing: border-box; }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
             margin: 0;
-            background: #f5f5f5;
-            color: #333;
+            background: var(--bg);
+            color: var(--text);
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 50px 20px;
+            justify-content: center;
+            padding: 80px 24px;
         }
 
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 500px;
+        }
+
+        header {
+            margin-bottom: 48px;
         }
 
         h1 {
-            text-align: center;
-            margin-bottom: 40px;
-            color: #222;
-            font-weight: 700;
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
+
+        .tool-list {
+            display: flex;
+            flex-direction: column;
+            border-top: 1px solid var(--text);
         }
 
         .tool-card {
             display: flex;
-            flex-direction: column;
-            background: white;
-            padding: 25px;
-            border-radius: 8px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 0;
             text-decoration: none;
             color: inherit;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            border-bottom: 1px solid var(--border);
+            transition: all 0.15s ease;
         }
 
         .tool-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border-color: #007bff;
+            padding-left: 8px;
+            color: #000;
+        }
+
+        .tool-card:hover .tool-title {
+            text-decoration: underline;
+            text-underline-offset: 4px;
         }
 
         .tool-title {
-            font-size: 1.4em;
-            font-weight: bold;
-            color: #007bff;
-            margin-bottom: 8px;
+            font-size: 1.1rem;
+            font-weight: 500;
         }
 
-        .tool-desc {
-            font-size: 0.95em;
-            color: #666;
-            line-height: 1.4;
+        .tool-path {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.8rem;
+            color: var(--subtle);
+            background: #f4f4f5;
+            padding: 4px 8px;
+            border-radius: 4px;
         }
 
-        /* Responsive tweak for very narrow screens */
-        @media (max-width: 400px) {
-            body { padding: 30px 15px; }
-            .tool-card { padding: 20px; }
+        .arrow {
+            font-size: 1.2rem;
+            margin-left: 12px;
+            opacity: 0.3;
+        }
+
+        .tool-card:hover .arrow {
+            opacity: 1;
+        }
+
+        footer {
+            margin-top: 60px;
+            font-size: 0.8rem;
+            color: var(--subtle);
         }
     </style>
 </head>
 <body>
 
     <div class="container">
+        <header>
+            <h1>Toolbox</h1>
+        </header>
 
-      <a href="notes.html" class="tool-card">
-            <span class="tool-title">Notes</span>
-        </a>
+        <nav class="tool-list">
+            <a href="/notes/" class="tool-card">
+                <span class="tool-title">Notes</span>
+                <div style="display: flex; align-items: center;">
+                    <span class="tool-path">/notes</span>
+                    <span class="arrow">→</span>
+                </div>
+            </a>
 
-        <a href="diffcheck.html" class="tool-card">
-            <span class="tool-title">Diff Checker</span>
-        </a>
+            <a href="/diffchecker/" class="tool-card">
+                <span class="tool-title">Diff Checker</span>
+                <div style="display: flex; align-items: center;">
+                    <span class="tool-path">/diffchecker</span>
+                    <span class="arrow">→</span>
+                </div>
+            </a>
 
-        <a href="wordcount.html" class="tool-card">
-            <span class="tool-title">Word Counter</span>
-        </a>
+            <a href="/wordcount/" class="tool-card">
+                <span class="tool-title">Word Counter</span>
+                <div style="display: flex; align-items: center;">
+                    <span class="tool-path">/wordcount</span>
+                    <span class="arrow">→</span>
+                </div>
+            </a>
+        </nav>
     </div>
 
 </body>
