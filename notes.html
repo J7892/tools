@@ -25,8 +25,8 @@
         .note-item:hover { background: #f0f0f0; }
         .note-list-empty { padding: 20px 10px; text-align: center; color: #aaa; font-size: 0.85em; }
 
-        /* Editor Area - Removed the massive left padding */
-        .editor-area { flex-grow: 1; background: white; height: 100vh; display: flex; flex-direction: column; padding: 20px 40px 10px 40px; position: relative; min-width: 0; align-items: center; }
+        /* Editor Area - Restored the 60px left padding for desktop */
+        .editor-area { flex-grow: 1; background: white; height: 100vh; display: flex; flex-direction: column; padding: 20px 40px 10px 60px; position: relative; min-width: 0; align-items: center; }
         .content-width-wrapper { width: 100%; max-width: 100%; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; transition: max-width 0.3s ease; }
         .content-width-wrapper.narrow { max-width: 800px; }
 
@@ -49,10 +49,11 @@
         .btn-delete { background: #ff4d4d; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
         .btn-copy { background: #f0f0f0; color: #333; font-size: 0.75em; border: 1px solid #ddd; margin-left: 10px; }
 
-        /* Toggle Sidebar - Integrated into the flex header */
+        /* Toggle Sidebar - Floating off to the left for desktop */
         .toggle-sidebar { 
+            position: absolute; left: 0; top: 20px; z-index: 1100;
             background: #333; color: white; padding: 0 15px; cursor: pointer; 
-            border-radius: 4px; border: none; font-size: 1.2em; height: 50px; 
+            border-radius: 0 4px 4px 0; border: none; font-size: 1.2em; height: 50px; 
             display: flex; align-items: center; justify-content: center;
         }
 
@@ -76,8 +77,13 @@
         /* --- RESPONSIVE ADJUSTMENTS FOR NARROW WINDOWS --- */
         @media (max-width: 768px) {
             .editor-area {
-                /* Even 15px padding on all sides now that the toggle button moved */
+                /* Even 15px padding on all sides on mobile */
                 padding: 15px;
+            }
+            .toggle-sidebar {
+                /* Pop it back into the flex header flow on mobile */
+                position: static;
+                border-radius: 4px;
             }
             .bottom-bar {
                 flex-wrap: wrap;
