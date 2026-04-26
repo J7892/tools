@@ -78,7 +78,7 @@
         .ql-picker { color: var(--text-color) !important; }
         
         #editor-container { flex-grow: 1; font-size: 16px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; height: auto !important; min-height: 0; overflow: hidden; }
-        .ql-editor { height: 100%; overflow-y: auto; padding-bottom: 40px; } /* Reverted line-height and size */
+        .ql-editor { height: 100%; overflow-y: auto; padding-bottom: 40px; }
         .ql-editor p { margin-bottom: 1.5em !important; } 
 
         button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
@@ -303,11 +303,19 @@
     window.onload = () => { 
         renderNoteList();
         checkBackupStatus();
-        if (localStorage.getItem('sidebar-open') === 'true') document.getElementById('sidebar').classList.add('open');
+        
+        // --- Modified: Sidebar is always closed on load ---
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.remove('open');
+        localStorage.setItem('sidebar-open', 'false');
+
         const widthPref = localStorage.getItem('width-pref') || 'full';
         setWidth(widthPref);
         document.querySelector(`input[value="${widthPref}"]`).checked = true;
         applyTheme(localStorage.getItem('theme-pref') || 'light');
+
+        // --- Modified: Ready for a New Note on load ---
+        createNewNote();
     };
 
     window.onbeforeunload = function() { if (isDirty) return "Unsaved changes."; };
@@ -329,7 +337,8 @@
     }
 
     function toggleSidebar() { 
-        const isOpen = document.getElementById('sidebar').classList.toggle('open');
+        const sidebar = document.getElementById('sidebar');
+        const isOpen = sidebar.classList.toggle('open');
         localStorage.setItem('sidebar-open', isOpen);
     }
 
@@ -459,6 +468,7 @@
         document.getElementById('note-title').value = '';
         quill.setContents([]);
         document.getElementById('status').innerText = "New Note";
+        document.getElementById('status').style.color = "#28a745";
         updateStats();
         document.getElementById('note-title').focus();
     }
