@@ -71,14 +71,14 @@
         
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; }
         
-        /* Quill Dark Mode UI Fixes */
+        /* Quill Toolbar Adjustments */
         .ql-toolbar.ql-snow { background: var(--toolbar-bg); border-color: var(--border-color) !important; flex-shrink: 0; }
         .ql-container.ql-snow { border-color: var(--border-color) !important; background: var(--editor-bg); color: var(--text-color); }
         .ql-stroke { stroke: var(--text-color) !important; }
         .ql-fill { fill: var(--text-color) !important; }
         .ql-picker { color: var(--text-color) !important; }
         [data-theme="dark"] .ql-picker-options { background-color: var(--sidebar-bg) !important; color: var(--text-color) !important; border-color: var(--border-color) !important; }
-        
+
         #editor-container { flex-grow: 1; font-size: 16px; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; height: auto !important; min-height: 0; overflow: hidden; }
         .ql-editor { height: 100%; overflow-y: auto; padding-bottom: 40px; }
         .ql-editor p { margin-bottom: 1.5em !important; } 
@@ -188,7 +188,7 @@
         modules: {
             toolbar: {
                 container: [
-                    [{ 'header': [1, 2, 3, false] }, { 'size': ['small', false, 'large', 'huge'] }], // Added Size Dropdown
+                    [{ 'size': ['small', false, 'large', 'huge'] }], // Kept only Size, removed Headers
                     ['bold', 'italic', 'underline', 'link'], 
                     ['highlight'], 
                     [{ 'background': ['#ffff00', '#ced4da', '#d4edda', '#f8d7da', false] }], 
@@ -278,6 +278,7 @@
                 currentNoteId = null;
                 createNewNote();
                 renderNoteList();
+                alert("Database cleared.");
             }
         }
     }
