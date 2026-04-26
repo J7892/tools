@@ -3,99 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tools</title>
+    <title>James Keller | Tools</title>
     <style>
         :root {
             --bg: #ffffff;
-            --text: #1a1a1a;
-            --subtle: #71717a;
-            --border: #e4e4e7;
-            --hover-bg: #fafafa;
+            --text: #111111;
+            --muted: #666666;
+            --border: #e5e5e5;
+            --hover: #f9f9f9;
         }
 
         * { box-sizing: border-box; }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
             color: var(--text);
+            margin: 0;
             display: flex;
             justify-content: center;
-            padding: 80px 24px;
+            padding-top: 15vh;
         }
 
         .container {
             width: 100%;
-            max-width: 500px;
+            max-width: 440px;
+            padding: 0 20px;
         }
 
         header {
-            margin-bottom: 48px;
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 12px;
+            margin-bottom: 32px;
         }
 
         h1 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
             margin: 0;
         }
 
-        .tool-list {
+        nav {
             display: flex;
             flex-direction: column;
-            border-top: 1px solid var(--text);
+            gap: 1px;
+            background-color: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
         }
 
-        .tool-card {
+        .tool-link {
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            text-decoration: none;
+            color: var(--text);
+            transition: background-color 0.15s ease;
+        }
+
+        .tool-link:hover {
+            background-color: var(--hover);
+        }
+
+        .tool-name {
+            font-weight: 500;
+            font-size: 1.05rem;
+        }
+
+        .tool-meta {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+            font-size: 0.75rem;
+            color: var(--muted);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 24px 0;
-            text-decoration: none;
-            color: inherit;
-            border-bottom: 1px solid var(--border);
-            transition: all 0.15s ease;
-        }
-
-        .tool-card:hover {
-            padding-left: 8px;
-            color: #000;
-        }
-
-        .tool-card:hover .tool-title {
-            text-decoration: underline;
-            text-underline-offset: 4px;
-        }
-
-        .tool-title {
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        .tool-path {
-            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-            font-size: 0.8rem;
-            color: var(--subtle);
-            background: #f4f4f5;
-            padding: 4px 8px;
-            border-radius: 4px;
+            gap: 8px;
         }
 
         .arrow {
-            font-size: 1.2rem;
-            margin-left: 12px;
-            opacity: 0.3;
+            font-size: 1rem;
+            opacity: 0.4;
         }
 
-        .tool-card:hover .arrow {
+        .tool-link:hover .arrow {
             opacity: 1;
+            transform: translateX(2px);
         }
 
         footer {
-            margin-top: 60px;
+            margin-top: 40px;
             font-size: 0.8rem;
-            color: var(--subtle);
+            color: var(--muted);
         }
     </style>
 </head>
@@ -103,34 +105,35 @@
 
     <div class="container">
         <header>
-            <h1>Toolbox</h1>
+            <h1>Editorial Toolkit</h1>
         </header>
 
-        <nav class="tool-list">
-            <a href="/notes/" class="tool-card">
-                <span class="tool-title">Notes</span>
-                <div style="display: flex; align-items: center;">
-                    <span class="tool-path">/notes</span>
-                    <span class="arrow">→</span>
+        <nav>
+            <a href="notes.html" class="tool-link">
+                <span class="tool-name">Notes</span>
+                <div class="tool-meta">
+                    notes.html <span class="arrow">→</span>
                 </div>
             </a>
 
-            <a href="/diffchecker/" class="tool-card">
-                <span class="tool-title">Diff Checker</span>
-                <div style="display: flex; align-items: center;">
-                    <span class="tool-path">/diffchecker</span>
-                    <span class="arrow">→</span>
+            <a href="diffcheck.html" class="tool-link">
+                <span class="tool-name">Diff Checker</span>
+                <div class="tool-meta">
+                    diffcheck.html <span class="arrow">→</span>
                 </div>
             </a>
 
-            <a href="/wordcount/" class="tool-card">
-                <span class="tool-title">Word Counter</span>
-                <div style="display: flex; align-items: center;">
-                    <span class="tool-path">/wordcount</span>
-                    <span class="arrow">→</span>
+            <a href="wordcount.html" class="tool-link">
+                <span class="tool-name">Word Counter</span>
+                <div class="tool-meta">
+                    wordcount.html <span class="arrow">→</span>
                 </div>
             </a>
         </nav>
+
+        <footer>
+            James Keller &bull; Toronto, 2026
+        </footer>
     </div>
 
 </body>
