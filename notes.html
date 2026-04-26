@@ -91,7 +91,7 @@
         .btn-nuclear { background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d !important; margin-top: 15px; font-size: 0.75em; width: 100%; opacity: 0.7; transition: opacity 0.2s, background 0.2s; }
         .btn-nuclear:hover { opacity: 1; background: rgba(255, 77, 77, 0.1); }
         .btn-copy { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); margin-left: 10px; }
-        .btn-theme { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); }
+        .btn-secondary-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); }
 
         .toggle-sidebar { 
             position: absolute; left: 0; top: 20px; z-index: 1100;
@@ -101,9 +101,9 @@
         }
 
         .bottom-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border-color); margin-top: 10px; width: 100%; flex-shrink: 0; background: var(--editor-bg); z-index: 10; position: relative; transition: background 0.3s; }
-        .status-group { display: flex; gap: 15px; align-items: center; }
+        .status-group { display: flex; gap: 10px; align-items: center; }
         .save-status { font-size: 0.85em; color: #28a745; font-weight: 600; min-width: 70px; }
-        .word-count { font-size: 0.85em; color: var(--secondary-text); }
+        .word-count { font-size: 0.85em; color: var(--secondary-text); margin-right: 5px; }
         .backup-nag { font-size: 0.75em; color: #fd7e14; font-weight: bold; display: none; }
         .last-backup-text { font-size: 0.75em; color: var(--secondary-text); display: block; margin-top: 4px; text-align: center; }
         .width-toggle-group { display: flex; align-items: center; gap: 5px; font-size: 0.75em; color: var(--secondary-text); }
@@ -158,7 +158,8 @@
                 <div class="status-group">
                     <span id="status" class="save-status">Saved</span>
                     <span id="word-count" class="word-count">0 words</span>
-                    <button class="btn-theme" onclick="toggleTheme()" id="theme-toggle">🌙 Dark</button>
+                    <button class="btn-secondary-tool" onclick="toggleFullscreen()" id="fullscreen-toggle">⛶ Fullscreen</button>
+                    <button class="btn-secondary-tool" onclick="toggleTheme()" id="theme-toggle">🌙 Dark</button>
                     <button class="btn-copy" onclick="copyNote()">Copy Text</button>
                     <span id="backup-nag" class="backup-nag">⚠️ Weekly Backup Due</span>
                 </div>
@@ -187,7 +188,6 @@
                 container: [
                     [{ 'header': [1, 2, 3, false] }],
                     ['bold', 'italic', 'underline', 'link'], 
-                    ['blockquote'],
                     ['highlight'], 
                     [{ 'background': ['#ffff00', '#ced4da', '#d4edda', '#f8d7da', false] }], 
                     [{ 'color': [] }],
@@ -219,6 +219,7 @@
         theme: 'snow'
     });
 
+    // Theme Toggle Functionality
     function toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
@@ -230,12 +231,30 @@
         document.getElementById('theme-toggle').innerText = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
     }
 
-    // --- Nuclear Option ---
+    // Fullscreen Functionality
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    // Listen for fullscreen change to update button text (handles Esc key)
+    document.addEventListener('fullscreenchange', () => {
+        const btn = document.getElementById('fullscreen-toggle');
+        if (document.fullscreenElement) {
+            btn.innerText = "✖ Exit";
+        } else {
+            btn.innerText = "⛶ Fullscreen";
+        }
+    });
+
     function nuclearDelete() {
-        const confirm1 = confirm("⚠️ WARNING: This will permanently delete ALL notes stored in this browser. There is no undo.\n\nAre you absolutely sure?");
-        if (confirm1) {
-            const confirm2 = confirm("LAST CHANCE: Seriously, everything goes. Proceed with the wipe?");
-            if (confirm2) {
+        if (confirm("⚠️ WARNING: This will permanently delete ALL notes stored in this browser. There is no undo.\n\nAre you absolutely sure?")) {
+            if (confirm("LAST CHANCE: Seriously, everything goes. Proceed with the wipe?")) {
                 localStorage.removeItem('my-github-notes');
                 currentNoteId = null;
                 createNewNote();
