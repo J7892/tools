@@ -87,17 +87,12 @@
         .arrow {
             font-size: 1rem;
             opacity: 0.4;
+            transition: transform 0.2s ease, opacity 0.2s ease;
         }
 
         .tool-link:hover .arrow {
             opacity: 1;
-            transform: translateX(2px);
-        }
-
-        footer {
-            margin-top: 40px;
-            font-size: 0.8rem;
-            color: var(--muted);
+            transform: translateX(4px);
         }
     </style>
 </head>
@@ -130,7 +125,6 @@
                 </div>
             </a>
         </nav>
-
     </div>
 
 </body>
