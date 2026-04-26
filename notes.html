@@ -25,7 +25,7 @@
         .note-item:hover { background: #f0f0f0; }
         .note-list-empty { padding: 20px 10px; text-align: center; color: #aaa; font-size: 0.85em; }
 
-        /* Editor Area - Restored the 60px left padding for desktop */
+        /* Editor Area */
         .editor-area { flex-grow: 1; background: white; height: 100vh; display: flex; flex-direction: column; padding: 20px 40px 10px 60px; position: relative; min-width: 0; align-items: center; }
         .content-width-wrapper { width: 100%; max-width: 100%; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; transition: max-width 0.3s ease; }
         .content-width-wrapper.narrow { max-width: 800px; }
@@ -49,7 +49,7 @@
         .btn-delete { background: #ff4d4d; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
         .btn-copy { background: #f0f0f0; color: #333; font-size: 0.75em; border: 1px solid #ddd; margin-left: 10px; }
 
-        /* Toggle Sidebar - Floating off to the left for desktop */
+        /* Toggle Sidebar */
         .toggle-sidebar { 
             position: absolute; left: 0; top: 20px; z-index: 1100;
             background: #333; color: white; padding: 0 15px; cursor: pointer; 
@@ -74,25 +74,11 @@
         }
         #import-input { display: none; }
 
-        /* --- RESPONSIVE ADJUSTMENTS FOR NARROW WINDOWS --- */
         @media (max-width: 768px) {
-            .editor-area {
-                /* Even 15px padding on all sides on mobile */
-                padding: 15px;
-            }
-            .toggle-sidebar {
-                /* Pop it back into the flex header flow on mobile */
-                position: static;
-                border-radius: 4px;
-            }
-            .bottom-bar {
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            .status-group {
-                gap: 10px;
-                flex-wrap: wrap;
-            }
+            .editor-area { padding: 15px; }
+            .toggle-sidebar { position: static; border-radius: 4px; }
+            .bottom-bar { flex-wrap: wrap; gap: 10px; }
+            .status-group { gap: 10px; flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -153,7 +139,7 @@
             toolbar: {
                 container: [
                     [{ 'size': ['small', false, 'large', 'huge'] }],
-                    ['bold', 'italic', 'underline'],
+                    ['bold', 'italic', 'underline', 'link'], // Added link to toolbar
                     ['highlight'], 
                     [{ 'background': ['#ffff00', '#ced4da', '#d4edda', '#f8d7da', false] }], 
                     [{ 'color': [] }],
@@ -182,6 +168,28 @@
             }
         },
         theme: 'snow'
+    });
+
+    // --- FEATURE 1: Paste URL to hyperlink highlighted text ---
+    quill.root.addEventListener('paste', function(e) {
+        const clipboardData = e.clipboardData || window.clipboardData;
+        if (!clipboardData) return;
+        
+        const pastedText = clipboardData.getData('Text').trim();
+        // Regex looks for http://, https://, or www.
+        const urlRegex = /^(https?:\/\/[^\s]+|www\.[^\s]+)$/i;
+        
+        if (urlRegex.test(pastedText)) {
+            const range = quill.getSelection();
+            if (range && range.length > 0) {
+                e.preventDefault(); // Stop the text from being overwritten
+                let url = pastedText;
+                if (!url.startsWith('http')) url = 'https://' + url;
+                
+                quill.formatText(range.index, range.length, 'link', url);
+                quill.setSelection(range.index + range.length); // Move cursor to end of link
+            }
+        }
     });
 
     let currentNoteId = null;
@@ -247,20 +255,45 @@
             handleInput();
 
             const selection = quill.getSelection();
-            if (selection && selection.index >= 2) {
+            if (!selection) return;
+
+            // Custom "//" Highlight Markdown
+            if (selection.index >= 2) {
                 const text = quill.getText(selection.index - 2, 2);
-                
                 if (text === '//') {
                     if (selection.index >= 3) {
                         const prevChar = quill.getText(selection.index - 3, 1);
                         if (prevChar === ':') return; 
                     }
-
                     const currentFormat = quill.getFormat(selection.index - 2);
                     const isHighlighted = !!currentFormat.background;
-
                     quill.deleteText(selection.index - 2, 2);
                     quill.format('background', isHighlighted ? false : '#ffff00');
+                    return; // Exit early so it doesn't trigger URL logic
+                }
+            }
+
+            // --- FEATURE 2: Auto-link URLs as you type ---
+            if (delta.ops.length > 0) {
+                const lastOp = delta.ops[delta.ops.length - 1];
+                // Check if the user just typed a space or pressed Enter
+                if (typeof lastOp.insert === 'string' && (lastOp.insert === ' ' || lastOp.insert === '\n')) {
+                    
+                    // Look backward to find the word they just finished typing
+                    const textStart = Math.max(0, selection.index - 100); 
+                    const textBefore = quill.getText(textStart, selection.index - textStart - 1); 
+                    const words = textBefore.split(/[\s\n]/);
+                    const lastWord = words[words.length - 1];
+
+                    const urlRegex = /^(https?:\/\/[^\s]+|www\.[^\s]+)$/i;
+                    
+                    if (lastWord && urlRegex.test(lastWord)) {
+                        const wordStart = selection.index - 1 - lastWord.length;
+                        let url = lastWord;
+                        if (!url.startsWith('http')) url = 'https://' + url;
+                        // Turn the word into a link
+                        quill.formatText(wordStart, lastWord.length, 'link', url);
+                    }
                 }
             }
         }
