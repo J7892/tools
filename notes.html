@@ -21,7 +21,11 @@
         .search-container { margin-bottom: 10px; }
         #sidebar-search { width: 100%; padding: 8px; border: 1px solid #eee; border-radius: 4px; outline: none; font-size: 0.85em; }
         .note-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
-        .note-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; border-radius: 4px; }
+        .note-item { 
+            padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-radius: 4px; transition: background 0.2s;
+        }
         .note-item:hover { background: #f0f0f0; }
         .note-list-empty { padding: 20px 10px; text-align: center; color: #aaa; font-size: 0.85em; }
 
@@ -49,7 +53,7 @@
         .btn-delete { background: #ff4d4d; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
         .btn-copy { background: #f0f0f0; color: #333; font-size: 0.75em; border: 1px solid #ddd; margin-left: 10px; }
 
-        /* Toggle Sidebar */
+        /* Toggle Sidebar - Absolute for Desktop */
         .toggle-sidebar { 
             position: absolute; left: 0; top: 20px; z-index: 1100;
             background: #333; color: white; padding: 0 15px; cursor: pointer; 
@@ -138,9 +142,9 @@
         modules: {
             toolbar: {
                 container: [
-                    [{ 'header': [1, 2, 3, false] }], // Added semantic headers
+                    [{ 'header': [1, 2, 3, false] }],
                     ['bold', 'italic', 'underline', 'link'], 
-                    ['blockquote'], // Added blockquote
+                    ['blockquote'],
                     ['highlight'], 
                     [{ 'background': ['#ffff00', '#ced4da', '#d4edda', '#f8d7da', false] }], 
                     [{ 'color': [] }],
@@ -150,7 +154,7 @@
                 handlers: { 'highlight': highlightHandler }
             },
             clipboard: {
-                matchVisual: false // The smart paste fix
+                matchVisual: false 
             },
             keyboard: {
                 bindings: {
@@ -174,24 +178,19 @@
         theme: 'snow'
     });
 
-    // --- FEATURE 1: Paste URL to hyperlink highlighted text ---
+    // --- FEATURE: Paste URL to hyperlink highlighted text ---
     quill.root.addEventListener('paste', function(e) {
         const range = quill.getSelection();
-        
         if (range && range.length > 0) {
             const clipboardData = e.clipboardData || window.clipboardData;
             if (!clipboardData) return;
-            
             const pastedText = clipboardData.getData('text/plain').trim();
             const urlRegex = /^(https?:\/\/[^\s]+|www\.[^\s]+)$/i;
-            
             if (urlRegex.test(pastedText)) {
                 e.preventDefault(); 
                 e.stopPropagation(); 
-                
                 let url = pastedText;
                 if (!url.startsWith('http')) url = 'https://' + url;
-                
                 quill.formatText(range.index, range.length, 'link', url);
                 quill.setSelection(range.index + range.length); 
             }
@@ -259,17 +258,14 @@
     quill.on('text-change', (delta, oldDelta, source) => {
         if (source === 'user') {
             handleInput();
-
             const selection = quill.getSelection();
             if (!selection) return;
 
+            // Custom "//" Highlight Markdown
             if (selection.index >= 2) {
                 const text = quill.getText(selection.index - 2, 2);
                 if (text === '//') {
-                    if (selection.index >= 3) {
-                        const prevChar = quill.getText(selection.index - 3, 1);
-                        if (prevChar === ':') return; 
-                    }
+                    if (selection.index >= 3 && quill.getText(selection.index - 3, 1) === ':') return; 
                     const currentFormat = quill.getFormat(selection.index - 2);
                     const isHighlighted = !!currentFormat.background;
                     quill.deleteText(selection.index - 2, 2);
@@ -278,18 +274,15 @@
                 }
             }
 
-            // --- FEATURE 2: Auto-link URLs as you type ---
+            // Auto-link URLs as you type
             if (delta.ops.length > 0) {
                 const lastOp = delta.ops[delta.ops.length - 1];
                 if (typeof lastOp.insert === 'string' && (lastOp.insert === ' ' || lastOp.insert === '\n')) {
-                    
                     const textStart = Math.max(0, selection.index - 100); 
                     const textBefore = quill.getText(textStart, selection.index - textStart - 1); 
                     const words = textBefore.split(/[\s\n]/);
                     const lastWord = words[words.length - 1];
-
                     const urlRegex = /^(https?:\/\/[^\s]+|www\.[^\s]+)$/i;
-                    
                     if (lastWord && urlRegex.test(lastWord)) {
                         const wordStart = selection.index - 1 - lastWord.length;
                         let url = lastWord;
@@ -305,7 +298,6 @@
         const title = document.getElementById('note-title').value || "Untitled Note";
         const content = quill.getContents();
         let notes = JSON.parse(localStorage.getItem('my-github-notes') || '[]');
-
         if (currentNoteId !== null) {
             const index = notes.findIndex(n => n.id === currentNoteId);
             if (index > -1) notes[index] = { id: currentNoteId, title, content, date: new Date().toISOString() };
@@ -314,13 +306,11 @@
             notes.push(newNote);
             currentNoteId = newNote.id;
         }
-
         localStorage.setItem('my-github-notes', JSON.stringify(notes));
         renderNoteList();
         isDirty = false;
-        const status = document.getElementById('status');
-        status.innerText = "Saved";
-        status.style.color = "#28a745";
+        document.getElementById('status').innerText = "Saved";
+        document.getElementById('status').style.color = "#28a745";
     }
 
     function checkBackupStatus() {
@@ -328,14 +318,10 @@
         const nagSpan = document.getElementById('backup-nag');
         const exportBtn = document.getElementById('export-btn');
         const timeText = document.getElementById('last-backup-text');
-        if (!lastBackup) {
-            timeText.innerText = '';
-            return;
-        }
+        if (!lastBackup) { timeText.innerText = ''; return; }
         const lastDate = new Date(lastBackup);
         timeText.innerText = `Last backup: ${lastDate.toLocaleDateString()}`;
-        const diffTime = Math.abs(new Date() - lastDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil(Math.abs(new Date() - lastDate) / (1000 * 60 * 60 * 24));
         if (diffDays >= BACKUP_THRESHOLD_DAYS) {
             nagSpan.style.display = "inline";
             exportBtn.classList.add('needs-backup');
@@ -360,15 +346,14 @@
             .filter(note => {
                 const titleMatch = note.title.toLowerCase().includes(searchTerm);
                 const bodyText = extractTextFromDelta(note.content).toLowerCase();
-                const contentMatch = bodyText.includes(searchTerm);
-                return titleMatch || contentMatch;
+                return titleMatch || bodyText.includes(searchTerm);
             })
             .sort((a, b) => new Date(b.date) - new Date(a.date));
 
         if (filtered.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'note-list-empty';
-            empty.innerText = searchTerm ? 'No notes match your search.' : 'No notes yet. Create one!';
+            empty.innerText = searchTerm ? 'No notes match your search.' : 'No notes yet.';
             listContainer.appendChild(empty);
             return;
         }
@@ -376,34 +361,41 @@
         filtered.forEach(note => {
             const div = document.createElement('div');
             div.className = 'note-item';
-            div.innerHTML = `<span style="flex-grow:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" onclick="loadNote(${note.id})">${note.title}</span><button class="btn-delete" onclick="deleteNote(${note.id})">×</button>`;
+            const dateObj = new Date(note.date);
+            const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            div.innerHTML = `
+                <div style="flex-grow:1; overflow:hidden; padding-right: 10px;" onclick="loadNote(${note.id})">
+                    <div style="white-space:nowrap; text-overflow:ellipsis; overflow:hidden; font-weight: 500; color: #333;">${note.title || "Untitled Note"}</div>
+                    <div style="font-size: 0.75em; color: #888; margin-top: 3px;">${dateStr}</div>
+                </div>
+                <button class="btn-delete" onclick="deleteNote(${note.id})">×</button>
+            `;
             listContainer.appendChild(div);
         });
     }
 
     function loadNote(id) {
-        if (isDirty && !confirm("You have unsaved changes. Discard and open this note?")) return;
+        if (isDirty && !confirm("Discard unsaved changes?")) return;
         const notes = JSON.parse(localStorage.getItem('my-github-notes') || '[]');
         const note = notes.find(n => n.id === id);
         if (note) {
             currentNoteId = note.id;
             document.getElementById('note-title').value = note.title;
             quill.setContents(note.content);
+            isDirty = false;
             document.getElementById('status').innerText = "Saved";
             document.getElementById('status').style.color = "#28a745";
-            isDirty = false;
             updateWordCount();
         }
     }
 
     function createNewNote() {
-        if (isDirty && !confirm("You have unsaved changes. Discard and create a new note?")) return;
+        if (isDirty && !confirm("Discard unsaved changes?")) return;
         currentNoteId = null;
         isDirty = false;
         document.getElementById('note-title').value = '';
         quill.setContents([]);
         document.getElementById('status').innerText = "New Note";
-        document.getElementById('status').style.color = "#28a745";
         document.getElementById('word-count').innerText = "0 words";
         document.getElementById('note-title').focus();
     }
@@ -413,10 +405,7 @@
             let notes = JSON.parse(localStorage.getItem('my-github-notes') || '[]');
             notes = notes.filter(n => n.id !== id);
             localStorage.setItem('my-github-notes', JSON.stringify(notes));
-            if (currentNoteId === id) {
-                isDirty = false;
-                createNewNote();
-            }
+            if (currentNoteId === id) createNewNote();
             renderNoteList();
         }
     }
@@ -441,23 +430,17 @@
         reader.onload = function(e) {
             try {
                 const importedNotes = JSON.parse(e.target.result);
-                if (!Array.isArray(importedNotes)) return alert("Invalid backup file.");
-
                 const existing = JSON.parse(localStorage.getItem('my-github-notes') || '[]');
                 const existingIds = new Set(existing.map(n => n.id));
                 const newNotes = importedNotes.filter(n => !existingIds.has(n.id));
-                const merged = [...existing, ...newNotes];
-
-                localStorage.setItem('my-github-notes', JSON.stringify(merged));
+                localStorage.setItem('my-github-notes', JSON.stringify([...existing, ...newNotes]));
                 renderNoteList();
-                const skipped = importedNotes.length - newNotes.length;
-                alert(`Import complete. ${newNotes.length} new note(s) added${skipped > 0 ? `, ${skipped} duplicate(s) skipped` : ''}.`);
+                alert(`Import complete. ${newNotes.length} new notes added.`);
             } catch (err) { alert("Invalid JSON file."); }
         };
         reader.readAsText(file);
         event.target.value = '';
     }
 </script>
-
 </body>
 </html>
