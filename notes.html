@@ -104,8 +104,17 @@
         .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before { content: 'Huge'; }
 
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
-        .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; line-height: 1.6; }
-        .ql-editor p { margin-bottom: 1.0em !important; } 
+        
+        /* TYPOGRAPHY REFINEMENTS */
+        .ql-editor { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding-bottom: 20px; 
+            line-height: 1.45; /* Tightened line spacing within paragraphs */
+        }
+        .ql-editor p { 
+            margin-bottom: 0.75em !important; /* Tightened paragraph spacing */
+        } 
         .ql-editor p:last-child { margin-bottom: 0 !important; }
 
         #editor-container.zoom-small .ql-editor { font-size: 13px; }
@@ -239,30 +248,36 @@
                         shiftKey: true,
                         handler: highlightHandler
                     },
+                    // ENHANCED SHIFT-ENTER: Explicitly insert a break without a new paragraph block
                     shiftEnter: {
                         key: 13,
                         shiftKey: true,
-                        handler: function(range, context) {
-                            quill.insertText(range.index, '\n', Quill.sources.USER);
+                        handler: function(range) {
+                            quill.insertEmbed(range.index, 'break', true, Quill.sources.USER);
                             quill.setSelection(range.index + 1, Quill.sources.SILENT);
-                            return false; 
+                            return false;
                         }
                     }
                 }
-            },
-            clipboard: {
-                matchers: [
-                    ['BR', function() { return new Delta().insert('\n'); }]
-                ]
             }
         },
         theme: 'snow'
     });
 
+    // Register break blot for soft line breaks
+    const Embed = Quill.import('blots/embed');
+    class BreakBlot extends Embed {
+        static create() { return document.createElement('br'); }
+    }
+    BreakBlot.blotName = 'break';
+    BreakBlot.tagName = 'BR';
+    Quill.register(BreakBlot);
+
+    // Clipboard Matcher: Clean up pasted newlines
     quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
         let ops = delta.ops.map(op => {
             if (typeof op.insert === 'string') {
-                return { ...op, insert: op.insert.replace(/\n\s*\n\s*\n/g, '\n\n').replace(/^\n+/, '') };
+                return { ...op, insert: op.insert.replace(/\n\s*\n+/g, '\n\n').replace(/^\n+/, '') };
             }
             return op;
         });
@@ -307,7 +322,7 @@
         else { notes.push(noteData); currentNoteId = noteData.id; }
         
         saveNotesInternal(notes);
-        localStorage.setItem('last-note-id', currentNoteId); // Remember this note
+        localStorage.setItem('last-note-id', currentNoteId);
         setDirty(false);
     }
 
@@ -364,7 +379,7 @@
         const note = getNotesSafely().find(n => n.id === id);
         if (note) {
             currentNoteId = note.id;
-            localStorage.setItem('last-note-id', currentNoteId); // Update last open note
+            localStorage.setItem('last-note-id', currentNoteId);
             document.getElementById('note-title').value = note.title;
             quill.setContents(note.content);
             setDirty(false);
@@ -376,7 +391,7 @@
     function createNewNote() {
         if (isDirty && !confirm("Discard changes?")) return;
         currentNoteId = null;
-        localStorage.removeItem('last-note-id'); // Clear tracking for new note
+        localStorage.removeItem('last-note-id');
         document.getElementById('note-title').value = '';
         quill.setContents([]);
         setDirty(false);
@@ -389,11 +404,8 @@
         if (confirm("Delete this note?")) {
             const notes = getNotesSafely().filter(n => n.id !== id);
             saveNotesInternal(notes);
-            if (currentNoteId === id) {
-                createNewNote();
-            } else {
-                renderNoteList();
-            }
+            if (currentNoteId === id) createNewNote();
+            else renderNoteList();
         }
     }
 
@@ -503,16 +515,12 @@
         setWidth(wp);
         document.querySelector(`input[value="${wp}"]`).checked = true;
 
-        // NEW LOGIC: Open last used note or default to new
         const lastId = localStorage.getItem('last-note-id');
         const notes = getNotesSafely();
         const lastNote = notes.find(n => n.id == lastId);
 
-        if (lastNote) {
-            loadNote(lastNote.id);
-        } else {
-            createNewNote();
-        }
+        if (lastNote) { loadNote(lastNote.id); } 
+        else { createNewNote(); }
     };
 
     window.onbeforeunload = (e) => { if (isDirty) return e.returnValue = "Unsaved changes!"; };
