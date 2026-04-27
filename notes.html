@@ -87,23 +87,13 @@
         .ql-snow .ql-fill { fill: var(--text-color) !important; }
         .ql-snow .ql-picker { color: var(--text-color) !important; }
 
-        /* Highlight Icon */
+        /* Highlight Icon UI */
         .ql-highlight { position: relative; width: 28px !important; }
         .ql-highlight::after { 
             content: "H"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #ffff00; padding: 0 5px; border-radius: 2px; border: 1px solid #ccc; 
             font-weight: bold; color: #333; font-size: 12px; pointer-events: none;
         }
-
-        /* Size Labels */
-        .ql-snow .ql-picker.ql-size .ql-picker-label::before,
-        .ql-snow .ql-picker.ql-size .ql-picker-item::before { content: 'Normal'; }
-        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before,
-        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="small"]::before { content: 'Small'; }
-        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="large"]::before,
-        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="large"]::before { content: 'Large'; }
-        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before,
-        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before { content: 'Huge'; }
 
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; }
@@ -147,7 +137,7 @@
             .bottom-bar { justify-content: center; }
             .ql-toolbar.ql-snow { overflow-x: auto !important; display: block; white-space: nowrap; }
             .ql-picker-options { position: fixed !important; top: auto !important; z-index: 3000; }
-            #fullscreen-toggle { display: none; } /* Hide fullscreen on mobile as requested */
+            #fullscreen-toggle { display: none; }
         }
     </style>
 </head>
@@ -206,6 +196,7 @@
     let saveTimeout = null;
     let isDirty = false;
 
+    // Highlight Toggle Handler
     const highlightHandler = function() {
         const range = quill.getSelection();
         if (!range) return;
@@ -227,6 +218,16 @@
                 handlers: { 
                     'highlight': highlightHandler,
                     'size': (val) => applyZoom(val)
+                }
+            },
+            keyboard: {
+                bindings: {
+                    highlightShortcut: {
+                        key: 'K',
+                        shortKey: true,
+                        shiftKey: true,
+                        handler: highlightHandler
+                    }
                 }
             }
         },
@@ -278,7 +279,7 @@
         try {
             localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes }));
             renderNoteList();
-        } catch (e) { alert("Storage full! Please backup and clear some notes."); }
+        } catch (e) { alert("Storage full!"); }
     }
 
     function getNotesSafely() {
@@ -376,15 +377,14 @@
             try {
                 const imported = JSON.parse(e.target.result);
                 const newData = Array.isArray(imported) ? imported : (imported.data || []);
-                if (!newData.length || !newData[0].content) throw new Error();
-                if (confirm("Merge imported notes with existing ones?")) {
+                if (confirm("Merge imported notes?")) {
                     const existing = getNotesSafely();
                     const existingIds = new Set(existing.map(n => n.id));
                     const merged = [...existing, ...newData.filter(n => !existingIds.has(n.id))];
                     saveNotesInternal(merged);
                     alert("Import successful.");
                 }
-            } catch (err) { alert("Error: Invalid backup file."); }
+            } catch (err) { alert("Invalid file."); }
         };
         reader.readAsText(file);
         event.target.value = '';
@@ -402,7 +402,7 @@
     }
 
     function nuclearDelete() {
-        if (confirm("Wipe EVERYTHING? This cannot be undone.")) {
+        if (confirm("Wipe EVERYTHING?")) {
             localStorage.removeItem('my-github-notes');
             createNewNote();
         }
@@ -425,13 +425,8 @@
     }
 
     function toggleFullscreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                alert(`Error attempting to enable full-screen mode: ${err.message}`);
-            });
-        } else {
-            document.exitFullscreen();
-        }
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
     }
 
     document.addEventListener('fullscreenchange', () => {
@@ -441,7 +436,20 @@
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
-    quill.on('text-change', (delta, old, source) => { if (source === 'user') handleInput(); });
+    // Logic for typing // to toggle highlight
+    quill.on('text-change', (delta, old, source) => {
+        if (source === 'user') {
+            handleInput();
+            const selection = quill.getSelection();
+            if (selection && selection.index >= 2) {
+                const text = quill.getText(selection.index - 2, 2);
+                if (text === '//') {
+                    quill.deleteText(selection.index - 2, 2);
+                    highlightHandler();
+                }
+            }
+        }
+    });
 
     window.onload = () => {
         renderNoteList();
