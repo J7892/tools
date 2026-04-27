@@ -242,9 +242,31 @@
                         handler: highlightHandler
                     }
                 }
+            },
+            // Clipboard Matcher: Collapses multiple line breaks in plain-text paste
+            clipboard: {
+                matchers: [
+                    [Node.TEXT_NODE, function(node, delta) {
+                        return delta.compose(new Delta().retain(delta.length(), {
+                            // We aren't changing attributes here, just providing the matcher hook
+                        }));
+                    }]
+                ]
             }
         },
         theme: 'snow'
+    });
+
+    // Custom Paste Handling to fix Cmd-Shift-V spacing
+    quill.clipboard.addMatcher(Node.ELEMENT_NODE, (node, delta) => {
+        let ops = delta.ops.map(op => {
+            if (typeof op.insert === 'string') {
+                // Collapse 3+ newlines into 2 to prevent "triple spacing" gaps
+                return { ...op, insert: op.insert.replace(/\n\s*\n\s*\n/g, '\n\n') };
+            }
+            return op;
+        });
+        return new Delta(ops);
     });
 
     function applyZoom(value) {
