@@ -76,7 +76,7 @@
         
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
         
-        /* Toolbar */
+        /* Toolbar Styling */
         .ql-toolbar.ql-snow { 
             background: var(--toolbar-bg); border-color: var(--border-color) !important; 
             flex-shrink: 0; z-index: 100; position: relative;
@@ -87,6 +87,7 @@
         .ql-snow .ql-fill { fill: var(--text-color) !important; }
         .ql-snow .ql-picker { color: var(--text-color) !important; }
 
+        /* Highlight Icon UI */
         .ql-highlight { position: relative; width: 28px !important; }
         .ql-highlight::after { 
             content: "H"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -94,6 +95,7 @@
             font-weight: bold; color: #333; font-size: 12px; pointer-events: none;
         }
 
+        /* Size Labels */
         .ql-snow .ql-picker.ql-size .ql-picker-label::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item::before { content: 'Normal'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before,
@@ -105,15 +107,14 @@
 
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         
-        /* TYPOGRAPHY REFINEMENTS */
         .ql-editor { 
             flex-grow: 1; 
             overflow-y: auto; 
             padding-bottom: 20px; 
-            line-height: 1.45; /* Tightened line spacing within paragraphs */
+            line-height: 1.45; 
         }
         .ql-editor p { 
-            margin-bottom: 0.75em !important; /* Tightened paragraph spacing */
+            margin-bottom: 0.75em !important; 
         } 
         .ql-editor p:last-child { margin-bottom: 0 !important; }
 
@@ -221,6 +222,7 @@
         const range = quill.getSelection();
         if (!range) return;
         const format = quill.getFormat(range);
+        // Simplified: Only toggles Yellow highlight
         quill.format('background', format.background ? false : '#ffff00');
     };
 
@@ -232,7 +234,6 @@
                     ['bold', 'italic', 'underline', 'link'], 
                     ['highlight'], 
                     [{ 'color': [] }],
-                    [{ 'background': [] }],
                     ['clean']
                 ],
                 handlers: { 
@@ -248,14 +249,14 @@
                         shiftKey: true,
                         handler: highlightHandler
                     },
-                    // ENHANCED SHIFT-ENTER: Explicitly insert a break without a new paragraph block
+                    // ROBUST SHIFT-RETURN: Explicitly insert newline character
                     shiftEnter: {
                         key: 13,
                         shiftKey: true,
                         handler: function(range) {
-                            quill.insertEmbed(range.index, 'break', true, Quill.sources.USER);
+                            quill.insertText(range.index, '\n', Quill.sources.USER);
                             quill.setSelection(range.index + 1, Quill.sources.SILENT);
-                            return false;
+                            return false; 
                         }
                     }
                 }
@@ -263,15 +264,6 @@
         },
         theme: 'snow'
     });
-
-    // Register break blot for soft line breaks
-    const Embed = Quill.import('blots/embed');
-    class BreakBlot extends Embed {
-        static create() { return document.createElement('br'); }
-    }
-    BreakBlot.blotName = 'break';
-    BreakBlot.tagName = 'BR';
-    Quill.register(BreakBlot);
 
     // Clipboard Matcher: Clean up pasted newlines
     quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
