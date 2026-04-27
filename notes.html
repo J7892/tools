@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes 850p</title>
+    <title>Notes</title>
     
     <link href="quill.snow.css" rel="stylesheet">
     
@@ -87,23 +87,11 @@
             flex-grow: 1; display: flex; flex-direction: column; min-height: 0; z-index: 10;
         }
 
-        /* Generic UI Theme Colors */
-        .ql-snow .ql-stroke { stroke: var(--text-color); }
-        .ql-snow .ql-fill { fill: var(--text-color); }
-        .ql-snow .ql-picker { color: var(--text-color); }
-
-        /* FINAL FIX: Surgical Text Color Icon Rendering */
-        /* Forces the inner 'A' paths to be visible and use the current color */
-        .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-stroke.ql-thin {
-            stroke: currentColor !important;
-            stroke-width: 2px !important;
-            display: block !important;
-            visibility: visible !important;
-        }
-        /* Ensures the underline reflects the actual active color choice */
-        .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-stroke:not(.ql-thin) {
-            stroke: inherit !important;
-        }
+        /* Standard Quill Stroke/Fill for visibility */
+        .ql-snow .ql-stroke { stroke: var(--text-color) !important; }
+        .ql-snow .ql-fill { fill: var(--text-color) !important; }
+        .ql-snow .ql-picker { color: var(--text-color) !important; }
+        [data-theme="dark"] .ql-picker-options { background-color: var(--sidebar-bg) !important; color: var(--text-color) !important; border-color: var(--border-color) !important; }
 
         /* Highlight Icon Helper */
         .ql-highlight { position: relative; width: 28px !important; }
