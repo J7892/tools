@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes 848p</title>
+    <title>Notes 850p</title>
     
     <link href="quill.snow.css" rel="stylesheet">
     
@@ -87,22 +87,25 @@
             flex-grow: 1; display: flex; flex-direction: column; min-height: 0; z-index: 10;
         }
 
-        /* Default Quill Stroke/Fill Overrides for Themes */
-        .ql-stroke { stroke: var(--text-color); }
-        .ql-fill { fill: var(--text-color); }
-        .ql-picker { color: var(--text-color); }
-        [data-theme="dark"] .ql-picker-options { background-color: var(--sidebar-bg) !important; color: var(--text-color) !important; border-color: var(--border-color) !important; }
+        /* Generic UI Theme Colors */
+        .ql-snow .ql-stroke { stroke: var(--text-color); }
+        .ql-snow .ql-fill { fill: var(--text-color); }
+        .ql-snow .ql-picker { color: var(--text-color); }
 
-        /* Icon Fixes: Surgical overrides to fix missing icons */
-        /* Restore the letter 'A' in the color picker and let it change color */
-        .ql-color .ql-picker-label svg .ql-stroke.ql-thin { 
-            stroke: currentColor !important; 
+        /* FINAL FIX: Surgical Text Color Icon Rendering */
+        /* Forces the inner 'A' paths to be visible and use the current color */
+        .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-stroke.ql-thin {
+            stroke: currentColor !important;
+            stroke-width: 2px !important;
+            display: block !important;
+            visibility: visible !important;
         }
-        /* Ensure the underline bar uses the actual selected color */
-        .ql-color .ql-picker-label svg .ql-stroke:not(.ql-thin) {
+        /* Ensures the underline reflects the actual active color choice */
+        .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-stroke:not(.ql-thin) {
             stroke: inherit !important;
         }
 
+        /* Highlight Icon Helper */
         .ql-highlight { position: relative; width: 28px !important; }
         .ql-highlight::after { 
             content: "H"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
