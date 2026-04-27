@@ -76,7 +76,7 @@
         
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
         
-        /* Toolbar */
+        /* Toolbar Styling */
         .ql-toolbar.ql-snow { 
             background: var(--toolbar-bg); border-color: var(--border-color) !important; 
             flex-shrink: 0; z-index: 100; position: relative;
@@ -95,8 +95,22 @@
             font-weight: bold; color: #333; font-size: 12px; pointer-events: none;
         }
 
+        /* Size Labels */
+        .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item::before { content: 'Normal'; }
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="small"]::before { content: 'Small'; }
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="large"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="large"]::before { content: 'Large'; }
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before { content: 'Huge'; }
+
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
-        .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; }
+        .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; line-height: 1.6; }
+        
+        /* ADJUSTMENT: Increase paragraph spacing */
+        .ql-editor p { margin-bottom: 1.5em !important; } 
+        .ql-editor p:last-child { margin-bottom: 0 !important; }
 
         #editor-container.zoom-small .ql-editor { font-size: 13px; }
         #editor-container.zoom-normal .ql-editor { font-size: 16px; }
@@ -196,7 +210,6 @@
     let saveTimeout = null;
     let isDirty = false;
 
-    // Highlight Toggle Handler
     const highlightHandler = function() {
         const range = quill.getSelection();
         if (!range) return;
@@ -436,7 +449,6 @@
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
-    // Logic for typing // to toggle highlight
     quill.on('text-change', (delta, old, source) => {
         if (source === 'user') {
             handleInput();
