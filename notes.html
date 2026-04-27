@@ -41,7 +41,7 @@
         .sidebar { 
             width: 280px; min-width: 280px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid var(--border-color); 
             display: flex; flex-direction: column; transition: margin-left 0.3s ease, background 0.3s; 
-            margin-left: -280px; height: 100vh; z-index: 1000;
+            margin-left: -280px; height: 100vh; z-index: 2000;
         }
         .sidebar.open { margin-left: 0; }
         .search-container { margin-bottom: 10px; }
@@ -80,16 +80,23 @@
             background: var(--editor-bg); color: var(--text-color);
         }
         
-        .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: hidden; }
+        .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
         
-        /* Quill UI */
+        /* Fixed Quill Toolbar for Mobile Dropdowns */
         .ql-toolbar.ql-snow { 
             background: var(--toolbar-bg); 
             border-color: var(--border-color) !important; 
             flex-shrink: 0; 
-            white-space: nowrap;
-            overflow-x: auto;
+            z-index: 100;
+            position: relative;
+            overflow: visible !important; /* Allow dropdowns to exit the bar */
         }
+
+        /* Responsive bar wrapper for horizontal scrolling buttons only */
+        .ql-formats {
+            margin-right: 15px !important;
+        }
+
         .ql-container.ql-snow { 
             border-color: var(--border-color) !important; 
             background: var(--editor-bg); 
@@ -98,7 +105,9 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+            z-index: 10;
         }
+
         .ql-stroke { stroke: var(--text-color) !important; }
         .ql-fill { fill: var(--text-color) !important; }
         .ql-picker { color: var(--text-color) !important; }
@@ -131,7 +140,6 @@
         .btn-new-main { background: #007bff; color: white; font-size: 1.4em; padding: 4px 16px; height: 50px; flex-shrink: 0; }
         .btn-new-sidebar { background: #007bff; color: white; margin-bottom: 10px; width: 100%; }
         .btn-export { background: #6c757d; color: white; margin-top: 10px; font-size: 0.8em; width: 100%; }
-        .btn-export.needs-backup { background: #fd7e14; animation: pulse-border 2s infinite; }
         .btn-delete { background: #ff4d4d; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
         .btn-nuclear { background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d !important; margin-top: 15px; font-size: 0.75em; width: 100%; opacity: 0.7; transition: opacity 0.2s; }
         .btn-copy, .btn-secondary-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); }
@@ -162,11 +170,9 @@
         .status-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
         .save-status { font-size: 0.8em; color: #28a745; font-weight: 600; min-width: 50px; }
         .stats-text { font-size: 0.75em; color: var(--secondary-text); }
-        .width-toggle-group { display: flex; align-items: center; gap: 5px; font-size: 0.75em; color: var(--secondary-text); }
         
-        /* Mobile/Narrow Screen Fixes */
         @media (max-width: 768px) {
-            .editor-area { padding: 5px; } /* Minimized side padding to prevent cut-off edges */
+            .editor-area { padding: 5px; } 
             .header-controls { margin-bottom: 8px; gap: 5px; }
             .toggle-sidebar { 
                 position: static; 
@@ -177,7 +183,6 @@
             }
             input#note-title { padding: 8px; font-size: 1.2em; }
             
-            /* Integrate New Note into bottom tools on mobile */
             .btn-new-main {
                 background: #007bff;
                 color: white;
@@ -186,21 +191,20 @@
                 padding: 0 10px;
                 display: flex;
                 align-items: center;
-                order: -1; /* Place at the front of the status group */
+                order: -1;
             }
             .btn-new-main::before { content: '+ '; }
             
             .bottom-bar { justify-content: center; padding: 5px 0; }
             .status-group { justify-content: center; gap: 4px; }
-            .btn-secondary-tool, .btn-copy { padding: 5px 8px; }
-        }
 
-        .ql-highlight:after { content: "H"; background: #ffff00; padding: 0 4px; border-radius: 2px; border: 1px solid #ccc; font-weight: bold; color: #333; }
-        
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(253, 126, 20, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0); }
+            /* Fix for scrolling toolbar on mobile while keeping dropdowns floating */
+            .ql-toolbar.ql-snow {
+                overflow-x: auto !important;
+                overflow-y: visible !important;
+                display: block;
+                white-space: nowrap;
+            }
         }
     </style>
 </head>
@@ -238,11 +242,6 @@
                     <button class="btn-secondary-tool" onclick="toggleFullscreen()" id="fullscreen-toggle">⛶ Full</button>
                     <button class="btn-secondary-tool" onclick="toggleTheme()" id="theme-toggle">🌙 Dark</button>
                     <button class="btn-copy" onclick="copyNote()">Copy</button>
-                </div>
-                
-                <div class="width-toggle-group">
-                    <label><input type="radio" name="width" value="full" onchange="setWidth('full')" checked> Full</label>
-                    <label><input type="radio" name="width" value="narrow" onchange="setWidth('narrow')"> Narrow</label>
                 </div>
             </div>
         </div>
@@ -357,9 +356,6 @@
         renderNoteList();
         checkBackupStatus();
         document.getElementById('sidebar').classList.remove('open');
-        const widthPref = localStorage.getItem('width-pref') || 'full';
-        setWidth(widthPref);
-        document.querySelector(`input[value="${widthPref}"]`).checked = true;
         applyTheme(localStorage.getItem('theme-pref') || 'light');
 
         const savedZoom = localStorage.getItem('zoom-pref') || 'normal';
