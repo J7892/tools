@@ -56,6 +56,7 @@
             border-radius: 4px; transition: background 0.2s;
         }
         .note-item:hover { background: var(--item-hover); }
+        .note-item.active { background: var(--item-hover); border-left: 4px solid #007bff; }
 
         /* Editor Area */
         .editor-area { 
@@ -75,22 +76,17 @@
         
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
         
-        /* Toolbar Styling */
+        /* Toolbar */
         .ql-toolbar.ql-snow { 
             background: var(--toolbar-bg); border-color: var(--border-color) !important; 
             flex-shrink: 0; z-index: 100; position: relative;
             padding: 8px !important; display: flex; align-items: center;
         }
 
-        .ql-container.ql-snow { 
-            border-color: var(--border-color) !important; background: var(--editor-bg); color: var(--text-color);
-            flex-grow: 1; display: flex; flex-direction: column; min-height: 0; z-index: 10;
-        }
-
-        .ql-stroke { stroke: var(--text-color) !important; }
-        .ql-fill { fill: var(--text-color) !important; }
-        .ql-picker { color: var(--text-color) !important; }
-        [data-theme="dark"] .ql-picker-options { background-color: var(--sidebar-bg) !important; color: var(--text-color) !important; border-color: var(--border-color) !important; }
+        /* Standard Quill Visibility */
+        .ql-snow .ql-stroke { stroke: var(--text-color) !important; }
+        .ql-snow .ql-fill { fill: var(--text-color) !important; }
+        .ql-snow .ql-picker { color: var(--text-color) !important; }
 
         /* Highlight Icon */
         .ql-highlight { position: relative; width: 28px !important; }
@@ -100,21 +96,20 @@
             font-weight: bold; color: #333; font-size: 12px; pointer-events: none;
         }
 
-        /* Picker Labels */
+        /* Size Labels */
+        .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item::before { content: 'Normal'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="small"]::before { content: 'Small'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="large"]::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="large"]::before { content: 'Large'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before { content: 'Huge'; }
-        .ql-snow .ql-picker.ql-size .ql-picker-label:not([data-value])::before,
-        .ql-snow .ql-picker.ql-size .ql-picker-item:not([data-value])::before { content: 'Normal'; }
 
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; }
-        .ql-editor p { margin-bottom: 1.5em !important; } 
 
-        /* Zoom Classes */
+        /* Zoom */
         #editor-container.zoom-small .ql-editor { font-size: 13px; }
         #editor-container.zoom-normal .ql-editor { font-size: 16px; }
         #editor-container.zoom-large .ql-editor { font-size: 20px; }
@@ -123,8 +118,6 @@
         button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
         .btn-new-main { background: #007bff; color: white; font-size: 1.4em; padding: 4px 16px; height: 50px; flex-shrink: 0; }
         .btn-new-sidebar { background: #007bff; color: white; margin-bottom: 10px; width: 100%; }
-        .btn-export { background: #6c757d; color: white; margin-top: 10px; font-size: 0.8em; width: 100%; }
-        .btn-nuclear { background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d !important; margin-top: 15px; font-size: 0.75em; width: 100%; opacity: 0.7; }
         .btn-copy, .btn-secondary-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); }
 
         .toggle-sidebar { 
@@ -141,35 +134,20 @@
             position: relative; flex-wrap: wrap; gap: 8px;
         }
         .status-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .save-status { font-size: 0.8em; color: #28a745; font-weight: 600; min-width: 50px; }
-        .stats-text { font-size: 0.75em; color: var(--secondary-text); }
-        .width-toggle-group { display: flex; align-items: center; gap: 8px; font-size: 0.75em; color: var(--secondary-text); border-left: 1px solid var(--border-color); padding-left: 10px; }
+        .save-status { font-size: 0.8em; font-weight: 600; min-width: 60px; }
+        .save-status.dirty { color: #ff9800; }
+        .save-status.saved { color: #28a745; }
         
         @media (max-width: 768px) {
             .editor-area { padding: 5px; } 
             .header-controls { margin-bottom: 8px; gap: 5px; }
             .toggle-sidebar { position: static; margin-right: 5px; border-radius: 4px; height: 40px; padding: 0 10px; }
             input#note-title { padding: 8px; font-size: 1.2em; }
-            .btn-new-main { background: #007bff; color: white; height: 32px; font-size: 0.75em; padding: 0 10px; display: flex; align-items: center; order: -1; }
+            .btn-new-main { background: #007bff; height: 32px; font-size: 0.75em; padding: 0 10px; order: -1; }
             .btn-new-main::before { content: '+ '; }
-            .bottom-bar { justify-content: center; padding: 5px 0; }
-            .status-group { justify-content: center; gap: 4px; }
-            .width-toggle-group { border: none; padding: 0; width: 100%; justify-content: center; margin-top: 5px; }
-            
-            /* SUGGESTION 2: Use fixed positioning for dropdowns to escape overflow context */
-            .ql-toolbar.ql-snow {
-                overflow-x: auto !important;
-                display: block;
-                white-space: nowrap;
-                -webkit-overflow-scrolling: touch;
-            }
-            .ql-picker-options { 
-                position: fixed !important; 
-                top: auto !important;
-                left: auto !important;
-                margin-top: 5px;
-                z-index: 3000;
-            }
+            .bottom-bar { justify-content: center; }
+            .ql-toolbar.ql-snow { overflow-x: auto !important; display: block; white-space: nowrap; }
+            .ql-picker-options { position: fixed !important; top: auto !important; z-index: 3000; }
         }
     </style>
 </head>
@@ -178,14 +156,11 @@
     <div id="sidebar" class="sidebar">
         <button class="btn-new-sidebar" onclick="createNewNote()">+ New Note</button>
         <div class="search-container">
-            <input type="text" id="sidebar-search" placeholder="Search titles..." oninput="renderNoteList()">
+            <input type="text" id="sidebar-search" placeholder="Search..." oninput="renderNoteList()">
         </div>
         <div id="note-list" class="note-list"></div>
-        <button id="export-btn" class="btn-export" onclick="exportNotes()">Download Backup</button>
-        <span id="last-backup-text" style="font-size: 0.7em; color: var(--secondary-text); text-align: center; display: block; margin: 5px 0;"></span>
-        <button class="btn-import" style="width: 100%; margin-top: 5px; font-size: 0.8em;" onclick="document.getElementById('import-input').click()">Import Backup</button>
-        <input type="file" id="import-input" style="display:none" accept=".json" onchange="importNotes(event)">
-        <button class="btn-nuclear" onclick="nuclearDelete()">☢ Clear All Notes</button>
+        <button id="export-btn" class="btn-export" style="width:100%; margin-top:10px;" onclick="exportNotes()">Backup (JSON)</button>
+        <button class="btn-nuclear" style="width:100%; margin-top:15px; color:red; background:none; border:1px solid red;" onclick="nuclearDelete()">Clear All</button>
     </div>
 
     <div class="editor-area">
@@ -193,7 +168,7 @@
             <div class="header-controls">
                 <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
                 <input type="text" id="note-title" placeholder="Note Title..." oninput="handleInput()">
-                <button class="btn-new-main" onclick="createNewNote()" title="New Note">New</button>
+                <button class="btn-new-main" onclick="createNewNote()">New</button>
             </div>
 
             <div class="editor-content-wrapper">
@@ -202,14 +177,13 @@
 
             <div class="bottom-bar">
                 <div class="status-group">
-                    <span id="status" class="save-status">Saved</span>
-                    <span id="stats-display" class="stats-text">0w | 0c</span>
-                    <button class="btn-secondary-tool" onclick="toggleFullscreen()" id="fullscreen-toggle">⛶ Full</button>
+                    <span id="status" class="save-status saved">Saved</span>
+                    <span id="stats-display" class="stats-text" style="font-size:0.75em; color:var(--secondary-text);">0w | 0c</span>
                     <button class="btn-secondary-tool" onclick="toggleTheme()" id="theme-toggle">🌙 Dark</button>
                     <button class="btn-copy" onclick="copyNote()">Copy</button>
                 </div>
                 
-                <div class="width-toggle-group">
+                <div style="font-size: 0.75em; color: var(--secondary-text); display: flex; gap: 8px;">
                     <label><input type="radio" name="width" value="full" onchange="setWidth('full')" checked> Full</label>
                     <label><input type="radio" name="width" value="narrow" onchange="setWidth('narrow')"> Narrow</label>
                 </div>
@@ -220,6 +194,11 @@
 <script src="quill.js"></script>
 
 <script>
+    const APP_VERSION = 1.0;
+    let currentNoteId = null;
+    let saveTimeout = null;
+    let isDirty = false;
+
     const highlightHandler = function() {
         const range = quill.getSelection();
         if (!range) return;
@@ -234,261 +213,188 @@
                     [{ 'size': ['small', false, 'large', 'huge'] }], 
                     ['bold', 'italic', 'underline', 'link'], 
                     ['highlight'], 
-                    [{ 'background': ['#ffff00', '#ced4da', '#d4edda', '#f8d7da', false] }], 
                     [{ 'color': [] }],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'background': [] }],
                     ['clean']
                 ],
                 handlers: { 
                     'highlight': highlightHandler,
-                    'size': function(value) {
-                        applyZoom(value);
-                    }
-                }
-            },
-            clipboard: { matchVisual: false },
-            keyboard: {
-                bindings: {
-                    highlightShortcut: { key: 'K', shortKey: true, shiftKey: true, handler: highlightHandler }
+                    'size': (val) => applyZoom(val)
                 }
             }
         },
         theme: 'snow'
     });
 
-    // SUGGESTION 1: Set zoom directly via classes and DOM attributes
     function applyZoom(value) {
         const container = document.getElementById('editor-container');
         container.classList.remove('zoom-small', 'zoom-normal', 'zoom-large', 'zoom-huge');
-        const zoomValue = value || 'normal';
-        container.classList.add(`zoom-${zoomValue}`);
+        container.classList.add(`zoom-${value || 'normal'}`);
         localStorage.setItem('zoom-pref', value || '');
-
-        // Update the picker label DOM attributes directly
         const label = document.querySelector('.ql-size .ql-picker-label');
-        if (label) {
-            if (value) label.setAttribute('data-value', value);
-            else label.removeAttribute('data-value');
-        }
+        if (label) { value ? label.setAttribute('data-value', value) : label.removeAttribute('data-value'); }
     }
-
-    function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('theme-pref', theme);
-        document.getElementById('theme-toggle').innerText = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
-    }
-
-    function toggleTheme() {
-        applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-    }
-
-    function toggleFullscreen() {
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-        else document.exitFullscreen();
-    }
-
-    document.addEventListener('fullscreenchange', () => {
-        document.getElementById('fullscreen-toggle').innerText = document.fullscreenElement ? "✖ Exit" : "⛶ Full";
-    });
-
-    function updateStats() {
-        const range = quill.getSelection();
-        let text = (range && range.length > 0) ? quill.getText(range.index, range.length).trim() : quill.getText().trim();
-        const words = text.length > 0 ? text.split(/\s+/).length : 0;
-        document.getElementById('stats-display').innerText = `${words}w | ${text.length}c`;
-    }
-
-    quill.on('selection-change', updateStats);
 
     function handleInput() {
-        isDirty = true;
-        document.getElementById('status').innerText = "Saving...";
-        document.getElementById('status').style.color = "#ff9800";
+        setDirty(true);
         updateStats();
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(autoSave, 1000);
     }
 
-    function nuclearDelete() {
-        if (confirm("Permanently delete ALL notes?")) {
-            localStorage.removeItem('my-github-notes');
-            currentNoteId = null;
-            createNewNote();
-            renderNoteList();
+    function setDirty(dirty) {
+        isDirty = dirty;
+        const status = document.getElementById('status');
+        if (dirty) {
+            status.innerText = "Saving...";
+            status.className = "save-status dirty";
+        } else {
+            status.innerText = "Saved";
+            status.className = "save-status saved";
         }
     }
-
-    quill.root.addEventListener('paste', function(e) {
-        const range = quill.getSelection();
-        if (range && range.length > 0) {
-            const pastedText = (e.clipboardData || window.clipboardData).getData('text/plain').trim();
-            if (/^(https?:\/\/[^\s]+|www\.[^\s]+)$/i.test(pastedText)) {
-                e.preventDefault(); e.stopPropagation(); 
-                let url = pastedText.startsWith('http') ? pastedText : 'https://' + pastedText;
-                quill.formatText(range.index, range.length, 'link', url);
-            }
-        }
-    }, true); 
-
-    let currentNoteId = null;
-    let saveTimeout = null;
-    let isDirty = false;
-
-    window.onload = () => { 
-        renderNoteList();
-        checkBackupStatus();
-        document.getElementById('sidebar').classList.remove('open');
-        applyTheme(localStorage.getItem('theme-pref') || 'light');
-
-        // Restore Zoom using direct DOM manipulation
-        const savedZoom = localStorage.getItem('zoom-pref');
-        applyZoom(savedZoom);
-
-        const widthPref = localStorage.getItem('width-pref') || 'full';
-        setWidth(widthPref);
-        document.querySelector(`input[value="${widthPref}"]`).checked = true;
-
-        createNewNote();
-    };
-
-    window.onbeforeunload = function() { if (isDirty) return "Unsaved changes."; };
-
-    function setWidth(mode) {
-        const wrapper = document.getElementById('width-wrapper');
-        if (mode === 'narrow') wrapper.classList.add('narrow');
-        else wrapper.classList.remove('narrow');
-        localStorage.setItem('width-pref', mode);
-    }
-
-    function copyNote() {
-        navigator.clipboard.writeText(quill.getText()).then(() => {
-            const btn = document.querySelector('.btn-copy');
-            const oldText = btn.innerText;
-            btn.innerText = 'Copied!';
-            setTimeout(() => btn.innerText = oldText, 2000);
-        });
-    }
-
-    function toggleSidebar() { 
-        const isOpen = document.getElementById('sidebar').classList.toggle('open');
-        localStorage.setItem('sidebar-open', isOpen);
-    }
-
-    quill.on('text-change', (delta, oldDelta, source) => {
-        if (source === 'user') {
-            handleInput();
-            const selection = quill.getSelection();
-            if (selection && selection.index >= 2) {
-                const text = quill.getText(selection.index - 2, 2);
-                if (text === '//' && quill.getText(selection.index - 3, 1) !== ':') {
-                    const format = quill.getFormat(selection.index - 2);
-                    quill.deleteText(selection.index - 2, 2);
-                    quill.format('background', format.background ? false : '#ffff00');
-                }
-            }
-        }
-    });
 
     function autoSave() {
-        const title = document.getElementById('note-title').value || "Untitled Note";
-        let notes = JSON.parse(localStorage.getItem('my-github-notes') || '[]');
+        const title = document.getElementById('note-title').value.trim() || "Untitled Note";
+        let notes = getNotesSafely();
         const noteData = { id: currentNoteId || Date.now(), title, content: quill.getContents(), date: new Date().toISOString() };
-        if (currentNoteId) {
-            const idx = notes.findIndex(n => n.id === currentNoteId);
-            if (idx > -1) notes[idx] = noteData;
-        } else {
-            notes.push(noteData);
-            currentNoteId = noteData.id;
-        }
-        localStorage.setItem('my-github-notes', JSON.stringify(notes));
-        renderNoteList();
-        isDirty = false;
-        document.getElementById('status').innerText = "Saved";
-        document.getElementById('status').style.color = "#28a745";
+        
+        const idx = notes.findIndex(n => n.id === currentNoteId);
+        if (idx > -1) notes[idx] = noteData;
+        else { notes.push(noteData); currentNoteId = noteData.id; }
+        
+        try {
+            localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes }));
+            renderNoteList();
+            setDirty(false);
+        } catch (e) { alert("Storage full! Please backup and clear some notes."); }
     }
 
-    function checkBackupStatus() {
-        const lastBackup = localStorage.getItem('last-export-date');
-        if (!lastBackup) return;
-        const lastDate = new Date(lastBackup);
-        document.getElementById('last-backup-text').innerText = `Last backup: ${lastDate.toLocaleDateString()}`;
+    function getNotesSafely() {
+        try {
+            const raw = localStorage.getItem('my-github-notes');
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            // Support both old array format and new versioned object format
+            return Array.isArray(parsed) ? parsed : (parsed.data || []);
+        } catch (e) { return []; }
     }
 
     function renderNoteList() {
-        const notes = JSON.parse(localStorage.getItem('my-github-notes') || '[]');
-        const term = document.getElementById('sidebar-search').value.toLowerCase();
+        const notes = getNotesSafely();
         const list = document.getElementById('note-list');
         list.innerHTML = '';
-        const filtered = notes.filter(n => n.title.toLowerCase().includes(term) || n.content.ops.map(op => typeof op.insert === 'string' ? op.insert : '').join('').toLowerCase().includes(term)).sort((a, b) => new Date(b.date) - new Date(a.date));
-        filtered.forEach(note => {
+        notes.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(note => {
             const div = document.createElement('div');
-            div.className = 'note-item';
-            div.innerHTML = `<div style="flex-grow:1; overflow:hidden; padding-right: 10px;" onclick="loadNote(${note.id})"><div style="white-space:nowrap; text-overflow:ellipsis; overflow:hidden; font-weight: 500; color: var(--text-color);">${note.title || "Untitled Note"}</div><div style="font-size: 0.75em; color: var(--secondary-text); margin-top: 3px;">${new Date(note.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div></div><button class="btn-delete" onclick="deleteNote(${note.id})">×</button>`;
+            div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
+            
+            const titleCont = document.createElement('div');
+            titleCont.style = "flex-grow:1; overflow:hidden;";
+            titleCont.onclick = () => loadNote(note.id);
+            
+            const titleEl = document.createElement('div');
+            titleEl.style = "white-space:nowrap; text-overflow:ellipsis; overflow:hidden; font-weight:500;";
+            titleEl.textContent = note.title || "Untitled Note"; // ROBUST: Use textContent
+            
+            const dateEl = document.createElement('div');
+            dateEl.style = "font-size:0.7em; color:var(--secondary-text);";
+            dateEl.textContent = new Date(note.date).toLocaleDateString();
+
+            titleCont.append(titleEl, dateEl);
+            
+            const delBtn = document.createElement('button');
+            delBtn.innerText = "×";
+            delBtn.style = "background:none; color:red; font-size:1.2em; padding:0 5px;";
+            delBtn.onclick = (e) => { e.stopPropagation(); deleteNote(note.id); };
+
+            div.append(titleCont, delBtn);
             list.appendChild(div);
         });
     }
 
     function loadNote(id) {
         if (isDirty && !confirm("Discard unsaved changes?")) return;
-        const note = JSON.parse(localStorage.getItem('my-github-notes') || '[]').find(n => n.id === id);
+        const note = getNotesSafely().find(n => n.id === id);
         if (note) {
             currentNoteId = note.id;
             document.getElementById('note-title').value = note.title;
             quill.setContents(note.content);
-            isDirty = false;
-            document.getElementById('status').innerText = "Saved";
-            document.getElementById('status').style.color = "#28a745";
+            setDirty(false);
+            renderNoteList();
             updateStats();
         }
     }
 
     function createNewNote() {
         if (isDirty && !confirm("Discard changes?")) return;
-        currentNoteId = null; isDirty = false;
+        currentNoteId = null;
         document.getElementById('note-title').value = '';
         quill.setContents([]);
-        document.getElementById('status').innerText = "New Note";
+        setDirty(false);
+        renderNoteList();
         updateStats();
-        document.getElementById('note-title').focus();
     }
 
     function deleteNote(id) {
         if (confirm("Delete this note?")) {
-            let notes = JSON.parse(localStorage.getItem('my-github-notes') || '[]').filter(n => n.id !== id);
-            localStorage.setItem('my-github-notes', JSON.stringify(notes));
+            const notes = getNotesSafely().filter(n => n.id !== id);
+            localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes }));
             if (currentNoteId === id) createNewNote();
-            renderNoteList();
+            else renderNoteList();
         }
     }
 
-    function exportNotes() {
-        const notes = localStorage.getItem('my-github-notes');
-        if (!notes || notes === "[]") return alert("No notes!");
-        localStorage.setItem('last-export-date', new Date().toISOString());
-        checkBackupStatus();
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([notes], { type: 'application/json' }));
-        a.download = `notes_backup_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
+    function nuclearDelete() {
+        if (confirm("Wipe EVERYTHING? This cannot be undone.")) {
+            localStorage.removeItem('my-github-notes');
+            createNewNote();
+        }
     }
 
-    function importNotes(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const imported = JSON.parse(e.target.result);
-                const existing = JSON.parse(localStorage.getItem('my-github-notes') || '[]');
-                const existingIds = new Set(existing.map(n => n.id));
-                localStorage.setItem('my-github-notes', JSON.stringify([...existing, ...imported.filter(n => !existingIds.has(n.id))]));
-                renderNoteList();
-                alert("Import complete.");
-            } catch (err) { alert("Error."); }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
+    function updateStats() {
+        const text = quill.getText().trim();
+        const words = text.length > 0 ? text.split(/\s+/).length : 0;
+        document.getElementById('stats-display').innerText = `${words}w | ${text.length}c`;
     }
+
+    function setWidth(mode) {
+        document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`;
+        localStorage.setItem('width-pref', mode);
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme-pref', theme);
+    }
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    function copyNote() {
+        navigator.clipboard.writeText(quill.getText()).then(() => {
+            const btn = document.querySelector('.btn-copy');
+            btn.innerText = 'Copied!';
+            setTimeout(() => btn.innerText = 'Copy', 2000);
+        });
+    }
+
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+    quill.on('text-change', (delta, old, source) => { if (source === 'user') handleInput(); });
+
+    window.onload = () => {
+        renderNoteList();
+        applyTheme(localStorage.getItem('theme-pref') || 'light');
+        applyZoom(localStorage.getItem('zoom-pref'));
+        const wp = localStorage.getItem('width-pref') || 'full';
+        setWidth(wp);
+        document.querySelector(`input[value="${wp}"]`).checked = true;
+        createNewNote();
+    };
+
+    window.onbeforeunload = (e) => { if (isDirty) return e.returnValue = "Unsaved changes!"; };
 </script>
 </body>
 </html>
