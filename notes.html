@@ -76,7 +76,7 @@
         
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
         
-        /* Toolbar */
+        /* Toolbar Styling */
         .ql-toolbar.ql-snow { 
             background: var(--toolbar-bg); border-color: var(--border-color) !important; 
             flex-shrink: 0; z-index: 100; position: relative;
@@ -108,6 +108,7 @@
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; line-height: 1.6; }
         
+        /* Adjusted paragraph spacing */
         .ql-editor p { margin-bottom: 1.0em !important; } 
         .ql-editor p:last-child { margin-bottom: 0 !important; }
 
@@ -242,19 +243,34 @@
                         shortKey: true,
                         shiftKey: true,
                         handler: highlightHandler
+                    },
+                    // FIX: Enable Shift-Enter for soft line breaks (<br>)
+                    shiftEnter: {
+                        key: 13,
+                        shiftKey: true,
+                        handler: function(range, context) {
+                            quill.insertText(range.index, '\n', Quill.sources.USER);
+                            quill.setSelection(range.index + 1, Quill.sources.SILENT);
+                            return false; 
+                        }
                     }
                 }
+            },
+            clipboard: {
+                matchers: [
+                    // Preserve <br> tags during paste
+                    ['BR', function() { return new Delta().insert('\n'); }]
+                ]
             }
         },
         theme: 'snow'
     });
 
-    // ROBUST PASTE HANDLING: Consolidate newlines to fix Cmd-Shift-V spacing gaps
+    // Matcher to clean up whitespace on paste and keep spacing tidy
     quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
         let ops = delta.ops.map(op => {
             if (typeof op.insert === 'string') {
-                // Remove multiple sequential newlines and replace with a single double-newline
-                return { ...op, insert: op.insert.replace(/\n\s*\n+/g, '\n\n').replace(/^\n+/, '') };
+                return { ...op, insert: op.insert.replace(/\n\s*\n\s*\n/g, '\n\n').replace(/^\n+/, '') };
             }
             return op;
         });
