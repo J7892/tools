@@ -115,13 +115,14 @@
             const totalWords = validWords.length;
             wordCountDisplay.textContent = totalWords;
 
-            // Approximate Line Count (Words / 5, rounded to nearest 5)
+            // Approximate Line Count (Words / 5, always rounded up to nearest 5)
             if (totalWords === 0) {
                 lineCountDisplay.textContent = "~0";
             } else {
                 const rawLines = totalWords / 5;
-                const roundedLines = Math.round(rawLines / 5) * 5;
-                lineCountDisplay.textContent = `~${roundedLines}`;
+                // Math.ceil divides by 5, rounds up to the next integer, then multiplies back
+                const ceiledLines = Math.ceil(rawLines / 5) * 5;
+                lineCountDisplay.textContent = `~${ceiledLines}`;
             }
         });
     </script>
