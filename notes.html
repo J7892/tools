@@ -87,7 +87,6 @@
         .ql-snow .ql-fill { fill: var(--text-color) !important; }
         .ql-snow .ql-picker { color: var(--text-color) !important; }
 
-        /* Highlight Icon UI */
         .ql-highlight { position: relative; width: 28px !important; }
         .ql-highlight::after { 
             content: "H"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -95,7 +94,6 @@
             font-weight: bold; color: #333; font-size: 12px; pointer-events: none;
         }
 
-        /* Size Labels */
         .ql-snow .ql-picker.ql-size .ql-picker-label::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item::before { content: 'Normal'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before,
@@ -107,7 +105,6 @@
 
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         
-        /* Typography */
         .ql-editor { 
             flex-grow: 1; 
             overflow-y: auto; 
@@ -147,6 +144,20 @@
         .save-status { font-size: 0.8em; font-weight: 600; min-width: 60px; }
         .save-status.dirty { color: #ff9800; }
         .save-status.saved { color: #28a745; }
+
+        /* Backup Prompt Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: var(--editor-bg); color: var(--text-color); padding: 25px;
+            border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            text-align: center; max-width: 400px; width: 90%;
+        }
+        .modal-content h3 { margin-top: 0; color: #d9534f; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
         
         @media (max-width: 768px) {
             .editor-area { padding: 5px; } 
@@ -209,6 +220,17 @@
         </div>
     </div>
 
+    <div id="backup-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Backup Recommended</h3>
+            <p>It has been over 7 days since your last backup. To prevent data loss, please download a fresh backup now.</p>
+            <div class="modal-buttons">
+                <button class="btn-copy" style="padding: 8px 16px; font-size: 1em;" onclick="dismissBackupPrompt()">Remind Me Later</button>
+                <button class="btn-new-main" style="height: auto; font-size: 1em; padding: 8px 16px;" onclick="executePromptedBackup()">Download Backup</button>
+            </div>
+        </div>
+    </div>
+
 <script src="quill.js"></script>
 
 <script>
@@ -219,7 +241,6 @@
 
     const Delta = Quill.import('delta');
 
-    // ISOLATED SOFT BREAK BLOT: Prevents breaking Quill's empty paragraph logic
     const Embed = Quill.import('blots/embed');
     class SoftBreak extends Embed {
         static create(value) {
@@ -265,7 +286,6 @@
                         key: 13,
                         shiftKey: true,
                         handler: function(range) {
-                            // Uses our isolated softbreak to prevent overriding the main BreakBlot
                             quill.insertEmbed(range.index, 'softbreak', true, Quill.sources.USER);
                             quill.setSelection(range.index + 1, Quill.sources.SILENT);
                             return false; 
@@ -494,6 +514,32 @@
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
+    // BACKUP PROMPT LOGIC
+    function checkBackupPrompt() {
+        if (sessionStorage.getItem('backup-prompt-dismissed')) return;
+        
+        const notes = getNotesSafely();
+        if (notes.length === 0) return; 
+
+        const lastBackup = localStorage.getItem('last-backup-date');
+        const now = new Date().getTime();
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        
+        if (!lastBackup || (now - new Date(lastBackup).getTime() > sevenDays)) {
+            document.getElementById('backup-modal').classList.add('active');
+        }
+    }
+
+    function dismissBackupPrompt() {
+        sessionStorage.setItem('backup-prompt-dismissed', 'true');
+        document.getElementById('backup-modal').classList.remove('active');
+    }
+
+    function executePromptedBackup() {
+        exportNotes();
+        dismissBackupPrompt();
+    }
+
     quill.on('text-change', (delta, old, source) => {
         if (source === 'user') {
             handleInput();
@@ -501,13 +547,11 @@
             if (selection && selection.index >= 2) {
                 const text = quill.getText(selection.index - 2, 2);
                 if (text === '//') {
-                    // Check format before deletion
                     const format = quill.getFormat(selection.index - 2, 2);
                     const toggleYellow = !format.background;
                     
                     quill.deleteText(selection.index - 2, 2, Quill.sources.USER);
                     
-                    // TIMEOUT FIX: Allows Quill to insert its empty paragraph placeholder before applying format
                     setTimeout(() => {
                         quill.format('background', toggleYellow ? '#ffff00' : false, Quill.sources.USER);
                     }, 10);
@@ -532,6 +576,9 @@
 
         if (lastNote) { loadNote(lastNote.id); } 
         else { createNewNote(); }
+
+        // Run backup check 1.5 seconds after load to prevent jarring UI shift
+        setTimeout(checkBackupPrompt, 1500);
     };
 
     window.onbeforeunload = (e) => { if (isDirty) return e.returnValue = "Unsaved changes!"; };
