@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Word Counter</title>
     <style>
-        /* Basic reset and styling */
         body {
             font-family: system-ui, -apple-system, sans-serif;
             background-color: #f4f4f9;
@@ -24,7 +23,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 800px; /* Increased width to make the box wider */
+            max-width: 800px;
         }
         h1 {
             margin-top: 0;
@@ -33,13 +32,13 @@
         }
         textarea {
             width: 100%;
-            height: 400px; /* Increased height significantly */
+            height: 400px;
             padding: 15px;
             box-sizing: border-box;
             border: 1px solid #ccc;
             border-radius: 4px;
             resize: vertical;
-            font-size: 14px; /* Reduced input text size */
+            font-size: 14px;
             margin-bottom: 1.5rem;
             line-height: 1.5;
         }
@@ -54,19 +53,21 @@
             background: #ecf0f1;
             padding: 1.5rem;
             border-radius: 6px;
+            gap: 10px;
         }
         .stat-box {
             text-align: center;
+            flex: 1;
         }
         .stat-number {
-            font-size: 1.5rem; /* Reduced number size */
+            font-size: 1.5rem;
             font-weight: bold;
             color: #2980b9;
             display: block;
         }
         .stat-label {
             display: block;
-            font-size: 0.8rem; /* Reduced label size */
+            font-size: 0.8rem;
             color: #7f8c8d;
             text-transform: uppercase;
             margin-top: 0.5rem;
@@ -89,30 +90,39 @@
                 <span id="charCount" class="stat-number">0</span>
                 <span class="stat-label">Characters</span>
             </div>
+            <div class="stat-box">
+                <span id="lineCount" class="stat-number">~0</span>
+                <span class="stat-label">Lines</span>
+            </div>
         </div>
     </div>
 
     <script>
-        // Grab the elements from the DOM
         const textInput = document.getElementById('textInput');
         const wordCountDisplay = document.getElementById('wordCount');
         const charCountDisplay = document.getElementById('charCount');
+        const lineCountDisplay = document.getElementById('lineCount');
 
-        // Listen for input events on the textarea
         textInput.addEventListener('input', () => {
             const text = textInput.value;
             
-            // 1. Calculate characters (includes spaces)
+            // Character Count
             charCountDisplay.textContent = text.length;
 
-            // 2. Calculate words
-            // Trim removes extra space at start/end, split(/\s+/) separates by any whitespace
+            // Word Count
             const words = text.trim().split(/\s+/);
-            
-            // If the input is empty or just whitespace, the split array will have an empty string.
-            // We filter out empty strings so the count stays at 0.
             const validWords = words.filter(word => word.length > 0);
-            wordCountDisplay.textContent = validWords.length;
+            const totalWords = validWords.length;
+            wordCountDisplay.textContent = totalWords;
+
+            // Approximate Line Count (Words / 5, rounded to nearest 5)
+            if (totalWords === 0) {
+                lineCountDisplay.textContent = "~0";
+            } else {
+                const rawLines = totalWords / 5;
+                const roundedLines = Math.round(rawLines / 5) * 5;
+                lineCountDisplay.textContent = `~${roundedLines}`;
+            }
         });
     </script>
 
