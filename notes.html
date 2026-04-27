@@ -78,7 +78,7 @@
         /* Toolbar Styling */
         .ql-toolbar.ql-snow { 
             background: var(--toolbar-bg); border-color: var(--border-color) !important; 
-            flex-shrink: 0; z-index: 100; position: relative; overflow: visible !important; 
+            flex-shrink: 0; z-index: 100; position: relative;
             padding: 8px !important; display: flex; align-items: center;
         }
 
@@ -87,13 +87,12 @@
             flex-grow: 1; display: flex; flex-direction: column; min-height: 0; z-index: 10;
         }
 
-        /* Standard Quill Stroke/Fill for visibility */
-        .ql-snow .ql-stroke { stroke: var(--text-color) !important; }
-        .ql-snow .ql-fill { fill: var(--text-color) !important; }
-        .ql-snow .ql-picker { color: var(--text-color) !important; }
+        .ql-stroke { stroke: var(--text-color) !important; }
+        .ql-fill { fill: var(--text-color) !important; }
+        .ql-picker { color: var(--text-color) !important; }
         [data-theme="dark"] .ql-picker-options { background-color: var(--sidebar-bg) !important; color: var(--text-color) !important; border-color: var(--border-color) !important; }
 
-        /* Highlight Icon Helper */
+        /* Highlight Icon */
         .ql-highlight { position: relative; width: 28px !important; }
         .ql-highlight::after { 
             content: "H"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -101,15 +100,21 @@
             font-weight: bold; color: #333; font-size: 12px; pointer-events: none;
         }
 
-        /* Labels for size picker */
-        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before { content: 'Small'; }
-        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="large"]::before { content: 'Large'; }
-        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before { content: 'Huge'; }
+        /* Picker Labels */
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="small"]::before { content: 'Small'; }
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="large"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="large"]::before { content: 'Large'; }
+        .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before { content: 'Huge'; }
+        .ql-snow .ql-picker.ql-size .ql-picker-label:not([data-value])::before,
+        .ql-snow .ql-picker.ql-size .ql-picker-item:not([data-value])::before { content: 'Normal'; }
 
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; }
         .ql-editor p { margin-bottom: 1.5em !important; } 
 
+        /* Zoom Classes */
         #editor-container.zoom-small .ql-editor { font-size: 13px; }
         #editor-container.zoom-normal .ql-editor { font-size: 16px; }
         #editor-container.zoom-large .ql-editor { font-size: 20px; }
@@ -151,8 +156,20 @@
             .status-group { justify-content: center; gap: 4px; }
             .width-toggle-group { border: none; padding: 0; width: 100%; justify-content: center; margin-top: 5px; }
             
-            .ql-toolbar.ql-snow { overflow-x: auto !important; overflow-y: visible !important; display: block; white-space: nowrap; }
-            .ql-picker-options { position: fixed !important; top: auto !important; margin-top: 5px; }
+            /* SUGGESTION 2: Use fixed positioning for dropdowns to escape overflow context */
+            .ql-toolbar.ql-snow {
+                overflow-x: auto !important;
+                display: block;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+            .ql-picker-options { 
+                position: fixed !important; 
+                top: auto !important;
+                left: auto !important;
+                margin-top: 5px;
+                z-index: 3000;
+            }
         }
     </style>
 </head>
@@ -180,7 +197,7 @@
             </div>
 
             <div class="editor-content-wrapper">
-                <div id="editor-container" class="zoom-normal"></div>
+                <div id="editor-container"></div>
             </div>
 
             <div class="bottom-bar">
@@ -225,11 +242,7 @@
                 handlers: { 
                     'highlight': highlightHandler,
                     'size': function(value) {
-                        const editorContainer = document.getElementById('editor-container');
-                        editorContainer.classList.remove('zoom-small', 'zoom-normal', 'zoom-large', 'zoom-huge');
-                        const zoomClass = value ? `zoom-${value}` : 'zoom-normal';
-                        editorContainer.classList.add(zoomClass);
-                        localStorage.setItem('zoom-pref', value || 'normal');
+                        applyZoom(value);
                     }
                 }
             },
@@ -242,6 +255,22 @@
         },
         theme: 'snow'
     });
+
+    // SUGGESTION 1: Set zoom directly via classes and DOM attributes
+    function applyZoom(value) {
+        const container = document.getElementById('editor-container');
+        container.classList.remove('zoom-small', 'zoom-normal', 'zoom-large', 'zoom-huge');
+        const zoomValue = value || 'normal';
+        container.classList.add(`zoom-${zoomValue}`);
+        localStorage.setItem('zoom-pref', value || '');
+
+        // Update the picker label DOM attributes directly
+        const label = document.querySelector('.ql-size .ql-picker-label');
+        if (label) {
+            if (value) label.setAttribute('data-value', value);
+            else label.removeAttribute('data-value');
+        }
+    }
 
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
@@ -281,7 +310,7 @@
     }
 
     function nuclearDelete() {
-        if (confirm("Permanently delete ALL notes?") && confirm("Proceed with total wipe?")) {
+        if (confirm("Permanently delete ALL notes?")) {
             localStorage.removeItem('my-github-notes');
             currentNoteId = null;
             createNewNote();
@@ -311,15 +340,9 @@
         document.getElementById('sidebar').classList.remove('open');
         applyTheme(localStorage.getItem('theme-pref') || 'light');
 
-        const savedZoom = localStorage.getItem('zoom-pref') || 'normal';
-        document.getElementById('editor-container').classList.add(`zoom-${savedZoom}`);
-        
-        const sizePicker = document.querySelector('.ql-size');
-        if (sizePicker) {
-            const options = sizePicker.querySelector('.ql-picker-options');
-            const target = options.querySelector(`[data-value="${savedZoom === 'normal' ? '' : savedZoom}"]`);
-            if (target) target.click(); 
-        }
+        // Restore Zoom using direct DOM manipulation
+        const savedZoom = localStorage.getItem('zoom-pref');
+        applyZoom(savedZoom);
 
         const widthPref = localStorage.getItem('width-pref') || 'full';
         setWidth(widthPref);
@@ -361,16 +384,6 @@
                     const format = quill.getFormat(selection.index - 2);
                     quill.deleteText(selection.index - 2, 2);
                     quill.format('background', format.background ? false : '#ffff00');
-                }
-            }
-            if (delta.ops.length > 0) {
-                const lastOp = delta.ops[delta.ops.length - 1];
-                if (typeof lastOp.insert === 'string' && (lastOp.insert === ' ' || lastOp.insert === '\n')) {
-                    const textBefore = quill.getText(Math.max(0, selection.index - 101), selection.index - 1);
-                    const lastWord = textBefore.split(/[\s\n]/).pop();
-                    if (lastWord && /^(https?:\/\/[^\s]+|www\.[^\s]+)$/i.test(lastWord)) {
-                        quill.formatText(selection.index - 1 - lastWord.length, lastWord.length, 'link', lastWord.startsWith('http') ? lastWord : 'https://' + lastWord);
-                    }
                 }
             }
         }
