@@ -76,7 +76,7 @@
         
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
         
-        /* Toolbar Styling */
+        /* Toolbar */
         .ql-toolbar.ql-snow { 
             background: var(--toolbar-bg); border-color: var(--border-color) !important; 
             flex-shrink: 0; z-index: 100; position: relative;
@@ -87,7 +87,7 @@
         .ql-snow .ql-fill { fill: var(--text-color) !important; }
         .ql-snow .ql-picker { color: var(--text-color) !important; }
 
-        /* Highlight Icon UI */
+        /* Highlight Icon */
         .ql-highlight { position: relative; width: 28px !important; }
         .ql-highlight::after { 
             content: "H"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -108,8 +108,8 @@
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; line-height: 1.6; }
         
-        /* ADJUSTMENT: Increase paragraph spacing */
-        .ql-editor p { margin-bottom: 1.5em !important; } 
+        /* Adjusted paragraph spacing */
+        .ql-editor p { margin-bottom: 1.0em !important; } 
         .ql-editor p:last-child { margin-bottom: 0 !important; }
 
         #editor-container.zoom-small .ql-editor { font-size: 13px; }
