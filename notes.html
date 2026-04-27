@@ -89,12 +89,10 @@
             flex-shrink: 0; 
             z-index: 100;
             position: relative;
-            overflow: visible !important; /* Allow dropdowns to exit the bar */
-        }
-
-        /* Responsive bar wrapper for horizontal scrolling buttons only */
-        .ql-formats {
-            margin-right: 15px !important;
+            overflow: visible !important; 
+            padding: 8px !important;
+            display: flex;
+            align-items: center;
         }
 
         .ql-container.ql-snow { 
@@ -113,12 +111,32 @@
         .ql-picker { color: var(--text-color) !important; }
         [data-theme="dark"] .ql-picker-options { background-color: var(--sidebar-bg) !important; color: var(--text-color) !important; border-color: var(--border-color) !important; }
 
+        /* Color Icon Fix */
         .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-stroke { stroke: inherit !important; }
         .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-fill { fill: inherit !important; }
 
+        /* Size Dropdown Labels */
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before { content: 'Small'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="large"]::before { content: 'Large'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before { content: 'Huge'; }
+
+        /* Highlight Icon Fix */
+        .ql-highlight { position: relative; width: 28px !important; }
+        .ql-highlight::after { 
+            content: "H"; 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ffff00; 
+            padding: 0 5px; 
+            border-radius: 2px; 
+            border: 1px solid #ccc; 
+            font-weight: bold; 
+            color: #333; 
+            font-size: 12px;
+            pointer-events: none;
+        }
 
         #editor-container { 
             flex-grow: 1; 
@@ -131,6 +149,7 @@
         .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; }
         .ql-editor p { margin-bottom: 1.5em !important; } 
 
+        /* Zoom Classes */
         #editor-container.zoom-small .ql-editor { font-size: 13px; }
         #editor-container.zoom-normal .ql-editor { font-size: 16px; }
         #editor-container.zoom-large .ql-editor { font-size: 20px; }
@@ -198,12 +217,19 @@
             .bottom-bar { justify-content: center; padding: 5px 0; }
             .status-group { justify-content: center; gap: 4px; }
 
-            /* Fix for scrolling toolbar on mobile while keeping dropdowns floating */
+            /* Mobile-specific toolbar scroll fix */
             .ql-toolbar.ql-snow {
                 overflow-x: auto !important;
                 overflow-y: visible !important;
                 display: block;
                 white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+            /* Ensure the options menus can break out of the scrollable toolbar */
+            .ql-picker-options {
+                position: fixed !important;
+                top: auto !important;
+                margin-top: 5px;
             }
         }
     </style>
