@@ -104,11 +104,9 @@
         .ql-picker { color: var(--text-color) !important; }
         [data-theme="dark"] .ql-picker-options { background-color: var(--sidebar-bg) !important; color: var(--text-color) !important; border-color: var(--border-color) !important; }
 
-        /* Color Icon Fix */
         .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-stroke { stroke: inherit !important; }
         .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-fill { fill: inherit !important; }
 
-        /* Size Dropdown Labels */
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before { content: 'Small'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="large"]::before { content: 'Large'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before { content: 'Huge'; }
@@ -121,16 +119,15 @@
             flex-direction: column;
             min-height: 0; 
         }
-        .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 40px; }
+        .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; }
         .ql-editor p { margin-bottom: 1.5em !important; } 
 
-        /* Zoom Classes */
         #editor-container.zoom-small .ql-editor { font-size: 13px; }
         #editor-container.zoom-normal .ql-editor { font-size: 16px; }
         #editor-container.zoom-large .ql-editor { font-size: 20px; }
         #editor-container.zoom-huge .ql-editor { font-size: 28px; }
 
-        button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+        button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
         .btn-new-main { background: #007bff; color: white; font-size: 1.4em; padding: 4px 16px; height: 50px; flex-shrink: 0; }
         .btn-new-sidebar { background: #007bff; color: white; margin-bottom: 10px; width: 100%; }
         .btn-export { background: #6c757d; color: white; margin-top: 10px; font-size: 0.8em; width: 100%; }
@@ -147,55 +144,55 @@
             border-radius: 0 4px 4px 0;
         }
 
-        /* Responsive Bottom Bar */
         .bottom-bar { 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            padding: 10px 0; 
+            padding: 8px 0; 
             border-top: 1px solid var(--border-color); 
-            margin-top: 10px; 
+            margin-top: 5px; 
             width: 100%; 
             flex-shrink: 0; 
             background: var(--editor-bg); 
             z-index: 10; 
             position: relative; 
             flex-wrap: wrap; 
-            gap: 10px;
+            gap: 8px;
         }
-        .status-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .save-status { font-size: 0.85em; color: #28a745; font-weight: 600; min-width: 60px; }
-        .stats-text { font-size: 0.8em; color: var(--secondary-text); }
-        .backup-nag { font-size: 0.75em; color: #fd7e14; font-weight: bold; display: none; }
+        .status-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .save-status { font-size: 0.8em; color: #28a745; font-weight: 600; min-width: 50px; }
+        .stats-text { font-size: 0.75em; color: var(--secondary-text); }
         .width-toggle-group { display: flex; align-items: center; gap: 5px; font-size: 0.75em; color: var(--secondary-text); }
         
         /* Mobile/Narrow Screen Fixes */
         @media (max-width: 768px) {
-            .editor-area { padding: 10px; }
+            .editor-area { padding: 5px; } /* Minimized side padding to prevent cut-off edges */
+            .header-controls { margin-bottom: 8px; gap: 5px; }
             .toggle-sidebar { 
                 position: static; 
-                margin-right: 10px;
+                margin-right: 5px;
                 border-radius: 4px;
-                height: 50px;
+                height: 40px;
+                padding: 0 10px;
             }
+            input#note-title { padding: 8px; font-size: 1.2em; }
+            
+            /* Integrate New Note into bottom tools on mobile */
             .btn-new-main {
-                position: fixed;
-                right: 20px;
-                bottom: 80px;
-                width: 56px;
-                height: 56px;
-                border-radius: 50%;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                z-index: 1200;
+                background: #007bff;
+                color: white;
+                height: 32px;
+                font-size: 0.75em;
+                padding: 0 10px;
                 display: flex;
                 align-items: center;
-                justify-content: center;
-                padding: 0;
-                font-size: 2em;
+                order: -1; /* Place at the front of the status group */
             }
-            .ql-editor { padding-bottom: 100px; }
-            .bottom-bar { justify-content: center; text-align: center; }
-            .status-group { justify-content: center; }
+            .btn-new-main::before { content: '+ '; }
+            
+            .bottom-bar { justify-content: center; padding: 5px 0; }
+            .status-group { justify-content: center; gap: 4px; }
+            .btn-secondary-tool, .btn-copy { padding: 5px 8px; }
         }
 
         .ql-highlight:after { content: "H"; background: #ffff00; padding: 0 4px; border-radius: 2px; border: 1px solid #ccc; font-weight: bold; color: #333; }
@@ -227,7 +224,7 @@
             <div class="header-controls">
                 <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
                 <input type="text" id="note-title" placeholder="Note Title..." oninput="handleInput()">
-                <button class="btn-new-main" onclick="createNewNote()" title="New Note">+</button>
+                <button class="btn-new-main" onclick="createNewNote()" title="New Note">New</button>
             </div>
 
             <div class="editor-content-wrapper">
@@ -237,11 +234,10 @@
             <div class="bottom-bar">
                 <div class="status-group">
                     <span id="status" class="save-status">Saved</span>
-                    <span id="stats-display" class="stats-text">0 words | 0 chars</span>
-                    <button class="btn-secondary-tool" onclick="toggleFullscreen()" id="fullscreen-toggle">⛶ Fullscreen</button>
+                    <span id="stats-display" class="stats-text">0w | 0c</span>
+                    <button class="btn-secondary-tool" onclick="toggleFullscreen()" id="fullscreen-toggle">⛶ Full</button>
                     <button class="btn-secondary-tool" onclick="toggleTheme()" id="theme-toggle">🌙 Dark</button>
-                    <button class="btn-copy" onclick="copyNote()">Copy Text</button>
-                    <span id="backup-nag" class="backup-nag">⚠️ Weekly Backup Due</span>
+                    <button class="btn-copy" onclick="copyNote()">Copy</button>
                 </div>
                 
                 <div class="width-toggle-group">
@@ -311,15 +307,14 @@
     }
 
     document.addEventListener('fullscreenchange', () => {
-        document.getElementById('fullscreen-toggle').innerText = document.fullscreenElement ? "✖ Exit" : "⛶ Fullscreen";
+        document.getElementById('fullscreen-toggle').innerText = document.fullscreenElement ? "✖ Exit" : "⛶ Full";
     });
 
     function updateStats() {
         const range = quill.getSelection();
         let text = (range && range.length > 0) ? quill.getText(range.index, range.length).trim() : quill.getText().trim();
-        document.getElementById('stats-display').style.color = (range && range.length > 0) ? "#007bff" : "var(--secondary-text)";
         const words = text.length > 0 ? text.split(/\s+/).length : 0;
-        document.getElementById('stats-display').innerText = `${words} words | ${text.length} chars`;
+        document.getElementById('stats-display').innerText = `${words}w | ${text.length}c`;
     }
 
     quill.on('selection-change', updateStats);
@@ -392,8 +387,9 @@
     function copyNote() {
         navigator.clipboard.writeText(quill.getText()).then(() => {
             const btn = document.querySelector('.btn-copy');
+            const oldText = btn.innerText;
             btn.innerText = 'Copied!';
-            setTimeout(() => btn.innerText = 'Copy Text', 2000);
+            setTimeout(() => btn.innerText = oldText, 2000);
         });
     }
 
@@ -450,10 +446,6 @@
         if (!lastBackup) return;
         const lastDate = new Date(lastBackup);
         document.getElementById('last-backup-text').innerText = `Last backup: ${lastDate.toLocaleDateString()}`;
-        if (Math.ceil(Math.abs(new Date() - lastDate) / 86400000) >= 7) {
-            document.getElementById('backup-nag').style.display = "inline";
-            document.getElementById('export-btn').classList.add('needs-backup');
-        }
     }
 
     function renderNoteList() {
