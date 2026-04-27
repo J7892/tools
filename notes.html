@@ -76,7 +76,7 @@
         
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
         
-        /* Toolbar Styling */
+        /* Toolbar */
         .ql-toolbar.ql-snow { 
             background: var(--toolbar-bg); border-color: var(--border-color) !important; 
             flex-shrink: 0; z-index: 100; position: relative;
@@ -87,7 +87,6 @@
         .ql-snow .ql-fill { fill: var(--text-color) !important; }
         .ql-snow .ql-picker { color: var(--text-color) !important; }
 
-        /* Highlight Icon */
         .ql-highlight { position: relative; width: 28px !important; }
         .ql-highlight::after { 
             content: "H"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -95,7 +94,6 @@
             font-weight: bold; color: #333; font-size: 12px; pointer-events: none;
         }
 
-        /* Size Labels */
         .ql-snow .ql-picker.ql-size .ql-picker-label::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item::before { content: 'Normal'; }
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="small"]::before,
@@ -107,8 +105,6 @@
 
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; line-height: 1.6; }
-        
-        /* Adjusted paragraph spacing */
         .ql-editor p { margin-bottom: 1.0em !important; } 
         .ql-editor p:last-child { margin-bottom: 0 !important; }
 
@@ -210,7 +206,6 @@
     let saveTimeout = null;
     let isDirty = false;
 
-    // Robustly import Delta
     const Delta = Quill.import('delta');
 
     const highlightHandler = function() {
@@ -244,7 +239,6 @@
                         shiftKey: true,
                         handler: highlightHandler
                     },
-                    // FIX: Enable Shift-Enter for soft line breaks (<br>)
                     shiftEnter: {
                         key: 13,
                         shiftKey: true,
@@ -258,7 +252,6 @@
             },
             clipboard: {
                 matchers: [
-                    // Preserve <br> tags during paste
                     ['BR', function() { return new Delta().insert('\n'); }]
                 ]
             }
@@ -266,7 +259,6 @@
         theme: 'snow'
     });
 
-    // Matcher to clean up whitespace on paste and keep spacing tidy
     quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
         let ops = delta.ops.map(op => {
             if (typeof op.insert === 'string') {
@@ -315,6 +307,7 @@
         else { notes.push(noteData); currentNoteId = noteData.id; }
         
         saveNotesInternal(notes);
+        localStorage.setItem('last-note-id', currentNoteId); // Remember this note
         setDirty(false);
     }
 
@@ -371,6 +364,7 @@
         const note = getNotesSafely().find(n => n.id === id);
         if (note) {
             currentNoteId = note.id;
+            localStorage.setItem('last-note-id', currentNoteId); // Update last open note
             document.getElementById('note-title').value = note.title;
             quill.setContents(note.content);
             setDirty(false);
@@ -382,19 +376,24 @@
     function createNewNote() {
         if (isDirty && !confirm("Discard changes?")) return;
         currentNoteId = null;
+        localStorage.removeItem('last-note-id'); // Clear tracking for new note
         document.getElementById('note-title').value = '';
         quill.setContents([]);
         setDirty(false);
         renderNoteList();
         updateStats();
+        document.getElementById('note-title').focus();
     }
 
     function deleteNote(id) {
         if (confirm("Delete this note?")) {
             const notes = getNotesSafely().filter(n => n.id !== id);
             saveNotesInternal(notes);
-            if (currentNoteId === id) createNewNote();
-            else renderNoteList();
+            if (currentNoteId === id) {
+                createNewNote();
+            } else {
+                renderNoteList();
+            }
         }
     }
 
@@ -447,6 +446,7 @@
     function nuclearDelete() {
         if (confirm("Wipe EVERYTHING?")) {
             localStorage.removeItem('my-github-notes');
+            localStorage.removeItem('last-note-id');
             createNewNote();
         }
     }
@@ -498,10 +498,21 @@
         updateBackupDate();
         applyTheme(localStorage.getItem('theme-pref') || 'light');
         applyZoom(localStorage.getItem('zoom-pref'));
+        
         const wp = localStorage.getItem('width-pref') || 'full';
         setWidth(wp);
         document.querySelector(`input[value="${wp}"]`).checked = true;
-        createNewNote();
+
+        // NEW LOGIC: Open last used note or default to new
+        const lastId = localStorage.getItem('last-note-id');
+        const notes = getNotesSafely();
+        const lastNote = notes.find(n => n.id == lastId);
+
+        if (lastNote) {
+            loadNote(lastNote.id);
+        } else {
+            createNewNote();
+        }
     };
 
     window.onbeforeunload = (e) => { if (isDirty) return e.returnValue = "Unsaved changes!"; };
