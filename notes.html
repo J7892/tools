@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes 845p</title>
+    <title>Notes 848p</title>
     
     <link href="quill.snow.css" rel="stylesheet">
     
@@ -87,19 +87,19 @@
             flex-grow: 1; display: flex; flex-direction: column; min-height: 0; z-index: 10;
         }
 
-        .ql-stroke { stroke: var(--text-color) !important; }
-        .ql-fill { fill: var(--text-color) !important; }
-        .ql-picker { color: var(--text-color) !important; }
+        /* Default Quill Stroke/Fill Overrides for Themes */
+        .ql-stroke { stroke: var(--text-color); }
+        .ql-fill { fill: var(--text-color); }
+        .ql-picker { color: var(--text-color); }
         [data-theme="dark"] .ql-picker-options { background-color: var(--sidebar-bg) !important; color: var(--text-color) !important; border-color: var(--border-color) !important; }
 
-        /* Icon Fixes: Surgical overrides to prevent icons from disappearing */
-        /* Restore the letter 'A' in the color picker */
-        .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-stroke.ql-thin { 
+        /* Icon Fixes: Surgical overrides to fix missing icons */
+        /* Restore the letter 'A' in the color picker and let it change color */
+        .ql-color .ql-picker-label svg .ql-stroke.ql-thin { 
             stroke: currentColor !important; 
-            stroke-width: 2;
         }
         /* Ensure the underline bar uses the actual selected color */
-        .ql-snow.ql-toolbar .ql-color .ql-picker-label svg .ql-stroke:not(.ql-thin) {
+        .ql-color .ql-picker-label svg .ql-stroke:not(.ql-thin) {
             stroke: inherit !important;
         }
 
