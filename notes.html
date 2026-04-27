@@ -209,7 +209,7 @@
     let saveTimeout = null;
     let isDirty = false;
 
-    // Explicitly import Delta to prevent paste crashes
+    // Robustly import Delta
     const Delta = Quill.import('delta');
 
     const highlightHandler = function() {
@@ -244,19 +244,17 @@
                         handler: highlightHandler
                     }
                 }
-            },
-            clipboard: {
-                matchers: [] 
             }
         },
         theme: 'snow'
     });
 
-    // Matcher to clean up whitespace and newlines on paste
+    // ROBUST PASTE HANDLING: Consolidate newlines to fix Cmd-Shift-V spacing gaps
     quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
         let ops = delta.ops.map(op => {
             if (typeof op.insert === 'string') {
-                return { ...op, insert: op.insert.replace(/\n\s*\n\s*\n/g, '\n\n') };
+                // Remove multiple sequential newlines and replace with a single double-newline
+                return { ...op, insert: op.insert.replace(/\n\s*\n+/g, '\n\n').replace(/^\n+/, '') };
             }
             return op;
         });
