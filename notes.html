@@ -108,7 +108,6 @@
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; line-height: 1.6; }
         
-        /* Adjusted paragraph spacing */
         .ql-editor p { margin-bottom: 1.0em !important; } 
         .ql-editor p:last-child { margin-bottom: 0 !important; }
 
@@ -210,6 +209,9 @@
     let saveTimeout = null;
     let isDirty = false;
 
+    // Explicitly import Delta to prevent paste crashes
+    const Delta = Quill.import('delta');
+
     const highlightHandler = function() {
         const range = quill.getSelection();
         if (!range) return;
@@ -243,25 +245,17 @@
                     }
                 }
             },
-            // Clipboard Matcher: Collapses multiple line breaks in plain-text paste
             clipboard: {
-                matchers: [
-                    [Node.TEXT_NODE, function(node, delta) {
-                        return delta.compose(new Delta().retain(delta.length(), {
-                            // We aren't changing attributes here, just providing the matcher hook
-                        }));
-                    }]
-                ]
+                matchers: [] 
             }
         },
         theme: 'snow'
     });
 
-    // Custom Paste Handling to fix Cmd-Shift-V spacing
-    quill.clipboard.addMatcher(Node.ELEMENT_NODE, (node, delta) => {
+    // Matcher to clean up whitespace and newlines on paste
+    quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
         let ops = delta.ops.map(op => {
             if (typeof op.insert === 'string') {
-                // Collapse 3+ newlines into 2 to prevent "triple spacing" gaps
                 return { ...op, insert: op.insert.replace(/\n\s*\n\s*\n/g, '\n\n') };
             }
             return op;
