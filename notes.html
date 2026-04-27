@@ -76,7 +76,7 @@
         
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
         
-        /* Toolbar Styling */
+        /* Toolbar */
         .ql-toolbar.ql-snow { 
             background: var(--toolbar-bg); border-color: var(--border-color) !important; 
             flex-shrink: 0; z-index: 100; position: relative;
@@ -147,6 +147,7 @@
             .bottom-bar { justify-content: center; }
             .ql-toolbar.ql-snow { overflow-x: auto !important; display: block; white-space: nowrap; }
             .ql-picker-options { position: fixed !important; top: auto !important; z-index: 3000; }
+            #fullscreen-toggle { display: none; } /* Hide fullscreen on mobile as requested */
         }
     </style>
 </head>
@@ -184,6 +185,7 @@
                 <div class="status-group">
                     <span id="status" class="save-status saved">Saved</span>
                     <span id="stats-display" class="stats-text" style="font-size:0.75em; color:var(--secondary-text);">0w | 0c</span>
+                    <button class="btn-secondary-tool" onclick="toggleFullscreen()" id="fullscreen-toggle">⛶ Full</button>
                     <button class="btn-secondary-tool" onclick="toggleTheme()" id="theme-toggle">🌙 Dark</button>
                     <button class="btn-copy" onclick="copyNote()">Copy</button>
                 </div>
@@ -374,9 +376,7 @@
             try {
                 const imported = JSON.parse(e.target.result);
                 const newData = Array.isArray(imported) ? imported : (imported.data || []);
-                
                 if (!newData.length || !newData[0].content) throw new Error();
-
                 if (confirm("Merge imported notes with existing ones?")) {
                     const existing = getNotesSafely();
                     const existingIds = new Set(existing.map(n => n.id));
@@ -416,6 +416,7 @@
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme-pref', theme);
+        document.getElementById('theme-toggle').innerText = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
     }
 
     function toggleTheme() {
@@ -423,13 +424,20 @@
         applyTheme(current === 'dark' ? 'light' : 'dark');
     }
 
-    function copyNote() {
-        navigator.clipboard.writeText(quill.getText()).then(() => {
-            const btn = document.querySelector('.btn-copy');
-            btn.innerText = 'Copied!';
-            setTimeout(() => btn.innerText = 'Copy', 2000);
-        });
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
     }
+
+    document.addEventListener('fullscreenchange', () => {
+        const btn = document.getElementById('fullscreen-toggle');
+        if (btn) btn.innerText = document.fullscreenElement ? "✖ Exit" : "⛶ Full";
+    });
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
