@@ -163,6 +163,15 @@
             padding-bottom: 20px; 
             line-height: 1.3; 
         }
+        
+        /* APPLE NOTES STYLE: First line is an auto-title */
+        .ql-editor > *:first-child {
+            font-size: 1.5em !important;
+            font-weight: bold !important;
+            margin-bottom: 0.5em !important;
+            line-height: 1.2 !important;
+        }
+
         .ql-editor p { margin-bottom: 0.5em !important; } 
         .ql-editor p:last-child { margin-bottom: 0 !important; }
 
@@ -205,11 +214,11 @@
             .editor-area { padding: 5px; } 
             
             .custom-toolbar-wrapper {
-                padding-left: 8px; /* Adds space before the hamburger icon */
+                padding-left: 8px; 
             }
 
             .toggle-sidebar { 
-                position: static; /* Forces it into the toolbar flexbox on mobile */
+                position: static; 
                 height: 32px; 
                 width: 36px;
                 padding: 0; 
@@ -347,31 +356,22 @@
         theme: 'snow'
     });
 
-    // ----------------------------------------------------
-    // DYNAMIC HEADER RECONSTRUCTION
-    // ----------------------------------------------------
     const toolbarEl = document.querySelector('.ql-toolbar');
     const customWrapper = document.createElement('div');
     customWrapper.className = 'custom-toolbar-wrapper';
     
-    // Insert wrapper where toolbar was
     toolbarEl.parentNode.insertBefore(customWrapper, toolbarEl);
     
-    // 1. Move toggle button inside so it acts as an inset button on mobile (stays absolute on desktop)
     const toggleBtn = document.querySelector('.toggle-sidebar');
     customWrapper.appendChild(toggleBtn);
     
-    // 2. Add the formatting tools into the middle
     customWrapper.appendChild(toolbarEl);
 
-    // 3. Create and append the native New Note button to the far right
     const nativeBtn = document.createElement('button');
     nativeBtn.className = 'native-new-btn';
     nativeBtn.innerHTML = '+ NEW NOTE';
     nativeBtn.onclick = createNewNote;
     customWrapper.appendChild(nativeBtn);
-    // ----------------------------------------------------
-
 
     quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
         let ops = delta.ops.map(op => {
