@@ -300,12 +300,12 @@
             const today = new Date();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const dd = String(today.getDate()).padStart(2, '0');
-            const dateText = `${mm}-${dd}`;
+            const dateText = `${mm}-${dd} - `;
             
             quill.setContents([]);
             quill.setText(`${dateText}\n\n`, 'user'); 
             
-            // Cursor automatically drops right after the date
+            // Cursor automatically drops right after the date string
             quill.setSelection(dateText.length, 0);
             quill.focus();
         }
