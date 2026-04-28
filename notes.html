@@ -159,6 +159,7 @@
         .modal-content h3 { margin-top: 0; color: #d9534f; }
         .modal-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
         
+        /* Mobile Optimizatons */
         @media (max-width: 768px) {
             .editor-area { padding: 5px; } 
             .header-controls { margin-bottom: 8px; gap: 5px; }
@@ -166,10 +167,26 @@
             input#note-title { padding: 8px; font-size: 1.2em; }
             .btn-new-main { background: #007bff; height: 32px; font-size: 0.75em; padding: 0 10px; order: -1; }
             .btn-new-main::before { content: '+ '; }
-            .bottom-bar { justify-content: center; }
+            
+            /* Slim down the bottom bar */
+            .bottom-bar { justify-content: center; padding: 4px 0; margin-top: 2px; } 
+            
             .ql-toolbar.ql-snow { overflow-x: auto !important; display: block; white-space: nowrap; }
             .ql-picker-options { position: fixed !important; top: auto !important; z-index: 3000; }
+            
+            /* Hide tools unneeded on mobile */
             #fullscreen-toggle { display: none; }
+            .width-toggle-container { display: none !important; }
+            
+            /* Convert buttons to text links */
+            #theme-toggle, .btn-copy {
+                background: transparent;
+                border: none;
+                color: var(--text-color);
+                font-weight: bold;
+                padding: 0 5px;
+                font-size: 0.85em;
+            }
         }
     </style>
 </head>
@@ -212,7 +229,7 @@
                     <button class="btn-copy" onclick="copyNote()">Copy</button>
                 </div>
                 
-                <div style="font-size: 0.75em; color: var(--secondary-text); display: flex; gap: 8px;">
+                <div class="width-toggle-container" style="font-size: 0.75em; color: var(--secondary-text); display: flex; gap: 8px;">
                     <label><input type="radio" name="width" value="full" onchange="setWidth('full')" checked> Full</label>
                     <label><input type="radio" name="width" value="narrow" onchange="setWidth('narrow')"> Narrow</label>
                 </div>
@@ -429,6 +446,17 @@
             if (currentNoteId === id) createNewNote();
             else renderNoteList();
         }
+    }
+
+    function copyNote() {
+        const title = document.getElementById('note-title').value.trim() || "Untitled Note";
+        const text = quill.getText();
+        navigator.clipboard.writeText(`${title}\n\n${text}`).then(() => {
+            const btn = document.querySelector('.btn-copy');
+            const originalText = btn.innerText;
+            btn.innerText = "Copied!";
+            setTimeout(() => btn.innerText = originalText, 1500);
+        });
     }
 
     function exportNotes() {
