@@ -334,7 +334,6 @@
         }
     }
 
-    // AutoSave now extracts the first line of the editor for the title
     function autoSave() {
         let fullText = quill.getText().trim();
         let firstLine = fullText.split('\n')[0].trim() || 'Untitled Note';
@@ -424,13 +423,12 @@
         currentNoteId = Date.now();
         localStorage.setItem('last-note-id', currentNoteId);
         
-        // Match the sidebar's date formatting
         const today = new Date();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         
         quill.setContents([]); 
-        quill.setText(`${mm}-${dd}\n\n`, 'user'); // Triggers autoSave immediately
+        quill.setText(`${mm}-${dd}\n\n`, 'user');
         
         setDirty(false);
         renderNoteList();
@@ -448,7 +446,6 @@
         }
     }
 
-    // Now copies the raw text directly from the editor
     function copyNote() {
         const text = quill.getText();
         navigator.clipboard.writeText(text).then(() => {
@@ -587,18 +584,41 @@
         }
     });
 
+    // Live Cross-Window Sync & State Sharing
     window.addEventListener('storage', (event) => {
+        
+        // 1. True Syncing: If a note is created, edited, or deleted in the Sidebar
         if (event.key === 'my-github-notes') {
-            renderNoteList();
+            renderNoteList(); 
+            
             const notes = getNotesSafely();
             const currentNote = notes.find(n => n.id === currentNoteId);
+            
             if (currentNote) {
                 const currentContent = JSON.stringify(quill.getContents());
                 const newContent = JSON.stringify(currentNote.content);
+                
                 if (currentContent !== newContent) {
                     quill.setContents(currentNote.content, 'api');
                     document.getElementById('status').innerText = "Synced";
                     document.getElementById('status').className = "save-status saved";
+                    updateStats();
+                }
+            } else if (notes.length > 0) {
+                loadNote(notes[0].id);
+            }
+        }
+
+        // 2. State Sharing: If you change notes or hit "+ New" in the Sidebar
+        if (event.key === 'last-note-id') {
+            const newId = parseInt(event.newValue);
+            if (newId && newId !== currentNoteId) {
+                const note = getNotesSafely().find(n => n.id === newId);
+                if (note) {
+                    currentNoteId = note.id;
+                    quill.setContents(note.content, 'api');
+                    setDirty(false);
+                    renderNoteList();
                     updateStats();
                 }
             }
