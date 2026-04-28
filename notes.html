@@ -68,9 +68,7 @@
         .content-width-wrapper { width: 100%; max-width: 100%; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; transition: max-width 0.3s ease; }
         .content-width-wrapper.narrow { max-width: 800px; }
 
-        .header-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; width: 100%; flex-shrink: 0; }
-        
-        .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
+        .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; margin-top: 10px;}
         
         /* Toolbar Styling */
         .ql-toolbar.ql-snow { 
@@ -99,6 +97,35 @@
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before { content: 'Huge'; }
 
+        /* Custom New Note Button in Toolbar */
+        .ql-snow .ql-toolbar .ql-new-note {
+            width: auto;
+            padding: 4px 12px;
+            background: #007bff;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            margin-left: auto; /* Pushes it to the far right */
+        }
+        
+        .ql-snow .ql-toolbar .ql-new-note:hover {
+            background: #0056b3;
+        }
+
+        /* Ensure the toolbar flexes correctly to keep the button on the right */
+        .ql-toolbar.ql-snow {
+             display: flex;
+             flex-wrap: nowrap; /* Prevent wrapping so button stays visible */
+        }
+        
+        /* Container for the standard tools to allow the new button to float right */
+        .ql-formats {
+            display: flex;
+            align-items: center;
+        }
+
         #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
         
         .ql-editor { 
@@ -118,7 +145,6 @@
         #editor-container.zoom-huge .ql-editor { font-size: 28px; }
 
         button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
-        .btn-new-main { background: #007bff; color: white; font-size: 1.4em; padding: 4px 16px; height: 50px; flex-shrink: 0; margin-left: auto; }
         .btn-new-sidebar { background: #007bff; color: white; margin-bottom: 10px; width: 100%; }
         .btn-sidebar-tool { background: #6c757d; color: white; margin-top: 5px; font-size: 0.8em; width: 100%; }
         .btn-copy, .btn-secondary-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); }
@@ -158,14 +184,10 @@
         /* Mobile Optimizatons */
         @media (max-width: 768px) {
             .editor-area { padding: 5px; } 
-            .header-controls { margin-bottom: 8px; gap: 5px; }
             .toggle-sidebar { position: static; margin-right: 5px; border-radius: 4px; height: 40px; padding: 0 10px; }
-            .btn-new-main { background: #007bff; height: 32px; font-size: 0.75em; padding: 0 10px; order: -1; margin-left: 0; }
-            .btn-new-main::before { content: '+ '; }
             
             .bottom-bar { justify-content: center; padding: 4px 0; margin-top: 2px; } 
             
-            .ql-toolbar.ql-snow { overflow-x: auto !important; display: block; white-space: nowrap; }
             .ql-picker-options { position: fixed !important; top: auto !important; z-index: 3000; }
             
             #fullscreen-toggle { display: none; }
@@ -198,11 +220,8 @@
 
     <div class="editor-area">
         <div id="width-wrapper" class="content-width-wrapper">
-            <div class="header-controls">
-                <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
-                <button class="btn-new-main" onclick="createNewNote()">New</button>
-            </div>
-
+            <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
+            
             <div class="editor-content-wrapper">
                 <div id="editor-container"></div>
             </div>
@@ -266,15 +285,18 @@
     var quill = new Quill('#editor-container', {
         modules: {
             toolbar: {
+                // Reduced toolbar configuration
                 container: [
                     [{ 'size': ['small', false, 'large', 'huge'] }], 
-                    ['bold', 'italic', 'underline', 'link'], 
+                    ['link'], 
                     ['highlight'], 
-                    ['clean']
+                    ['clean'],
+                    ['new-note'] // Custom button
                 ],
                 handlers: { 
                     'highlight': highlightHandler,
-                    'size': (val) => applyZoom(val)
+                    'size': (val) => applyZoom(val),
+                    'new-note': function() { createNewNote(); } // Handler for the custom button
                 }
             },
             keyboard: {
@@ -295,6 +317,12 @@
         },
         theme: 'snow'
     });
+
+    // Style the custom toolbar button
+    const newNoteButton = document.querySelector('.ql-new-note');
+    if (newNoteButton) {
+        newNoteButton.innerHTML = '+ New';
+    }
 
     quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
         let ops = delta.ops.map(op => {
