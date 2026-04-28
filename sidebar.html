@@ -6,93 +6,43 @@
         html, body { 
             margin: 0; padding: 0; height: 100vh; width: 100%;
             display: flex; flex-direction: column; overflow: hidden; background: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, sans-serif;
         }
 
-        /* Top Container: TickTick */
-        #todo-container {
-            height: 50%; /* Initial split at 50% */
-            width: 100%;
-            overflow: hidden;
-            position: relative;
+        /* TickTick Section */
+        #todo-container { height: 45%; width: 100%; overflow: hidden; position: relative; }
+        #todo-frame { 
+            position: absolute; top: 0; left: 0; width: 125%; height: 125%; 
+            transform: scale(0.8); transform-origin: top left; border: none; 
         }
 
-        #todo-frame {
-            position: absolute;
-            top: 0; left: 0;
-            /* Scaling math: 1 / 0.8 = 1.25 (125%) to fill the area at 80% zoom */
-            width: 125%; height: 125%;
-            transform: scale(0.8);
-            transform-origin: top left;
-            border: none;
-        }
+        #resizer { height: 8px; background: #333; cursor: row-resize; width: 100%; z-index: 10; flex-shrink: 0; }
+        #ghost-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 9; }
 
-        /* Ghost overlay blocks the iframe during dragging so it doesn't steal mouse events */
-        #ghost-overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 9;
+        /* Notes Section with Sidebar */
+        #editor-wrapper { flex: 1; display: flex; overflow: hidden; position: relative; }
+        
+        /* The Note List (Hidden by default) */
+        #note-list { 
+            width: 0; transition: 0.3s; background: #f4f4f4; 
+            border-right: 1px solid #ccc; overflow-y: auto; font-size: 11px;
         }
+        #note-list.open { width: 120px; }
+        .note-item { 
+            padding: 8px; border-bottom: 1px solid #ddd; cursor: pointer; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+        }
+        .note-item:hover { background: #e0e0e0; }
 
-        /* The Draggable Divider */
-        #resizer {
-            height: 10px;
-            background: #333;
-            cursor: row-resize;
-            width: 100%;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        #resizer::after {
-            content: "═══";
-            color: #aaa;
-            font-size: 10px;
-            font-weight: bold;
-        }
-        #resizer:hover { background: #444; }
+        /* The Main Editor Area */
+        #editor-container { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        #editor { flex: 1; overflow-y: auto; border: none !important; }
 
-        /* Bottom Container: Quill Editor */
-        #editor-container {
-            flex: 1; 
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            background: white;
+        .toolbar-footer { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 4px 8px; background: #eee; font-size: 10px; border-top: 1px solid #ccc; 
         }
-
-        #editor { 
-            flex: 1; 
-            overflow-y: auto; 
-            border: none !important;
-        }
-
-        .ql-toolbar {
-            border-left: none !important;
-            border-right: none !important;
-            border-top: none !important;
-            background: #f8f8f8;
-        }
-
-        .toolbar-footer {
-            display: flex; 
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 10px; 
-            background: #eee;
-            font-size: 10px; 
-            border-top: 1px solid #ccc;
-            color: #555;
-        }
-
-        button {
-            font-size: 10px;
-            cursor: pointer;
-            padding: 2px 6px;
-        }
+        button { cursor: pointer; font-size: 10px; padding: 2px 5px; }
     </style>
 </head>
 <body>
@@ -102,78 +52,102 @@
         <div id="ghost-overlay"></div>
     </div>
 
-    <div id="resizer" title="Drag to resize"></div>
+    <div id="resizer"></div>
 
-    <div id="editor-container">
-        <div id="editor"></div>
-        <div class="toolbar-footer">
-            <span id="save-status">Ready</span>
-            <button onclick="exportNotes()">Export HTML</button>
+    <div id="editor-wrapper">
+        <div id="note-list" id="noteList">
+            <div style="padding: 10px; font-weight: bold; border-bottom: 1px solid #ccc;">My Notes</div>
+            <div id="list-items"></div>
+        </div>
+
+        <div id="editor-container">
+            <div id="editor"></div>
+            <div class="toolbar-footer">
+                <div>
+                    <button onclick="toggleList()">☰ Notes</button>
+                    <button onclick="createNewNote()">+ New</button>
+                </div>
+                <span id="save-status">Ready</span>
+                <button onclick="exportNotes()">Export</button>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-
     <script>
-        // 1. Initialize Quill Editor
-        var quill = new Quill('#editor', {
+        let currentNoteId = localStorage.getItem('current_note_id') || 'default';
+        const quill = new Quill('#editor', {
             theme: 'snow',
-            modules: { 
-                toolbar: [
-                    ['bold', 'italic'], 
-                    [{ 'list': 'bullet' }, { 'list': 'ordered' }], 
-                    ['clean']
-                ] 
-            },
-            placeholder: 'Type your daily notes here (saved locally)...'
+            modules: { toolbar: [['bold', 'italic'], [{ 'list': 'bullet' }]] }
         });
 
-        // LOAD: Retrieve from LocalStorage
-        const savedData = localStorage.getItem('quill_sidebar_content');
-        if (savedData) {
-            quill.root.innerHTML = savedData;
+        // Load & Sync Logic
+        function loadNote(id) {
+            currentNoteId = id;
+            localStorage.setItem('current_note_id', id);
+            const data = localStorage.getItem('note_' + id) || '';
+            quill.root.innerHTML = data;
+            updateListUI();
         }
 
-        // SAVE: On every keystroke
         quill.on('text-change', () => {
-            localStorage.setItem('quill_sidebar_content', quill.root.innerHTML);
-            document.getElementById('save-status').innerText = "Saved: " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            localStorage.setItem('note_' + currentNoteId, quill.root.innerHTML);
+            localStorage.setItem('title_' + currentNoteId, quill.getText(0, 15).trim() || 'Untitled');
+            document.getElementById('save-status').innerText = "Saved";
+            updateListUI();
         });
 
-        // 2. Drag-to-Resize Logic
+        function createNewNote() {
+            const id = 'note_' + Date.now();
+            loadNote(id);
+        }
+
+        function toggleList() {
+            document.getElementById('note-list').classList.toggle('open');
+        }
+
+        function updateListUI() {
+            const listContainer = document.getElementById('list-items');
+            listContainer.innerHTML = '';
+            Object.keys(localStorage).filter(k => k.startsWith('note_')).forEach(key => {
+                const id = key.replace('note_', '');
+                const title = localStorage.getItem('title_' + id) || 'Untitled';
+                const item = document.createElement('div');
+                item.className = 'note-item';
+                item.innerText = title;
+                item.onclick = () => loadNote(id);
+                listContainer.appendChild(item);
+            });
+        }
+
+        // Resizer Logic
         const resizer = document.getElementById('resizer');
         const todoContainer = document.getElementById('todo-container');
         const ghost = document.getElementById('ghost-overlay');
 
         resizer.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            ghost.style.display = 'block'; // Block the iframe so dragging is smooth
-            document.addEventListener('mousemove', handleMouseMove);
+            ghost.style.display = 'block';
+            const move = (e) => {
+                let h = (e.clientY / window.innerHeight) * 100;
+                if (h > 10 && h < 90) todoContainer.style.height = h + '%';
+            };
+            document.addEventListener('mousemove', move);
             document.addEventListener('mouseup', () => {
                 ghost.style.display = 'none';
-                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mousemove', move);
             });
         });
 
-        function handleMouseMove(e) {
-            // Calculate height as percentage of window
-            const newHeight = (e.clientY / window.innerHeight) * 100;
-            // Prevent frames from disappearing (min 10%, max 90%)
-            if (newHeight > 10 && newHeight < 90) {
-                todoContainer.style.height = newHeight + '%';
-            }
-        }
-
-        // 3. Export Logic (keeps infosec data portable)
         function exportNotes() {
-            const content = quill.root.innerHTML;
-            const fullHtml = `<html><head><meta charset="UTF-8"></head><body>${content}</body></html>`;
-            const blob = new Blob([fullHtml], {type: 'text/html'});
+            const blob = new Blob([quill.root.innerHTML], {type: 'text/html'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `sidebar_notes_${new Date().toISOString().slice(0,10)}.html`;
+            a.download = `note_${currentNoteId}.html`;
             a.click();
         }
+
+        loadNote(currentNoteId);
+        updateListUI();
     </script>
 </body>
 </html>
