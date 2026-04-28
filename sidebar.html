@@ -22,19 +22,26 @@
         /* Notes Section with Sidebar */
         #editor-wrapper { flex: 1; display: flex; overflow: hidden; position: relative; }
         
-        /* The Note List (Hidden by default) */
         #note-list { 
             width: 0; transition: 0.3s; background: #f4f4f4; 
             border-right: 1px solid #ccc; overflow-y: auto; font-size: 11px;
         }
-        #note-list.open { width: 120px; }
+        #note-list.open { width: 150px; }
+        
         .note-item { 
+            display: flex; justify-content: space-between; align-items: center;
             padding: 8px; border-bottom: 1px solid #ddd; cursor: pointer; 
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
         }
         .note-item:hover { background: #e0e0e0; }
+        .note-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; }
+        
+        .delete-btn { 
+            color: #cc0000; font-weight: bold; padding: 0 5px; 
+            visibility: hidden; cursor: pointer; font-size: 14px;
+        }
+        .note-item:hover .delete-btn { visibility: visible; }
 
-        /* The Main Editor Area */
+        /* Editor Area */
         #editor-container { flex: 1; display: flex; flex-direction: column; min-width: 0; }
         #editor { flex: 1; overflow-y: auto; border: none !important; }
 
@@ -55,7 +62,7 @@
     <div id="resizer"></div>
 
     <div id="editor-wrapper">
-        <div id="note-list" id="noteList">
+        <div id="note-list">
             <div style="padding: 10px; font-weight: bold; border-bottom: 1px solid #ccc;">My Notes</div>
             <div id="list-items"></div>
         </div>
@@ -81,18 +88,18 @@
             modules: { toolbar: [['bold', 'italic'], [{ 'list': 'bullet' }]] }
         });
 
-        // Load & Sync Logic
         function loadNote(id) {
             currentNoteId = id;
             localStorage.setItem('current_note_id', id);
-            const data = localStorage.getItem('note_' + id) || '';
-            quill.root.innerHTML = data;
+            quill.root.innerHTML = localStorage.getItem('note_' + id) || '';
             updateListUI();
         }
 
         quill.on('text-change', () => {
             localStorage.setItem('note_' + currentNoteId, quill.root.innerHTML);
-            localStorage.setItem('title_' + currentNoteId, quill.getText(0, 15).trim() || 'Untitled');
+            // Use plain text for title preview
+            const textPreview = quill.getText(0, 20).trim() || 'Untitled';
+            localStorage.setItem('title_' + currentNoteId, textPreview);
             document.getElementById('save-status').innerText = "Saved";
             updateListUI();
         });
@@ -102,6 +109,19 @@
             loadNote(id);
         }
 
+        function deleteNote(id, event) {
+            event.stopPropagation(); // Don't trigger loadNote
+            if (confirm("Delete this note? This cannot be undone.")) {
+                localStorage.removeItem('note_' + id);
+                localStorage.removeItem('title_' + id);
+                if (currentNoteId === id) {
+                    loadNote('default');
+                } else {
+                    updateListUI();
+                }
+            }
+        }
+
         function toggleList() {
             document.getElementById('note-list').classList.toggle('open');
         }
@@ -109,13 +129,30 @@
         function updateListUI() {
             const listContainer = document.getElementById('list-items');
             listContainer.innerHTML = '';
-            Object.keys(localStorage).filter(k => k.startsWith('note_')).forEach(key => {
+            
+            // Get all keys and sort by timestamp if available
+            const keys = Object.keys(localStorage).filter(k => k.startsWith('note_'));
+            
+            keys.forEach(key => {
                 const id = key.replace('note_', '');
                 const title = localStorage.getItem('title_' + id) || 'Untitled';
+                
                 const item = document.createElement('div');
                 item.className = 'note-item';
-                item.innerText = title;
-                item.onclick = () => loadNote(id);
+                if (id === currentNoteId) item.style.background = "#e8f0fe";
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'note-title';
+                titleSpan.innerText = title;
+                titleSpan.onclick = () => loadNote(id);
+                
+                const delBtn = document.createElement('span');
+                delBtn.className = 'delete-btn';
+                delBtn.innerHTML = '&times;';
+                delBtn.onclick = (e) => deleteNote(id, e);
+                
+                item.appendChild(titleSpan);
+                item.appendChild(delBtn);
                 listContainer.appendChild(item);
             });
         }
@@ -139,15 +176,16 @@
         });
 
         function exportNotes() {
-            const blob = new Blob([quill.root.innerHTML], {type: 'text/html'});
+            const content = quill.root.innerHTML;
+            const blob = new Blob([content], {type: 'text/html'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = `note_${currentNoteId}.html`;
             a.click();
         }
 
+        // Initial setup
         loadNote(currentNoteId);
-        updateListUI();
     </script>
 </body>
 </html>
