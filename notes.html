@@ -266,7 +266,6 @@
                     [{ 'size': ['small', false, 'large', 'huge'] }], 
                     ['bold', 'italic', 'underline', 'link'], 
                     ['highlight'], 
-                    [{ 'color': [] }],
                     ['clean']
                 ],
                 handlers: { 
@@ -577,7 +576,6 @@
         if (lastNote) { loadNote(lastNote.id); } 
         else { createNewNote(); }
 
-        // Run backup check 1.5 seconds after load to prevent jarring UI shift
         setTimeout(checkBackupPrompt, 1500);
     };
 
