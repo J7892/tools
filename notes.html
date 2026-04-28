@@ -69,10 +69,6 @@
         .content-width-wrapper.narrow { max-width: 800px; }
 
         .header-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; width: 100%; flex-shrink: 0; }
-        input#note-title { 
-            flex-grow: 1; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1.5em; font-weight: bold; outline: none;
-            background: var(--editor-bg); color: var(--text-color);
-        }
         
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; }
         
@@ -122,7 +118,7 @@
         #editor-container.zoom-huge .ql-editor { font-size: 28px; }
 
         button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
-        .btn-new-main { background: #007bff; color: white; font-size: 1.4em; padding: 4px 16px; height: 50px; flex-shrink: 0; }
+        .btn-new-main { background: #007bff; color: white; font-size: 1.4em; padding: 4px 16px; height: 50px; flex-shrink: 0; margin-left: auto; }
         .btn-new-sidebar { background: #007bff; color: white; margin-bottom: 10px; width: 100%; }
         .btn-sidebar-tool { background: #6c757d; color: white; margin-top: 5px; font-size: 0.8em; width: 100%; }
         .btn-copy, .btn-secondary-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); }
@@ -164,28 +160,20 @@
             .editor-area { padding: 5px; } 
             .header-controls { margin-bottom: 8px; gap: 5px; }
             .toggle-sidebar { position: static; margin-right: 5px; border-radius: 4px; height: 40px; padding: 0 10px; }
-            input#note-title { padding: 8px; font-size: 1.2em; }
-            .btn-new-main { background: #007bff; height: 32px; font-size: 0.75em; padding: 0 10px; order: -1; }
+            .btn-new-main { background: #007bff; height: 32px; font-size: 0.75em; padding: 0 10px; order: -1; margin-left: 0; }
             .btn-new-main::before { content: '+ '; }
             
-            /* Slim down the bottom bar */
             .bottom-bar { justify-content: center; padding: 4px 0; margin-top: 2px; } 
             
             .ql-toolbar.ql-snow { overflow-x: auto !important; display: block; white-space: nowrap; }
             .ql-picker-options { position: fixed !important; top: auto !important; z-index: 3000; }
             
-            /* Hide tools unneeded on mobile */
             #fullscreen-toggle { display: none; }
             .width-toggle-container { display: none !important; }
             
-            /* Convert buttons to text links */
             #theme-toggle, .btn-copy {
-                background: transparent;
-                border: none;
-                color: var(--text-color);
-                font-weight: bold;
-                padding: 0 5px;
-                font-size: 0.85em;
+                background: transparent; border: none; color: var(--text-color);
+                font-weight: bold; padding: 0 5px; font-size: 0.85em;
             }
         }
     </style>
@@ -212,7 +200,6 @@
         <div id="width-wrapper" class="content-width-wrapper">
             <div class="header-controls">
                 <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
-                <input type="text" id="note-title" placeholder="Note Title..." oninput="handleInput()">
                 <button class="btn-new-main" onclick="createNewNote()">New</button>
             </div>
 
@@ -243,7 +230,7 @@
             <p>It has been over 5 days since your last backup. To prevent data loss, please download a fresh backup now.</p>
             <div class="modal-buttons">
                 <button class="btn-copy" style="padding: 8px 16px; font-size: 1em;" onclick="dismissBackupPrompt()">Remind Me Later</button>
-                <button class="btn-new-main" style="height: auto; font-size: 1em; padding: 8px 16px;" onclick="executePromptedBackup()">Download Backup</button>
+                <button class="btn-new-main" style="height: auto; font-size: 1em; padding: 8px 16px; margin-left: 0;" onclick="executePromptedBackup()">Download Backup</button>
             </div>
         </div>
     </div>
@@ -293,14 +280,10 @@
             keyboard: {
                 bindings: {
                     highlightShortcut: {
-                        key: 'K',
-                        shortKey: true,
-                        shiftKey: true,
-                        handler: highlightHandler
+                        key: 'K', shortKey: true, shiftKey: true, handler: highlightHandler
                     },
                     shiftEnter: {
-                        key: 13,
-                        shiftKey: true,
+                        key: 13, shiftKey: true,
                         handler: function(range) {
                             quill.insertEmbed(range.index, 'softbreak', true, Quill.sources.USER);
                             quill.setSelection(range.index + 1, Quill.sources.SILENT);
@@ -351,8 +334,13 @@
         }
     }
 
+    // AutoSave now extracts the first line of the editor for the title
     function autoSave() {
-        const title = document.getElementById('note-title').value.trim() || "Untitled Note";
+        let fullText = quill.getText().trim();
+        let firstLine = fullText.split('\n')[0].trim() || 'Untitled Note';
+        if (firstLine.length > 25) firstLine = firstLine.substring(0, 25) + '...';
+
+        const title = firstLine;
         let notes = getNotesSafely();
         const noteData = { id: currentNoteId || Date.now(), title, content: quill.getContents(), date: new Date().toISOString() };
         
@@ -385,7 +373,12 @@
         const notes = getNotesSafely();
         const list = document.getElementById('note-list');
         list.innerHTML = '';
+        
+        const searchTerm = document.getElementById('sidebar-search').value.toLowerCase();
+        
         notes.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(note => {
+            if (searchTerm && !(note.title || '').toLowerCase().includes(searchTerm)) return;
+
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
             
@@ -419,7 +412,6 @@
         if (note) {
             currentNoteId = note.id;
             localStorage.setItem('last-note-id', currentNoteId);
-            document.getElementById('note-title').value = note.title;
             quill.setContents(note.content);
             setDirty(false);
             renderNoteList();
@@ -429,14 +421,22 @@
 
     function createNewNote() {
         if (isDirty && !confirm("Discard changes?")) return;
-        currentNoteId = null;
-        localStorage.removeItem('last-note-id');
-        document.getElementById('note-title').value = '';
-        quill.setContents([]);
+        currentNoteId = Date.now();
+        localStorage.setItem('last-note-id', currentNoteId);
+        
+        // Match the sidebar's date formatting
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        
+        quill.setContents([]); 
+        quill.setText(`${mm}-${dd}\n\n`, 'user'); // Triggers autoSave immediately
+        
         setDirty(false);
         renderNoteList();
         updateStats();
-        document.getElementById('note-title').focus();
+        quill.setSelection(quill.getLength(), 0);
+        quill.focus();
     }
 
     function deleteNote(id) {
@@ -448,10 +448,10 @@
         }
     }
 
+    // Now copies the raw text directly from the editor
     function copyNote() {
-        const title = document.getElementById('note-title').value.trim() || "Untitled Note";
         const text = quill.getText();
-        navigator.clipboard.writeText(`${title}\n\n${text}`).then(() => {
+        navigator.clipboard.writeText(text).then(() => {
             const btn = document.querySelector('.btn-copy');
             const originalText = btn.innerText;
             btn.innerText = "Copied!";
@@ -582,6 +582,24 @@
                     setTimeout(() => {
                         quill.format('background', toggleYellow ? '#ffff00' : false, Quill.sources.USER);
                     }, 10);
+                }
+            }
+        }
+    });
+
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'my-github-notes') {
+            renderNoteList();
+            const notes = getNotesSafely();
+            const currentNote = notes.find(n => n.id === currentNoteId);
+            if (currentNote) {
+                const currentContent = JSON.stringify(quill.getContents());
+                const newContent = JSON.stringify(currentNote.content);
+                if (currentContent !== newContent) {
+                    quill.setContents(currentNote.content, 'api');
+                    document.getElementById('status').innerText = "Synced";
+                    document.getElementById('status').className = "save-status saved";
+                    updateStats();
                 }
             }
         }
