@@ -52,6 +52,17 @@
         #editor-container { flex: 1; display: flex; flex-direction: column; min-width: 0; }
         #editor { flex: 1; overflow-y: auto; border: none !important; }
 
+        /* APPLE NOTES STYLE: First line is an auto-title */
+        .ql-editor > *:first-child {
+            font-size: 1.4em !important;
+            font-weight: bold !important;
+            margin-bottom: 0.5em !important;
+            line-height: 1.2 !important;
+        }
+        
+        .ql-editor p { margin-bottom: 0.5em !important; } 
+        .ql-editor p:last-child { margin-bottom: 0 !important; }
+
         .toolbar-footer { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 4px 8px; background: #eee; font-size: 10px; border-top: 1px solid #ccc; 
@@ -163,9 +174,14 @@
             const today = new Date();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const dd = String(today.getDate()).padStart(2, '0');
+            const dateText = `${mm}-${dd}`;
             
-            quill.setText(`${mm}-${dd}\n\n`, 'user'); // 'user' triggers the auto-save instantly
-            quill.setSelection(quill.getLength(), 0);
+            quill.setContents([]);
+            quill.setText(`${dateText}\n\n`, 'user'); // 'user' triggers the auto-save instantly
+            
+            // Sets cursor right after the date string
+            quill.setSelection(dateText.length, 0);
+            quill.focus();
         }
 
         function deleteNote(id, event) {
@@ -233,6 +249,19 @@
                 } else if (notes.length > 0) {
                     // Current note was deleted in the other app
                     loadNote(notes[0].id);
+                }
+            }
+            
+            // State Sharing: If you change notes or hit "+ New" in the Standalone App
+            if (event.key === 'last-note-id') {
+                const newId = parseInt(event.newValue);
+                if (newId && newId !== currentNoteId) {
+                    const note = getNotesSafely().find(n => n.id === newId);
+                    if (note) {
+                        currentNoteId = note.id;
+                        quill.setContents(note.content, 'api');
+                        updateListUI();
+                    }
                 }
             }
         });
