@@ -9,7 +9,7 @@
             font-family: -apple-system, sans-serif;
         }
 
-        /* TickTick Section - Set to 1/3 height (approx 33.3%) */
+        /* TickTick Section - Set to 1/3 height */
         #todo-container { height: 33.3%; width: 100%; overflow: hidden; position: relative; }
         #todo-frame { 
             position: absolute; top: 0; left: 0; width: 125%; height: 125%; 
@@ -119,10 +119,18 @@
             updateListUI();
         }
 
+        // Improved Save Logic (First Line Title Extraction)
         quill.on('text-change', () => {
             localStorage.setItem('note_' + currentNoteId, quill.root.innerHTML);
-            const textPreview = quill.getText(0, 20).trim() || 'Untitled';
-            localStorage.setItem('title_' + currentNoteId, textPreview);
+            
+            let fullText = quill.getText().trim();
+            let firstLine = fullText.split('\n')[0].trim() || 'Untitled';
+            
+            if (firstLine.length > 25) {
+                firstLine = firstLine.substring(0, 25) + '...';
+            }
+            
+            localStorage.setItem('title_' + currentNoteId, firstLine);
             document.getElementById('save-status').innerText = "Saved";
             updateListUI();
         });
@@ -169,6 +177,19 @@
                 listContainer.appendChild(item);
             });
         }
+
+        // Cross-Window Sync Logic
+        window.addEventListener('storage', (event) => {
+            if (event.key && (event.key.startsWith('note_') || event.key.startsWith('title_'))) {
+                updateListUI();
+            }
+            if (event.key === 'note_' + currentNoteId) {
+                if (quill.root.innerHTML !== event.newValue) {
+                    quill.root.innerHTML = event.newValue || '';
+                    document.getElementById('save-status').innerText = "Synced from other window";
+                }
+            }
+        });
 
         // Resizer Logic
         const resizer = document.getElementById('resizer');
