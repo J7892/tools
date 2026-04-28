@@ -70,13 +70,29 @@
 
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; margin-top: 10px;}
         
-        /* Toolbar Styling */
-        .ql-toolbar.ql-snow { 
-            background: var(--toolbar-bg); border-color: var(--border-color) !important; 
-            flex-shrink: 0; z-index: 100; position: relative;
-            padding: 8px 12px !important; display: flex; align-items: center;
-            flex-wrap: nowrap; /* Prevent wrapping so button stays visible */
+        /* Custom Toolbar Wrapper */
+        .custom-toolbar-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--toolbar-bg);
+            border: 1px solid var(--border-color);
+            border-bottom: none; /* Blends seamlessly with the editor below */
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            padding-right: 12px; /* Breathing room for the custom button */
             width: 100%;
+        }
+
+        /* Toolbar Styling Overrides */
+        .ql-toolbar.ql-snow { 
+            border: none !important; /* We let the wrapper handle the borders */
+            flex-grow: 1;
+            padding: 8px 12px !important; 
+            display: flex; 
+            align-items: center;
+            flex-wrap: nowrap;
+            overflow-x: auto; /* Allows tools to scroll on tiny screens without squishing the New button */
         }
 
         .ql-snow .ql-stroke { stroke: var(--text-color) !important; }
@@ -99,43 +115,40 @@
         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="huge"]::before,
         .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before { content: 'Huge'; }
 
-        /* Container for the standard tools */
-        .ql-formats {
-            display: flex;
-            align-items: center;
-        }
-
-        /* Target the specific format group holding the NEW NOTE button and push it right */
-        .ql-toolbar.ql-snow .ql-formats:last-child {
-            margin-left: auto;
-            margin-right: 0;
-        }
-
-        /* Aggressively override Quill's square button geometry */
-        .ql-snow .ql-toolbar button.ql-new-note {
-            width: auto !important;
-            height: 32px !important;
-            padding: 0 16px !important;
-            background-color: #007bff !important;
-            color: #ffffff !important;
-            border: none !important;
-            border-radius: 4px !important;
-            font-weight: 600 !important;
-            font-size: 12px !important;
-            letter-spacing: 0.5px !important;
-            white-space: nowrap !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+        /* The standalone native New Note Button */
+        .native-new-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0 16px;
+            font-weight: 600;
+            font-size: 13px;
             cursor: pointer;
+            height: 32px;
+            white-space: nowrap; /* Forces text to stay on one line */
+            flex-shrink: 0; /* Ensures the button never gets squished */
+            transition: background-color 0.2s;
         }
         
-        .ql-snow .ql-toolbar button.ql-new-note:hover {
-            background-color: #0056b3 !important;
+        .native-new-btn:hover {
+            background-color: #0056b3;
         }
 
-        #editor-container { flex-grow: 1; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; display: flex; flex-direction: column; min-height: 0; }
+        #editor-container { 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 0; 
+        }
         
+        /* Editor Box Native Styling */
+        .ql-container.ql-snow {
+            border: 1px solid var(--border-color) !important;
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
         .ql-editor { 
             flex-grow: 1; 
             overflow-y: auto; 
@@ -196,7 +209,6 @@
             
             .bottom-bar { justify-content: center; padding: 4px 0; margin-top: 2px; } 
             
-            .ql-toolbar.ql-snow { overflow-x: auto !important; display: flex; flex-wrap: nowrap; }
             .ql-picker-options { position: fixed !important; top: auto !important; z-index: 3000; }
             
             #fullscreen-toggle { display: none; }
@@ -291,6 +303,7 @@
         quill.format('background', format.background ? false : '#ffff00');
     };
 
+    // Initialize Quill with the reduced toolbar
     var quill = new Quill('#editor-container', {
         modules: {
             toolbar: {
@@ -298,13 +311,11 @@
                     [{ 'size': ['small', false, 'large', 'huge'] }], 
                     ['link'], 
                     ['highlight'], 
-                    ['clean'],
-                    ['new-note'] // Custom button
+                    ['clean']
                 ],
                 handlers: { 
                     'highlight': highlightHandler,
-                    'size': (val) => applyZoom(val),
-                    'new-note': function() { createNewNote(); } 
+                    'size': (val) => applyZoom(val)
                 }
             },
             keyboard: {
@@ -326,11 +337,22 @@
         theme: 'snow'
     });
 
-    // Set the inner text of the custom button
-    const newNoteButton = document.querySelector('.ql-new-note');
-    if (newNoteButton) {
-        newNoteButton.innerHTML = 'NEW NOTE';
-    }
+    // Dynamically wrap the Quill toolbar and inject the Native Button alongside it
+    const toolbarEl = document.querySelector('.ql-toolbar');
+    const customWrapper = document.createElement('div');
+    customWrapper.className = 'custom-toolbar-wrapper';
+    
+    // Insert wrapper where toolbar was, move toolbar inside, then add the new button
+    toolbarEl.parentNode.insertBefore(customWrapper, toolbarEl);
+    customWrapper.appendChild(toolbarEl);
+
+    const nativeBtn = document.createElement('button');
+    nativeBtn.className = 'native-new-btn';
+    nativeBtn.innerHTML = '+ NEW NOTE';
+    nativeBtn.onclick = createNewNote;
+    customWrapper.appendChild(nativeBtn);
+
+    // End formatting injection
 
     quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
         let ops = delta.ops.map(op => {
@@ -623,7 +645,6 @@
     // Live Cross-Window Sync & State Sharing
     window.addEventListener('storage', (event) => {
         
-        // 1. True Syncing: If a note is created, edited, or deleted in the Sidebar
         if (event.key === 'my-github-notes') {
             renderNoteList(); 
             
@@ -645,7 +666,6 @@
             }
         }
 
-        // 2. State Sharing: If you change notes or hit "+ New" in the Sidebar
         if (event.key === 'last-note-id') {
             const newId = parseInt(event.newValue);
             if (newId && newId !== currentNoteId) {
