@@ -310,17 +310,27 @@
         let index = text.indexOf('//');
         
         while (index !== -1) {
-            // Get format at the current index
+            // Save the current selection (cursor position)
+            const range = quill.getSelection();
+            
             const format = quill.getFormat(index, 2);
             const isHighlighted = format.background === '#ffff00' || format.background === 'yellow';
             
             // Delete the // 
             quill.deleteText(index, 2);
             
-            // Toggle global highlight format
+            // Toggle highlight format
             quill.format('background', isHighlighted ? false : '#ffff00');
             
-            // Refresh text and find next instance
+            // CRITICAL: Refocus and put cursor back where it belongs
+            // if range.index was after the //, we need to subtract 2
+            if (range) {
+                const newCursorPos = Math.max(0, range.index - 2);
+                quill.setSelection(newCursorPos, 0);
+            }
+            quill.focus();
+
+            // Refresh loop
             text = quill.getText();
             index = text.indexOf('//');
         }
