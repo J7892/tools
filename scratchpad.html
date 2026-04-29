@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsive Scratchpad</title>
+    <title>Scratchpad</title>
     
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     
@@ -23,50 +23,44 @@
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
-        /* Width Toggle Controls */
-        #width-controls {
-            background: #fff;
-            padding: 8px;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 14px;
-        }
-
-        /* App Layout */
+        /* App Layout Container */
         #app-wrapper {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease-in-out;
             margin: 0 auto;
             background: #fff;
             width: 100%; 
             height: 100%;
             overflow: hidden;
+            /* Tiny bit of side padding in Wide Mode as requested */
+            padding: 0 10px;
+            box-sizing: border-box;
         }
 
         /* Narrow Mode Class */
         #app-wrapper.narrow-mode {
             max-width: var(--max-narrow);
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            margin: 20px auto;
-            height: calc(100% - 100px);
-            border-radius: 8px;
+            /* Reduced top/bottom margin for narrow mode */
+            margin: 10px auto; 
+            height: calc(100% - 20px);
+            border-radius: 6px;
             border: 1px solid var(--border-color);
+            padding: 0; /* Let the editor handle its own internal padding */
         }
 
-        /* Editor and Paragraph Spacing */
         #editor {
             flex-grow: 1;
             font-size: 16px;
             border: none !important;
         }
 
-        /* This specifically adds spacing between paragraphs */
+        /* Paragraph Spacing */
         .ql-editor p {
             margin-bottom: 1.2em !important;
         }
@@ -75,67 +69,70 @@
         #status-bar {
             background: var(--toolbar-bg);
             border-top: 1px solid var(--border-color);
-            padding: 10px 15px;
+            padding: 8px 15px;
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            font-size: 13px;
+            font-size: 12px;
             gap: 10px;
+            z-index: 10;
         }
 
         .stats-group {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             color: #555;
+            font-weight: 500;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-left: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            padding: 0 15px;
         }
 
         .actions-group {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
         button {
-            padding: 6px 12px;
+            padding: 4px 10px;
             cursor: pointer;
             background: #f8f9fa;
             border: 1px solid #bbb;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         button:hover {
             background: #e9ecef;
         }
 
-        /* Mobile/Narrow Logic */
+        /* Responsive Hiding */
         @media (max-width: 768px) {
-            #width-controls {
+            .toggle-group {
                 display: none;
             }
             #app-wrapper.narrow-mode, #app-wrapper {
-                width: calc(100% - 20px);
-                margin: 10px auto !important;
-                height: calc(100% - 20px) !important;
+                width: 100%;
+                margin: 0 !important;
+                height: 100% !important;
                 max-width: none;
+                border: none;
+                border-radius: 0;
             }
             #status-bar {
-                flex-direction: column;
-                align-items: flex-start;
+                padding: 10px;
             }
         }
     </style>
 </head>
 <body>
-
-<div id="width-controls">
-    <label>
-        <input type="radio" name="width-toggle" value="wide" checked onchange="toggleWidth('wide')"> Wide
-    </label>
-    <label>
-        <input type="radio" name="width-toggle" value="narrow" onchange="toggleWidth('narrow')"> Narrow
-    </label>
-</div>
 
 <div id="app-wrapper">
     <div id="editor"></div>
@@ -146,6 +143,16 @@
             <span id="word-count">Words: 0</span>
             <span id="line-calc">Lines: 0</span>
         </div>
+
+        <div class="toggle-group">
+            <label>
+                <input type="radio" name="width-toggle" value="wide" checked onchange="toggleWidth('wide')"> Wide
+            </label>
+            <label>
+                <input type="radio" name="width-toggle" value="narrow" onchange="toggleWidth('narrow')"> Narrow
+            </label>
+        </div>
+
         <div class="actions-group">
             <button onclick="copyToClipboard()">Copy</button>
             <button onclick="exportToEmail()">Email</button>
@@ -204,6 +211,7 @@
                 const isHighlighted = currentFormat.background === 'yellow' || currentFormat.background === '#ffff00';
 
                 quill.deleteText(index, 2);
+                // Highlight from current position to end of text or toggle off
                 quill.formatText(index, text.length - index, 'background', isHighlighted ? false : 'yellow', 'user');
                 
                 const updatedText = quill.getText();
@@ -217,6 +225,7 @@
         const text = quill.getText().trim();
         const charCount = text.length;
         const words = text.length > 0 ? text.split(/\s+/).length : 0;
+        // Formula: word count / 5, rounded up to nearest 5
         const lineCalc = Math.ceil((words / 5) / 5) * 5;
 
         document.getElementById('char-count').innerText = `Chars: ${charCount}`;
@@ -227,16 +236,21 @@
     // --- Actions ---
     function copyToClipboard() {
         const text = quill.getText();
-        navigator.clipboard.writeText(text).then(() => alert("Copied!"));
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.querySelector('button[onclick="copyToClipboard()"]');
+            const originalText = btn.innerText;
+            btn.innerText = "Saved!";
+            setTimeout(() => btn.innerText = originalText, 1500);
+        });
     }
 
     function exportToEmail() {
         const body = encodeURIComponent(quill.getText());
-        window.location.href = `mailto:?subject=Scratchpad&body=${body}`;
+        window.location.href = `mailto:?subject=Scratchpad Export&body=${body}`;
     }
 
     function exportToFile() {
-        const htmlContent = `<html><head><style>.ql-editor p { margin-bottom: 1.2em; }</style></head><body>${quill.root.innerHTML}</body></html>`;
+        const htmlContent = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:20px;}.ql-editor p{margin-bottom:1.2em;}</style></head><body>${quill.root.innerHTML}</body></html>`;
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -244,6 +258,7 @@
         a.click();
     }
 
+    // Run initial update
     updateStats();
 </script>
 
