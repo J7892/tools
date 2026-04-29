@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Notes</title>
+    <title>Sidebar</title>
     
     <link href="quill.snow.css" rel="stylesheet">
     
@@ -119,6 +119,7 @@
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center; }
 
+        /* Full page Task Footer Toolbar */
         #task-only-footer { 
             display: none; height: 40px; background: #fff; border-top: 1px solid var(--border-color);
             align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 1001; flex-shrink: 0;
@@ -366,7 +367,6 @@
         let firstLine = fullText.split('\n')[0].trim() || 'Untitled Note';
         let notes = getNotesSafely();
         
-        // We store plain text representation for easier searching later
         const noteData = { 
             id: currentNoteId || Date.now(), 
             title: firstLine, 
@@ -389,7 +389,6 @@
         const searchTerm = document.getElementById('sidebar-search').value.toLowerCase();
         
         notes.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(note => {
-            // Full-text search logic: check title OR plainText
             const titleMatch = (note.title || "").toLowerCase().includes(searchTerm);
             const contentMatch = (note.plainText || "").toLowerCase().includes(searchTerm);
             
