@@ -17,7 +17,7 @@
         }
     </script>
     
-    <link href="quill.snow.css" rel="stylesheet">
+    <link href="/quill.snow.css" rel="stylesheet">
     
     <style>
         :root {
@@ -118,10 +118,21 @@
         #status { font-size: 0.8em; font-weight: 600; }
         .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 
+        /* Sidebar Note Items */
         .note-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
         .note-item { padding: 12px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; border-radius: 4px; position: relative; }
         .note-item:hover { background: var(--item-hover); }
         .note-item.active { background: var(--item-hover); border-left: 4px solid #007bff; }
+        
+        .note-title { 
+            font-size: 0.85em; 
+            font-weight: bold; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            color: var(--text-color);
+        }
+
         .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; visibility: hidden; cursor: pointer; font-size: 18px; z-index: 10; }
         .delete-btn:hover { color: var(--danger); }
         .note-item:hover .delete-btn { visibility: visible; }
@@ -193,7 +204,7 @@
         <div id="task-only-footer"><button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 20px; font-weight:bold;">Notes</button></div>
     </div>
 
-<script src="quill.js"></script>
+<script src="/quill.js"></script>
 <script>
     const APP_VERSION = 1.1;
     let currentNoteId = null;
@@ -375,7 +386,7 @@
             if (searchTerm && !(note.title || "").toLowerCase().includes(searchTerm) && !(note.plainText || "").toLowerCase().includes(searchTerm)) return;
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
-            div.innerHTML = `<div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;" onclick="loadNote(${note.id})"><b>${note.title || "Untitled"}</b><div style="font-size:0.75em; color:var(--secondary-text);">${new Date(note.date).toLocaleDateString()}</div></div><span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>`;
+            div.innerHTML = `<div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;" onclick="loadNote(${note.id})"><div class="note-title">${note.title || "Untitled"}</div><div style="font-size:0.75em; color:var(--secondary-text);">${new Date(note.date).toLocaleDateString()}</div></div><span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>`;
             list.appendChild(div);
         });
     }
@@ -403,7 +414,6 @@
         reader.readAsText(file);
     }
 
-    // CHANGED TO DOMContentLoaded TO BYPASS IFRAME DELAY
     document.addEventListener('DOMContentLoaded', () => {
         renderNoteList();
         const savedHeight = localStorage.getItem('ticktick-height');
