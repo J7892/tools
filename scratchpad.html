@@ -15,7 +15,7 @@
             --max-narrow: 700px;
             --highlight-color: #ffff00;
             --editor-font-size: 16px;
-            --link-color: #0000ee; /* Standard blue */
+            --link-color: #0000ee;
         }
 
         body, html {
@@ -89,7 +89,6 @@
             font-size: var(--editor-font-size) !important;
         }
 
-        /* FORCE LINKS TO BE BLUE */
         .ql-editor a {
             color: var(--link-color) !important;
             text-decoration: underline !important;
@@ -249,14 +248,37 @@
         }
     }
 
+    /**
+     * Squeeze Text - Smart Version
+     * Replaces multiple newlines with a single newline while 
+     * preserving existing bold, italic, and link formats.
+     */
     function squeezeText() {
-        const currentText = quill.getText();
-        const squeezed = currentText.replace(/\n\s*\n/g, '\n').trim();
-        quill.setText(squeezed);
+        const delta = quill.getContents();
+        const newDelta = { ops: [] };
+
+        delta.ops.forEach((op, i) => {
+            if (typeof op.insert === 'string') {
+                // Replace 2+ consecutive newlines with exactly one
+                let newString = op.insert.replace(/\n\n+/g, '\n');
+                
+                // If it's the first operation, trim leading newlines
+                if (i === 0) newString = newString.replace(/^\n+/, '');
+                
+                newDelta.ops.push({
+                    insert: newString,
+                    attributes: op.attributes
+                });
+            } else {
+                newDelta.ops.push(op);
+            }
+        });
+
+        quill.setContents(newDelta);
         
         const btn = document.querySelector('button[onclick="squeezeText()"]');
         const originalText = btn.innerText;
-        btn.innerText = "Cleaned!";
+        btn.innerText = "Squeezed!";
         setTimeout(() => btn.innerText = originalText, 1500);
     }
 
@@ -295,6 +317,7 @@
     }
 
     function copyToClipboard() {
+        // Plain text for standard clipboard, but preserves text content
         navigator.clipboard.writeText(quill.getText()).then(() => {
             const btn = document.querySelector('button[onclick="copyToClipboard()"]');
             const originalText = btn.innerText;
