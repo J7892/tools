@@ -119,7 +119,6 @@
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center; }
 
-        /* Full page Task Footer Toolbar */
         #task-only-footer { 
             display: none; height: 40px; background: #fff; border-top: 1px solid var(--border-color);
             align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 1001; flex-shrink: 0;
@@ -386,11 +385,19 @@
         const list = document.getElementById('note-list');
         list.innerHTML = '';
         const notes = getNotesSafely();
-        const searchTerm = document.getElementById('sidebar-search').value.toLowerCase();
+        const searchTerm = document.getElementById('sidebar-search').value.toLowerCase().trim();
         
         notes.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(note => {
+            // Self-healing: if older notes don't have plainText yet, we derive it from delta content
+            let searchableContent = note.plainText;
+            if (searchableContent === undefined && note.content) {
+                const tempQuill = new Quill(document.createElement('div'));
+                tempQuill.setContents(note.content);
+                searchableContent = tempQuill.getText();
+            }
+
             const titleMatch = (note.title || "").toLowerCase().includes(searchTerm);
-            const contentMatch = (note.plainText || "").toLowerCase().includes(searchTerm);
+            const contentMatch = (searchableContent || "").toLowerCase().includes(searchTerm);
             
             if (searchTerm && !titleMatch && !contentMatch) return;
             
