@@ -26,7 +26,7 @@
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: hidden; /* Prevents the whole page from scrolling */
         }
 
         #app-wrapper {
@@ -37,8 +37,8 @@
             margin: 0 auto;
             background: #fff;
             width: 100%; 
-            height: 100%;
-            overflow: hidden;
+            height: 100vh; /* Fixed height to match viewport */
+            overflow: hidden; /* Contains the children */
             padding: 0 10px;
             box-sizing: border-box;
         }
@@ -47,7 +47,7 @@
             max-width: var(--max-narrow);
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
             margin: 10px auto; 
-            height: calc(100% - 20px);
+            height: calc(100vh - 20px);
             border-radius: 6px;
             border: 1px solid var(--border-color);
             padding: 0; 
@@ -60,8 +60,71 @@
             align-items: center;
             flex-wrap: wrap;
             padding: 8px !important;
+            flex-shrink: 0; /* Prevents toolbar from squishing */
         }
 
+        #editor {
+            flex-grow: 1;
+            font-size: var(--editor-font-size) !important;
+            border: none !important;
+            overflow-y: auto; /* Allows only the editor area to scroll */
+        }
+
+        .ql-container.ql-snow {
+            border: none !important;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ql-editor {
+            font-size: var(--editor-font-size) !important;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .ql-editor a {
+            color: var(--link-color) !important;
+            text-decoration: underline !important;
+        }
+
+        .ql-editor p {
+            margin-bottom: 0.6em !important;
+        }
+
+        #status-bar {
+            background: var(--toolbar-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 8px 15px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            gap: 10px;
+            z-index: 10;
+            flex-shrink: 0; /* Prevents status bar from squishing */
+        }
+
+        .stats-group {
+            display: flex;
+            gap: 12px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* Highlighter UI */
         .ql-background.ql-picker { display: none !important; }
         .custom-highlighter {
             background: none;
@@ -93,56 +156,6 @@
             cursor: pointer;
         }
 
-        #editor {
-            flex-grow: 1;
-            font-size: var(--editor-font-size) !important;
-            border: none !important;
-        }
-
-        .ql-editor {
-            font-size: var(--editor-font-size) !important;
-        }
-
-        .ql-editor a {
-            color: var(--link-color) !important;
-            text-decoration: underline !important;
-        }
-
-        .ql-editor p {
-            margin-bottom: 0.6em !important;
-        }
-
-        #status-bar {
-            background: var(--toolbar-bg);
-            border-top: 1px solid var(--border-color);
-            padding: 8px 15px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            gap: 10px;
-            z-index: 10;
-        }
-
-        .stats-group {
-            display: flex;
-            gap: 12px;
-            color: #555;
-            font-weight: 500;
-        }
-
-        .toggle-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .actions-group {
-            display: flex;
-            gap: 6px;
-        }
-
         button.action-btn {
             padding: 4px 10px;
             cursor: pointer;
@@ -163,7 +176,7 @@
             #app-wrapper.narrow-mode, #app-wrapper {
                 width: 100% !important;
                 margin: 0 !important;
-                height: 100% !important;
+                height: 100vh !important;
                 max-width: none !important;
                 border: none !important;
                 border-radius: 0 !important;
@@ -311,29 +324,21 @@
         
         while (index !== -1) {
             const range = quill.getSelection();
-            
-            // Fetch format of the slashes
             const format = quill.getFormat(index, 2);
             const isHighlighted = format.background === '#ffff00' || format.background === 'yellow';
             
-            // Clear formatting explicitly first to prevent state limbo
             quill.removeFormat(index, 2);
             quill.deleteText(index, 2);
-            
-            // Set the new formatting state
             quill.format('background', isHighlighted ? false : '#ffff00');
             
-            // Force focus and selection recovery
             if (range) {
                 const newPos = Math.max(0, range.index - 2);
-                // Wrap in timeout to ensure DOM reconciliation 
                 setTimeout(() => {
                     quill.focus();
                     quill.setSelection(newPos, 0);
                 }, 1);
             }
 
-            // Loop check
             text = quill.getText();
             index = text.indexOf('//');
         }
