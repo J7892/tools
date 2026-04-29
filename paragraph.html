@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paragraph Squeezer</title>
+    <title>Paragraph Fixer</title>
     <style>
         :root {
             --bg: #f8f9fa;
@@ -22,7 +22,7 @@
         h2 { 
             font-weight: 700;
             color: var(--accent);
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
         #editor {
             width: 100%;
@@ -36,12 +36,9 @@
             margin-bottom: 20px;
             outline: none;
             overflow-y: auto;
-
-            /* THE FIX: Force every child div to have a bottom margin */
             line-height: 1.5;
         }
         
-        /* This ensures that after we "Squeeze", the new divs have spacing */
         #editor div {
             margin-bottom: 0.8em;
             min-height: 1em;
@@ -53,6 +50,7 @@
             display: flex;
             gap: 12px;
             align-items: center;
+            flex-wrap: wrap;
         }
         button {
             padding: 12px 24px;
@@ -65,46 +63,67 @@
         }
         .btn-primary { background: var(--accent); color: white; }
         .btn-secondary { background: #636e72; color: white; }
+        .btn-outline { background: #fff; color: var(--accent); border: 2px solid var(--accent); padding: 10px 22px; }
         button:active { transform: scale(0.98); }
         .status { font-size: 14px; color: #00b894; font-weight: 600; }
     </style>
 </head>
 <body>
 
-    <h2>Paragraph Squeezer</h2>
-    <p>Paste messy text. This version rebuilds the HTML structure to keep your 0.8 spacing after cleaning.</p>
+    <h2>Paragraph Fixer</h2>
+    <p>Paste text below to fix line breaks, eliminate double spaces, and format quotes.</p>
 
     <div id="editor" contenteditable="true" spellcheck="false"></div>
 
     <div class="controls">
-        <button class="btn-primary" onclick="squeezeText()">Squeeze & Clean</button>
+        <button class="btn-primary" onclick="fixText()">Fix Text</button>
+        <button class="btn-outline" onclick="smartQuotes()">Smart Quotes</button>
         <button class="btn-secondary" onclick="copyToClipboard()">Copy to Clipboard</button>
         <span id="statusMessage" class="status"></span>
     </div>
 
     <script>
-        function squeezeText() {
+        // Helper to refresh the visual 0.8 spacing divs
+        function refreshEditor(text) {
             const editor = document.getElementById('editor');
-            
-            // 1. Get raw text and collapse double/triple breaks into single breaks
-            let rawText = editor.innerText.replace(/\n\s*\n/g, '\n').trim();
-            
-            // 2. Split text into an array of paragraphs
-            let paragraphs = rawText.split('\n');
-
-            // 3. Rebuild the editor's inner HTML so each paragraph is a <div>
-            // This is what preserves the visual CSS spacing!
+            let paragraphs = text.split('\n');
             editor.innerHTML = paragraphs
                 .map(p => `<div>${p}</div>`)
                 .join('');
+        }
 
-            showStatus("Squeezed & Formatted!");
+        function fixText() {
+            const editor = document.getElementById('editor');
+            let text = editor.innerText;
+
+            let cleaned = text
+                .replace(/[ ]{2,}/g, ' ')  
+                .replace(/\n\s*\n/g, '\n') 
+                .trim();
+            
+            refreshEditor(cleaned);
+            showStatus("Fixed!");
+        }
+
+        function smartQuotes() {
+            const editor = document.getElementById('editor');
+            let text = editor.innerText;
+
+            // Logic for Smart Quotes
+            let smart = text
+                // Double quotes
+                .replace(/"(?=\w)/g, '“')     // Opening double
+                .replace(/"/g, '”')            // Closing double
+                // Single quotes / Apostrophes
+                .replace(/'(?=\w)/g, '‘')     // Opening single
+                .replace(/'/g, '’');           // Closing single (and apostrophes)
+
+            refreshEditor(smart);
+            showStatus("Quotes Curled!");
         }
 
         async function copyToClipboard() {
             const editor = document.getElementById('editor');
-            // We still use innerText for copying because it returns clean text 
-            // with single line breaks, ignoring our visual div margins.
             const text = editor.innerText;
             
             try {
