@@ -40,6 +40,8 @@
             width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; outline: none; font-size: 0.85em; 
             background: var(--editor-bg); color: var(--text-color);
         }
+        #sidebar-search:focus { border-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,0.1); }
+
         .note-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
         .note-item { 
             padding: 12px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; 
@@ -56,12 +58,18 @@
         .delete-btn:hover { color: var(--danger); background: rgba(217, 83, 79, 0.1); }
         .note-item:hover .delete-btn { visibility: visible; }
 
+        /* Main Layout */
         .main-layout { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
 
         #todo-container { height: 40%; width: 100%; overflow: hidden; position: relative; flex-shrink: 0; display: none; }
         #todo-container.visible { display: block; }
-        #todo-container.fullscreen { height: 100% !important; border-bottom: none; }
-        #todo-frame { position: absolute; top: 0; left: 0; width: 125%; height: 125%; transform: scale(0.8); transform-origin: top left; border: none; }
+        #todo-container.fullscreen { flex-grow: 1; height: auto !important; border-bottom: none; }
+        
+        #todo-frame { 
+            position: absolute; top: 0; left: 0; width: 125%; height: 125%; 
+            transform: scale(0.8); transform-origin: top left; border: none; 
+        }
+        
         #ghost-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 9; }
 
         #resizer { 
@@ -72,7 +80,11 @@
         #resizer.visible { display: flex; }
         #resizer::after { content: ""; width: 32px; height: 3px; background: #ced4da; border-radius: 3px; }
 
-        .editor-area { flex-grow: 1; background: var(--editor-bg); display: flex; flex-direction: column; padding: 10px 40px 10px 60px; position: relative; min-width: 0; align-items: center; }
+        .editor-area { 
+            flex-grow: 1; background: var(--editor-bg); 
+            display: flex; flex-direction: column; padding: 10px 40px 10px 60px; 
+            position: relative; min-width: 0; align-items: center; 
+        }
         .editor-area.hidden { display: none; }
         
         .content-width-wrapper { width: 100%; max-width: 100%; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; transition: max-width 0.3s ease; }
@@ -106,8 +118,12 @@
 
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center; }
-        #task-focus-controls { position: absolute; bottom: 20px; right: 20px; z-index: 1001; display: none; }
-        #task-focus-controls.visible { display: flex; }
+
+        #task-only-footer { 
+            display: none; height: 40px; background: #fff; border-top: 1px solid var(--border-color);
+            align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 1001; flex-shrink: 0;
+        }
+        #task-only-footer.visible { display: flex; }
 
         @media (max-width: 768px) {
             .editor-area { padding: 5px; } 
@@ -125,7 +141,7 @@
     <div id="sidebar" class="sidebar">
         <button class="native-new-btn" style="width:100%; margin-bottom:10px;" onclick="createNewNote()">+ New Note</button>
         <div class="search-container">
-            <input type="text" id="sidebar-search" placeholder="Search..." oninput="renderNoteList()">
+            <input type="text" id="sidebar-search" placeholder="Search titles & content..." oninput="renderNoteList()">
         </div>
         <div id="note-list" class="note-list"></div>
         <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border-color);">
@@ -140,8 +156,12 @@
             <iframe id="todo-frame" src="https://ticktick.com/webapp/#q/week/tasks"></iframe>
             <div id="ghost-overlay"></div>
         </div>
+
         <div id="resizer"></div>
-        <div id="task-focus-controls"><button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 15px; font-weight:bold;">Focus Notes</button></div>
+
+        <div id="task-only-footer">
+            <button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; font-weight:bold;">Focus Notes</button>
+        </div>
 
         <div class="editor-area">
             <div id="width-wrapper" class="content-width-wrapper">
@@ -237,7 +257,7 @@
     const todoContainer = document.getElementById('todo-container');
     const editorArea = document.querySelector('.editor-area');
     const ghost = document.getElementById('ghost-overlay');
-    const taskFocusControls = document.getElementById('task-focus-controls');
+    const taskOnlyFooter = document.getElementById('task-only-footer');
 
     resizer.addEventListener('mousedown', (e) => {
         ghost.style.display = 'block';
@@ -262,12 +282,12 @@
             todoContainer.classList.add('visible', 'fullscreen');
             resizer.classList.remove('visible');
             editorArea.classList.add('hidden');
-            taskFocusControls.classList.add('visible');
+            taskOnlyFooter.classList.add('visible');
             localStorage.setItem('view-focus-pref', 'tasks');
         } else {
             todoContainer.classList.remove('fullscreen');
             editorArea.classList.remove('hidden');
-            taskFocusControls.classList.remove('visible');
+            taskOnlyFooter.classList.remove('visible');
             const wasVisible = localStorage.getItem('ticktick-pref') === 'true';
             todoContainer.classList.toggle('visible', wasVisible);
             resizer.classList.toggle('visible', wasVisible);
@@ -345,7 +365,16 @@
         let fullText = quill.getText().trim();
         let firstLine = fullText.split('\n')[0].trim() || 'Untitled Note';
         let notes = getNotesSafely();
-        const noteData = { id: currentNoteId || Date.now(), title: firstLine, content: quill.getContents(), date: new Date().toISOString() };
+        
+        // We store plain text representation for easier searching later
+        const noteData = { 
+            id: currentNoteId || Date.now(), 
+            title: firstLine, 
+            content: quill.getContents(), 
+            plainText: quill.getText(),
+            date: new Date().toISOString() 
+        };
+        
         const idx = notes.findIndex(n => n.id === currentNoteId);
         if (idx > -1) notes[idx] = noteData; else { notes.push(noteData); currentNoteId = noteData.id; }
         saveNotesInternal(notes);
@@ -360,7 +389,12 @@
         const searchTerm = document.getElementById('sidebar-search').value.toLowerCase();
         
         notes.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(note => {
-            if (searchTerm && !note.title.toLowerCase().includes(searchTerm)) return;
+            // Full-text search logic: check title OR plainText
+            const titleMatch = (note.title || "").toLowerCase().includes(searchTerm);
+            const contentMatch = (note.plainText || "").toLowerCase().includes(searchTerm);
+            
+            if (searchTerm && !titleMatch && !contentMatch) return;
+            
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
             
