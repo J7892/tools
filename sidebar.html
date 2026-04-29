@@ -133,6 +133,21 @@
             border-radius: 3px; cursor: pointer; font-size: 11px; color: #495057;
         }
         .footer-btn:hover { background: #dde2e6; }
+
+        /* Backup Prompt Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: #fff; color: #333; padding: 20px;
+            border-radius: 8px; border: 1px solid #ccc; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            text-align: center; max-width: 300px; width: 85%;
+        }
+        .modal-content h3 { margin-top: 0; color: #d9534f; font-size: 16px; }
+        .modal-content p { font-size: 13px; line-height: 1.4; }
+        .modal-buttons { display: flex; gap: 8px; justify-content: center; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -163,6 +178,17 @@
                     <button class="footer-btn" onclick="document.getElementById('import-input').click()">Import</button>
                     <input type="file" id="import-input" style="display:none" accept=".json" onchange="importNotes(event)">
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="backup-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Backup Reminder</h3>
+            <p>It's been over 5 days since your last backup. Download a fresh copy now to keep your data safe.</p>
+            <div class="modal-buttons">
+                <button class="footer-btn" onclick="dismissBackupPrompt()">Later</button>
+                <button class="native-new-btn" style="height: auto; padding: 6px 12px;" onclick="executePromptedBackup()">Backup Now</button>
             </div>
         </div>
     </div>
@@ -220,7 +246,7 @@
         SoftBreak.tagName = 'BR';
         Quill.register(SoftBreak);
 
-        // Build the dynamic UI Header
+        // Build dynamic UI Header
         const toolbarEl = document.querySelector('.ql-toolbar');
         const customWrapper = document.createElement('div');
         customWrapper.className = 'custom-toolbar-wrapper';
@@ -275,7 +301,7 @@
         quill.on('text-change', (delta, oldDelta, source) => {
             if (source !== 'user') return; 
 
-            // Check for custom slash-slash highlighting shortcut
+            // Check for highlight shortcut
             const selection = quill.getSelection();
             if (selection && selection.index >= 2) {
                 const text = quill.getText(selection.index - 2, 2);
@@ -321,7 +347,6 @@
             quill.setContents([]);
             quill.setText(`${dateText}\n\n`, 'user'); 
             
-            // Cursor automatically drops right after the date string
             quill.setSelection(dateText.length, 0);
             quill.focus();
         }
@@ -386,7 +411,6 @@
             event.target.value = '';
         }
 
-        // UI and Sync Updates
         function toggleList() {
             document.getElementById('note-list').classList.toggle('open');
         }
@@ -395,8 +419,7 @@
             const listContainer = document.getElementById('list-items');
             listContainer.innerHTML = '';
             const notes = getNotesSafely();
-            const searchInput = document.getElementById('sidebar-search');
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const searchTerm = document.getElementById('sidebar-search').value.toLowerCase();
             
             notes.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(note => {
                 if (searchTerm && !(note.title || '').toLowerCase().includes(searchTerm)) return;
@@ -419,6 +442,32 @@
                 item.appendChild(delBtn);
                 listContainer.appendChild(item);
             });
+        }
+
+        // BACKUP PROMPT LOGIC
+        function checkBackupPrompt() {
+            if (sessionStorage.getItem('backup-prompt-dismissed')) return;
+            
+            const notes = getNotesSafely();
+            if (notes.length === 0) return; 
+
+            const lastBackup = localStorage.getItem('last-backup-date');
+            const now = new Date().getTime();
+            const fiveDays = 5 * 24 * 60 * 60 * 1000;
+            
+            if (!lastBackup || (now - new Date(lastBackup).getTime() > fiveDays)) {
+                document.getElementById('backup-modal').classList.add('active');
+            }
+        }
+
+        function dismissBackupPrompt() {
+            sessionStorage.setItem('backup-prompt-dismissed', 'true');
+            document.getElementById('backup-modal').classList.remove('active');
+        }
+
+        function executePromptedBackup() {
+            exportNotes();
+            dismissBackupPrompt();
         }
 
         window.addEventListener('storage', (event) => {
@@ -482,6 +531,8 @@
         } else {
             createNewNote();
         }
+
+        setTimeout(checkBackupPrompt, 1500);
     </script>
 </body>
 </html>
