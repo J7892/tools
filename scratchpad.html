@@ -140,7 +140,6 @@
             .toggle-group {
                 display: none !important;
             }
-            
             #app-wrapper.narrow-mode, #app-wrapper {
                 width: 100% !important;
                 margin: 0 !important;
@@ -149,11 +148,6 @@
                 border: none !important;
                 border-radius: 0 !important;
                 box-shadow: none !important;
-            }
-
-            .custom-size-container {
-                margin-left: 5px;
-                padding-left: 5px;
             }
         }
     </style>
@@ -203,7 +197,7 @@
         theme: 'snow',
         modules: {
             toolbar: [
-                ['bold', 'italic', 'underline'],
+                ['bold', 'italic', 'underline', 'link'], // Added 'link' button
                 [{ 'background': ['#ffff00'] }], 
                 ['clean']
             ]
@@ -211,9 +205,27 @@
         placeholder: 'Write something...'
     });
 
+    // Inject Text Size Selector
     const toolbar = document.querySelector('.ql-toolbar');
     const template = document.getElementById('size-selector-template');
     toolbar.appendChild(template.content.cloneNode(true));
+
+    // --- Link Pasting Logic ---
+    // If text is selected and a URL is pasted, turn the selection into a link
+    quill.root.addEventListener('paste', (e) => {
+        const selection = quill.getSelection();
+        if (selection && selection.length > 0) {
+            const clipboardData = e.clipboardData || window.clipboardData;
+            const pastedText = clipboardData.getData('text');
+            
+            // Basic URL validation
+            const urlPattern = /^(https?:\/\/[^\s]+)$/i;
+            if (urlPattern.test(pastedText.trim())) {
+                e.preventDefault();
+                quill.format('link', pastedText.trim());
+            }
+        }
+    }, true);
 
     function updateTextSize(size) {
         document.documentElement.style.setProperty('--editor-font-size', size);
@@ -236,16 +248,10 @@
     }
 
     function squeezeText() {
-        // Get the plain text from Quill
         const currentText = quill.getText();
-        
-        // Collapse double/triple breaks into single breaks and trim
         const squeezed = currentText.replace(/\n\s*\n/g, '\n').trim();
-        
-        // Set the text back into Quill (this resets formatting, which is standard for a 'clean' squeeze)
         quill.setText(squeezed);
         
-        // Visual feedback
         const btn = document.querySelector('button[onclick="squeezeText()"]');
         const originalText = btn.innerText;
         btn.innerText = "Cleaned!";
