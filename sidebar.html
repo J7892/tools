@@ -62,7 +62,7 @@
             z-index: 99999; background: transparent;
         }
 
-        /* Resizer Bar */
+        /* Resizer Bar - Vertical by default */
         #resizer { 
             height: 16px; background: #eee; cursor: row-resize; width: 100%; 
             z-index: 5000; flex-shrink: 0; display: none; justify-content: center; align-items: center;
@@ -403,7 +403,8 @@
         reader.readAsText(file);
     }
 
-    window.onload = () => {
+    // CHANGED TO DOMContentLoaded TO BYPASS IFRAME DELAY
+    document.addEventListener('DOMContentLoaded', () => {
         renderNoteList();
         const savedHeight = localStorage.getItem('ticktick-height');
         const savedWidth = localStorage.getItem('ticktick-width');
@@ -416,7 +417,7 @@
         document.querySelector(`input[value="${wp}"]`).checked = true;
         const lastId = localStorage.getItem('last-note-id');
         if (lastId) loadNote(parseInt(lastId)); else createNewNote();
-    };
+    });
 </script>
 </body>
 </html>
