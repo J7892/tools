@@ -128,7 +128,7 @@
         <div class="search-container"><input type="text" id="sidebar-search" placeholder="Search titles & content..." oninput="renderNoteList()"></div>
         <div id="note-list" class="note-list"></div>
         <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border-color);">
-            <button class="btn-tool" style="width:100%; margin-bottom:5px;" onclick="exportNotes()">Backup Database</button>
+            <button class="btn-tool" style="width:100%; margin-bottom:5px;" onclick="exportFullDatabase()">Backup Database</button>
             <button class="btn-tool" style="width:100%;" onclick="document.getElementById('import-input').click()">Import Backup</button>
             <input type="file" id="import-input" style="display:none" onchange="importNotes(event)">
         </div>
@@ -156,9 +156,12 @@
                         <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">📅 Tasks</button>
                         <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">🔍 Focus Tasks</button>
                     </div>
-                    <div class="radio-group">
-                        <label><input type="radio" name="view-width" value="full" onclick="setWidth('full')" checked> Full</label>
-                        <label><input type="radio" name="view-width" value="narrow" onclick="setWidth('narrow')"> Narrow</label>
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <button class="btn-tool" onclick="exportSingleNote()">Export Note</button>
+                        <div class="radio-group">
+                            <label><input type="radio" name="view-width" value="full" onclick="setWidth('full')" checked> Full</label>
+                            <label><input type="radio" name="view-width" value="narrow" onclick="setWidth('narrow')"> Narrow</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -252,7 +255,46 @@
 
     function toggleTickTick() { const isVisible = todoContainer.classList.toggle('visible'); resizer.classList.toggle('visible', isVisible); localStorage.setItem('ticktick-pref', isVisible); }
     function createNewNote() { currentNoteId = Date.now(); quill.setText(`\n`, 'user'); quill.focus(); }
-    function exportNotes() { const raw = localStorage.getItem('my-github-notes'); const blob = new Blob([raw], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `notes_backup_${new Date().toISOString().split('T')[0]}.json`; a.click(); }
+    
+    function exportFullDatabase() { 
+        const raw = localStorage.getItem('my-github-notes'); 
+        const blob = new Blob([raw], { type: 'application/json' }); 
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+        a.download = `sidebar_full_backup_${new Date().toISOString().split('T')[0]}.json`; 
+        a.click(); 
+    }
+
+    function exportSingleNote() {
+        const note = getNotesSafely().find(n => n.id === currentNoteId);
+        if (!note) return;
+        
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"><title>${note.title}</title>
+            <style>
+                body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; }
+                h1 { color: #333; }
+                .date { color: #888; font-size: 0.9em; margin-bottom: 20px; }
+                p { margin-bottom: 0.8em; }
+            </style>
+            </head>
+            <body>
+                <h1>${note.title}</h1>
+                <div class="date">Created: ${new Date(note.date).toLocaleString()}</div>
+                <hr>
+                <div class="content">${quill.root.innerHTML}</div>
+            </body>
+            </html>
+        `;
+        
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+        a.click();
+    }
+
     function getNotesSafely() { try { const raw = localStorage.getItem('my-github-notes'); if (!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : (parsed.data || []); } catch (e) { return []; } }
     function saveNotesInternal(notes) { localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes })); renderNoteList(); }
     
