@@ -64,7 +64,7 @@
         /* TickTick Frame Styling */
         #todo-container { 
             height: 40%; width: 100%; overflow: hidden; position: relative; flex-shrink: 0; 
-            border-bottom: 1px solid var(--border-color); display: none; /* Hidden by default */
+            border-bottom: 1px solid var(--border-color); display: none; 
         }
         #todo-container.visible { display: block; }
         #todo-frame { 
@@ -96,6 +96,9 @@
             border: none !important; flex-grow: 1; padding: 8px 12px !important; 
             display: flex; align-items: center; flex-wrap: nowrap; overflow-x: auto; 
         }
+        
+        /* Hide scrollbar but keep functionality */
+        .ql-toolbar.ql-snow::-webkit-scrollbar { display: none; }
 
         .native-new-btn {
             background-color: #007bff; color: white; border: none; border-radius: 4px;
@@ -132,7 +135,6 @@
 
         .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 
-        /* Modal */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center;
@@ -214,10 +216,11 @@
     let saveTimeout = null;
     let isDirty = false;
 
+    // Initialize Quill without Bold/Italic to keep the header minimal
     var quill = new Quill('#editor-container', {
         modules: {
             toolbar: {
-                container: [[{ 'size': ['small', false, 'large', 'huge'] }], ['bold', 'italic'], ['link'], ['clean']],
+                container: [[{ 'size': ['small', false, 'large', 'huge'] }], ['link'], ['clean']],
             }
         },
         theme: 'snow'
@@ -336,6 +339,7 @@
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; }
+    
     function toggleTheme() {
         const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', theme);
@@ -343,7 +347,12 @@
     }
 
     function copyNote() {
-        navigator.clipboard.writeText(quill.getText()).then(() => alert("Copied!"));
+        navigator.clipboard.writeText(quill.getText()).then(() => {
+            const status = document.getElementById('status');
+            const original = status.innerText;
+            status.innerText = "Copied!";
+            setTimeout(() => status.innerText = original, 1500);
+        });
     }
 
     window.onload = () => {
