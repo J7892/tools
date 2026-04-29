@@ -14,6 +14,8 @@
             --toolbar-bg: #fff;
             --max-narrow: 700px;
             --highlight-color: #ffff00;
+            /* Default global text size */
+            --editor-font-size: 16px;
         }
 
         body, html {
@@ -54,8 +56,13 @@
 
         #editor {
             flex-grow: 1;
-            font-size: 16px;
+            font-size: var(--editor-font-size) !important;
             border: none !important;
+        }
+
+        /* Ensure Quill inner editor inherits the global size */
+        .ql-editor {
+            font-size: var(--editor-font-size) !important;
         }
 
         .ql-editor p {
@@ -83,9 +90,9 @@
             font-weight: 500;
         }
 
-        .toggle-group {
+        .controls-group {
             display: flex;
-            gap: 10px;
+            gap: 15px;
             align-items: center;
             border-left: 1px solid #ddd;
             border-right: 1px solid #ddd;
@@ -97,8 +104,8 @@
             gap: 6px;
         }
 
-        button {
-            padding: 4px 10px;
+        select, button {
+            padding: 4px 8px;
             cursor: pointer;
             background: #f8f9fa;
             border: 1px solid #bbb;
@@ -111,9 +118,16 @@
         }
 
         /* Responsive Hiding */
-        @media (max-width: 768px) {
-            .toggle-group {
-                display: none;
+        @media (max-width: 850px) {
+            .controls-group {
+                border: none;
+                padding: 0;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .toggle-label {
+                display: none; /* Hide Wide/Narrow text on very small screens */
             }
             #app-wrapper.narrow-mode, #app-wrapper {
                 width: 100%;
@@ -123,14 +137,6 @@
                 border: none;
                 border-radius: 0;
             }
-            #status-bar {
-                padding: 10px;
-            }
-        }
-
-        /* Force Quill highlight button to look active when yellow is set */
-        .ql-snow .ql-toolbar button.ql-background[value="#ffff00"] {
-            background-color: #ffff00;
         }
     </style>
 </head>
@@ -146,13 +152,21 @@
             <span id="line-calc">Lines: 0</span>
         </div>
 
-        <div class="toggle-group">
-            <label>
-                <input type="radio" name="width-toggle" value="wide" checked onchange="toggleWidth('wide')"> Wide
-            </label>
-            <label>
-                <input type="radio" name="width-toggle" value="narrow" onchange="toggleWidth('narrow')"> Narrow
-            </label>
+        <div class="controls-group">
+            <div>
+                Size: 
+                <select id="size-select" onchange="updateTextSize(this.value)">
+                    <option value="13px">Small</option>
+                    <option value="16px" selected>Normal</option>
+                    <option value="20px">Large</option>
+                    <option value="28px">Huge</option>
+                </select>
+            </div>
+
+            <div class="toggle-label">
+                <label><input type="radio" name="width-toggle" value="wide" checked onchange="toggleWidth('wide')"> Wide</label>
+                <label><input type="radio" name="width-toggle" value="narrow" onchange="toggleWidth('narrow')"> Narrow</label>
+            </div>
         </div>
 
         <div class="actions-group">
@@ -166,20 +180,32 @@
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 <script>
-    // Initialize Quill with simplified background button
     const quill = new Quill('#editor', {
         theme: 'snow',
         modules: {
             toolbar: {
                 container: [
                     ['bold', 'italic', 'underline'],
-                    [{ 'background': ['#ffff00'] }], // Only Yellow allowed
+                    [{ 'background': ['#ffff00'] }], 
                     ['clean']
                 ]
             }
         },
         placeholder: 'Write something...'
     });
+
+    // --- Global Text Size Logic ---
+    function updateTextSize(size) {
+        document.documentElement.style.setProperty('--editor-font-size', size);
+        localStorage.setItem('scratchpad_text_size', size);
+    }
+
+    // Load saved size preference
+    const savedSize = localStorage.getItem('scratchpad_text_size');
+    if (savedSize) {
+        updateTextSize(savedSize);
+        document.getElementById('size-select').value = savedSize;
+    }
 
     function toggleWidth(mode) {
         const wrapper = document.getElementById('app-wrapper');
@@ -196,50 +222,36 @@
         quill.setContents(JSON.parse(savedContent));
     }
 
-    // Main event listener
     quill.on('text-change', (delta, oldDelta, source) => {
         if (source === 'user') {
             handleMarkdownHighlight();
         }
         updateStats();
-        
-        // Auto-save
-        const content = quill.getContents();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(quill.getContents()));
     });
 
     function handleMarkdownHighlight() {
         const text = quill.getText();
         const index = text.indexOf('//');
-        
         if (index !== -1) {
-            // Determine current state of highlight at that position
             const format = quill.getFormat(index, 2);
-            const isCurrentlyHighlighted = format.background === '#ffff00' || format.background === 'yellow';
-
-            // Remove the // characters
+            const isHighlighted = format.background === '#ffff00' || format.background === 'yellow';
             quill.deleteText(index, 2);
-
-            // Toggle highlight for the cursor's current formatting
-            // This affects subsequent typing
-            quill.format('background', isCurrentlyHighlighted ? false : '#ffff00');
+            quill.format('background', isHighlighted ? false : '#ffff00');
         }
     }
 
     function updateStats() {
         const text = quill.getText().trim();
-        const charCount = text.length;
         const words = text.length > 0 ? text.split(/\s+/).length : 0;
         const lineCalc = Math.ceil((words / 5) / 5) * 5;
-
-        document.getElementById('char-count').innerText = `Chars: ${charCount}`;
+        document.getElementById('char-count').innerText = `Chars: ${text.length}`;
         document.getElementById('word-count').innerText = `Words: ${words}`;
         document.getElementById('line-calc').innerText = `Lines: ${lineCalc}`;
     }
 
     function copyToClipboard() {
-        const text = quill.getText();
-        navigator.clipboard.writeText(text).then(() => {
+        navigator.clipboard.writeText(quill.getText()).then(() => {
             const btn = document.querySelector('button[onclick="copyToClipboard()"]');
             const originalText = btn.innerText;
             btn.innerText = "Copied!";
@@ -253,7 +265,8 @@
     }
 
     function exportToFile() {
-        const htmlContent = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:20px;}.ql-editor p{margin-bottom:0.6em;}</style></head><body>${quill.root.innerHTML}</body></html>`;
+        const currentSize = getComputedStyle(document.documentElement).getPropertyValue('--editor-font-size');
+        const htmlContent = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:20px;font-size:${currentSize};}.ql-editor p{margin-bottom:0.6em;}</style></head><body>${quill.root.innerHTML}</body></html>`;
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
