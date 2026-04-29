@@ -53,13 +53,25 @@
         /* TickTick Frame Styling */
         #todo-container { 
             height: 40%; width: 100%; overflow: hidden; position: relative; flex-shrink: 0; 
-            border-bottom: 1px solid var(--border-color); display: none; 
+            display: none; 
         }
         #todo-container.visible { display: block; }
         #todo-frame { 
             position: absolute; top: 0; left: 0; width: 125%; height: 125%; 
             transform: scale(0.8); transform-origin: top left; border: none; 
         }
+        
+        /* Ghost overlay prevents iframe from intercepting mouse during drag */
+        #ghost-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 9; }
+
+        /* Resizer Bar */
+        #resizer { 
+            height: 8px; background: #f8f9fa; border-top: 1px solid var(--border-color); 
+            border-bottom: 1px solid var(--border-color); cursor: row-resize; width: 100%; 
+            z-index: 10; flex-shrink: 0; display: none; justify-content: center; align-items: center;
+        }
+        #resizer.visible { display: flex; }
+        #resizer::after { content: ""; width: 32px; height: 3px; background: #ced4da; border-radius: 3px; }
 
         /* Editor Area */
         .editor-area { 
@@ -73,7 +85,6 @@
 
         .editor-content-wrapper { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; overflow: visible; margin-top: 10px;}
         
-        /* Custom Toolbar Wrapper */
         .custom-toolbar-wrapper {
             display: flex; justify-content: space-between; align-items: center;
             background: var(--toolbar-bg); border: 1px solid var(--border-color);
@@ -108,7 +119,6 @@
 
         .ql-editor { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; line-height: 1.3; }
         
-        /* Apple Notes Title Style */
         .ql-editor > *:first-child {
             font-size: 1.5em !important; font-weight: bold !important;
             margin-bottom: 0.5em !important; line-height: 1.2 !important;
@@ -123,25 +133,21 @@
         .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
-        .radio-group label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
 
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center;
         }
         .modal-overlay.active { display: flex; }
-        .modal-content {
-            background: var(--editor-bg); color: var(--text-color); padding: 25px;
-            border-radius: 8px; border: 1px solid var(--border-color); text-align: center; max-width: 400px;
-        }
 
         @media (max-width: 768px) {
             .editor-area { padding: 5px; } 
             .toggle-sidebar { position: static; height: 32px; width: 36px; padding: 0; margin-right: 4px; border-radius: 4px; }
             .native-new-btn .btn-text { display: none; }
             .native-new-btn { padding: 0; width: 32px; font-size: 18px; }
-            #todo-container { height: 30%; }
-            .radio-group { display: none; } /* Hide width toggle on small screens */
+            #todo-container { height: 30% !important; }
+            .radio-group { display: none; }
+            #resizer { display: none !important; }
         }
     </style>
 </head>
@@ -163,7 +169,10 @@
     <div class="main-layout">
         <div id="todo-container">
             <iframe id="todo-frame" src="https://ticktick.com/webapp/#q/week/tasks"></iframe>
+            <div id="ghost-overlay"></div>
         </div>
+
+        <div id="resizer"></div>
 
         <div class="editor-area">
             <div id="width-wrapper" class="content-width-wrapper">
@@ -189,7 +198,7 @@
     </div>
 
     <div id="backup-modal" class="modal-overlay">
-        <div class="modal-content">
+        <div class="modal-content" style="background:var(--editor-bg); padding:25px; border-radius:8px; border:1px solid var(--border-color); text-align:center;">
             <h3>Daily Backup</h3>
             <p>Don't forget to save your daily database backup to OneDrive.</p>
             <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
@@ -206,11 +215,7 @@
     let saveTimeout = null;
 
     var quill = new Quill('#editor-container', {
-        modules: {
-            toolbar: {
-                container: [[{ 'size': ['small', false, 'large', 'huge'] }], ['link'], ['clean']],
-            }
-        },
+        modules: { toolbar: { container: [[{ 'size': ['small', false, 'large', 'huge'] }], ['link'], ['clean']] } },
         theme: 'snow'
     });
 
@@ -227,10 +232,37 @@
     nativeBtn.onclick = createNewNote;
     customWrapper.appendChild(nativeBtn);
 
+    // --- Resizer Logic ---
+    const resizer = document.getElementById('resizer');
+    const todoContainer = document.getElementById('todo-container');
+    const ghost = document.getElementById('ghost-overlay');
+
+    resizer.addEventListener('mousedown', (e) => {
+        ghost.style.display = 'block';
+        const move = (e) => {
+            let h = (e.clientY / window.innerHeight) * 100;
+            if (h > 10 && h < 85) {
+                todoContainer.style.height = h + '%';
+                localStorage.setItem('ticktick-height', h);
+            }
+        };
+        const stop = () => {
+            ghost.style.display = 'none';
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', stop);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', stop);
+    });
+
     function toggleTickTick() {
         const container = document.getElementById('todo-container');
+        const resizerBar = document.getElementById('resizer');
         const btn = document.getElementById('ticktick-toggle');
+        
         const isVisible = container.classList.toggle('visible');
+        resizerBar.classList.toggle('visible', isVisible);
+        
         btn.innerText = isVisible ? "📅 Hide Tasks" : "📅 Show Tasks";
         localStorage.setItem('ticktick-pref', isVisible);
     }
@@ -340,8 +372,34 @@
         });
     }
 
+    function importNotes(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                const newData = Array.isArray(imported) ? imported : (imported.data || []);
+                if (confirm("Merge imported notes?")) {
+                    const existing = getNotesSafely();
+                    const existingIds = new Set(existing.map(n => n.id));
+                    const merged = [...existing, ...newData.filter(n => !existingIds.has(n.id))];
+                    saveNotesInternal(merged);
+                    alert("Import successful.");
+                }
+            } catch (err) { alert("Invalid file."); }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
     window.onload = () => {
         renderNoteList();
+        
+        // Restore height
+        const savedHeight = localStorage.getItem('ticktick-height');
+        if (savedHeight) todoContainer.style.height = savedHeight + '%';
+
         if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
         
         const wp = localStorage.getItem('width-pref') || 'full';
