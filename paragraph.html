@@ -36,11 +36,14 @@
             margin-bottom: 20px;
             outline: none;
             overflow-y: auto;
+
+            /* THE GRID FIX: This creates real gaps between line breaks */
+            display: grid;
+            align-content: start;
+            row-gap: 0.8em; 
             
-            /* THE FIX: pre-line respects \n and we can stretch the height of those breaks */
-            white-space: pre-line;
-            line-height: 1.8; 
-            word-spacing: 0.05em;
+            white-space: pre-wrap;
+            line-height: 1.5;
         }
         #editor:focus { border-color: var(--accent); }
 
@@ -67,7 +70,7 @@
 <body>
 
     <h2>Paragraph Squeezer</h2>
-    <p>Paste your text. The tool will collapse double-breaks but use a wide line-height to make them look like paragraphs.</p>
+    <p>Paste your text. This version uses Grid logic to force visual spacing between every line break.</p>
 
     <div id="editor" contenteditable="true" spellcheck="false"></div>
 
@@ -80,7 +83,6 @@
     <script>
         function squeezeText() {
             const editor = document.getElementById('editor');
-            // innerText is better than textContent for preserving line breaks as \n
             let text = editor.innerText;
 
             // Collapse multiple newlines into one
@@ -89,16 +91,26 @@
                 .trim();
 
             editor.innerText = cleaned;
-            showStatus("Cleaned & Tightened!");
+            showStatus("Squeezed!");
         }
 
-        function copyToClipboard() {
+        async function copyToClipboard() {
             const editor = document.getElementById('editor');
             const text = editor.innerText;
             
-            navigator.clipboard.writeText(text).then(() => {
+            try {
+                await navigator.clipboard.writeText(text);
                 showStatus("Copied to clipboard!");
-            });
+            } catch (err) {
+                // Fallback for older environments
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showStatus("Copied!");
+            }
         }
 
         function showStatus(msg) {
