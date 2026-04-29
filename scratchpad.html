@@ -15,6 +15,7 @@
             --max-narrow: 700px;
             --highlight-color: #ffff00;
             --editor-font-size: 16px;
+            --link-color: #0000ee; /* Standard blue */
         }
 
         body, html {
@@ -86,6 +87,12 @@
 
         .ql-editor {
             font-size: var(--editor-font-size) !important;
+        }
+
+        /* FORCE LINKS TO BE BLUE */
+        .ql-editor a {
+            color: var(--link-color) !important;
+            text-decoration: underline !important;
         }
 
         .ql-editor p {
@@ -197,7 +204,7 @@
         theme: 'snow',
         modules: {
             toolbar: [
-                ['bold', 'italic', 'underline', 'link'], // Added 'link' button
+                ['bold', 'italic', 'underline', 'link'],
                 [{ 'background': ['#ffff00'] }], 
                 ['clean']
             ]
@@ -205,20 +212,15 @@
         placeholder: 'Write something...'
     });
 
-    // Inject Text Size Selector
     const toolbar = document.querySelector('.ql-toolbar');
     const template = document.getElementById('size-selector-template');
     toolbar.appendChild(template.content.cloneNode(true));
 
-    // --- Link Pasting Logic ---
-    // If text is selected and a URL is pasted, turn the selection into a link
     quill.root.addEventListener('paste', (e) => {
         const selection = quill.getSelection();
         if (selection && selection.length > 0) {
             const clipboardData = e.clipboardData || window.clipboardData;
             const pastedText = clipboardData.getData('text');
-            
-            // Basic URL validation
             const urlPattern = /^(https?:\/\/[^\s]+)$/i;
             if (urlPattern.test(pastedText.trim())) {
                 e.preventDefault();
@@ -308,7 +310,7 @@
 
     function exportToFile() {
         const currentSize = getComputedStyle(document.documentElement).getPropertyValue('--editor-font-size');
-        const htmlContent = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:20px;font-size:${currentSize};}.ql-editor p{margin-bottom:0.6em;}</style></head><body>${quill.root.innerHTML}</body></html>`;
+        const htmlContent = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:20px;font-size:${currentSize};}.ql-editor p{margin-bottom:0.6em;} .ql-editor a { color: #0000ee !important; text-decoration: underline !important; }</style></head><body>${quill.root.innerHTML}</body></html>`;
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
