@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Scratchpad</title>
+    
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --border-color: #ccc;
+            --toolbar-bg: #fff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            background: var(--bg-color);
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Editor container */
+        #editor {
+            flex-grow: 1;
+            background: #fff;
+            font-size: 16px;
+        }
+
+        /* Bottom Status Bar */
+        #status-bar {
+            background: var(--toolbar-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 8px 12px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            gap: 10px;
+        }
+
+        .stats-group {
+            display: flex;
+            gap: 15px;
+            color: #555;
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+            background: #eee;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #ddd;
+        }
+
+        /* Mobile/Sidebar Adjustments */
+        @media (max-width: 500px) {
+            #status-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .stats-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="editor"></div>
+    
+    <div id="status-bar">
+        <div class="stats-group">
+            <span id="char-count">Chars: 0</span>
+            <span id="word-count">Words: 0</span>
+            <span id="line-calc">Lines: 0</span>
+        </div>
+        <div class="actions-group">
+            <button onclick="copyToClipboard()">Copy</button>
+            <button onclick="exportToEmail()">Email</button>
+            <button onclick="exportToFile()">Export</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<script>
+    // Initialize Quill
+    const quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'background': [] }], // Highlighting
+                ['clean']
+            ]
+        },
+        placeholder: 'Start typing...'
+    });
+
+    // --- Local Storage Logic ---
+    const STORAGE_KEY = 'scratchpad_content';
+    const savedContent = localStorage.getItem(STORAGE_KEY);
+    if (savedContent) {
+        quill.setContents(JSON.parse(savedContent));
+    }
+
+    // Save on every change
+    quill.on('text-change', () => {
+        const delta = quill.getContents();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(delta));
+        updateStats();
+        handleMarkdownHighlight();
+    });
+
+    // --- Markdown Highlight Logic (// trigger) ---
+    function handleMarkdownHighlight() {
+        const text = quill.getText();
+        const range = quill.getSelection();
+        
+        // Find the sequence "//"
+        if (text.includes('//')) {
+            let index = text.indexOf('//');
+            while (index !== -1) {
+                // Check if we are closing or opening
+                // For simplicity: this toggles yellow highlight for the current session session
+                const currentFormat = quill.getFormat(index, 2);
+                const isHighlighted = currentFormat.background === 'yellow' || currentFormat.background === '#ffff00';
+
+                // Delete the "//" characters
+                quill.deleteText(index, 2);
+                
+                // Toggle highlighting for the rest of the line/paragraph 
+                // or until the next "//" (handled by subsequent loops)
+                quill.format('background', isHighlighted ? false : 'yellow', 'user');
+                
+                // Update text variable and search again
+                const updatedText = quill.getText();
+                index = updatedText.indexOf('//');
+            }
+        }
+    }
+
+    // --- Statistics Logic ---
+    function updateStats() {
+        const text = quill.getText().trim();
+        const charCount = text.length;
+        const words = text.length > 0 ? text.split(/\s+/).length : 0;
+        
+        // Custom Line Count: word count divided by 5, rounded up to nearest 5
+        const lineCalc = Math.ceil((words / 5) / 5) * 5;
+
+        document.getElementById('char-count').innerText = `Chars: ${charCount}`;
+        document.getElementById('word-count').innerText = `Words: ${words}`;
+        document.getElementById('line-calc').innerText = `Lines: ${lineCalc}`;
+    }
+
+    // --- Action Functions ---
+
+    function copyToClipboard() {
+        const text = quill.getText();
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Text copied to clipboard!");
+        });
+    }
+
+    function exportToEmail() {
+        const body = encodeURIComponent(quill.getText());
+        window.location.href = `mailto:?subject=Scratchpad Export&body=${body}`;
+    }
+
+    function exportToFile() {
+        const htmlContent = quill.root.innerHTML;
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'scratchpad_export.html';
+        a.click();
+    }
+
+    // Initial stat update
+    updateStats();
+</script>
+
+</body>
+</html>
