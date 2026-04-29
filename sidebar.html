@@ -89,6 +89,7 @@
         .ql-container.ql-snow { flex: 1; border: 1px solid var(--border-color) !important; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
         .ql-editor { flex: 1; overflow-y: auto; padding: 20px; line-height: 1.4; }
         
+        /* Paragraph Spacing */
         .ql-editor p { margin-bottom: 0.8em !important; }
         .ql-editor p:last-child { margin-bottom: 0 !important; }
         .ql-editor > *:first-child { font-size: 1.5em !important; font-weight: bold !important; margin-bottom: 0.8em !important; }
@@ -152,8 +153,8 @@
                 <div class="bottom-bar">
                     <div style="display:flex; gap:8px; align-items:center;">
                         <span id="status" style="font-size:0.8em; font-weight:600;">Saved</span>
-                        <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">📅 Tasks</button>
-                        <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">🔍 Focus Tasks</button>
+                        <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">Tasks</button>
+                        <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">Focus Tasks</button>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center;">
                         <button class="btn-tool" onclick="emailNote()">Email</button>
