@@ -22,7 +22,7 @@
         h2 { 
             font-weight: 700;
             color: var(--accent);
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         #editor {
             width: 100%;
@@ -37,14 +37,16 @@
             outline: none;
             overflow-y: auto;
 
-            /* THE GRID FIX: This creates real gaps between line breaks */
-            display: grid;
-            align-content: start;
-            row-gap: 0.8em; 
-            
-            white-space: pre-wrap;
+            /* THE FIX: Force every child div to have a bottom margin */
             line-height: 1.5;
         }
+        
+        /* This ensures that after we "Squeeze", the new divs have spacing */
+        #editor div {
+            margin-bottom: 0.8em;
+            min-height: 1em;
+        }
+
         #editor:focus { border-color: var(--accent); }
 
         .controls {
@@ -70,7 +72,7 @@
 <body>
 
     <h2>Paragraph Squeezer</h2>
-    <p>Paste your text. This version uses Grid logic to force visual spacing between every line break.</p>
+    <p>Paste messy text. This version rebuilds the HTML structure to keep your 0.8 spacing after cleaning.</p>
 
     <div id="editor" contenteditable="true" spellcheck="false"></div>
 
@@ -83,33 +85,33 @@
     <script>
         function squeezeText() {
             const editor = document.getElementById('editor');
-            let text = editor.innerText;
+            
+            // 1. Get raw text and collapse double/triple breaks into single breaks
+            let rawText = editor.innerText.replace(/\n\s*\n/g, '\n').trim();
+            
+            // 2. Split text into an array of paragraphs
+            let paragraphs = rawText.split('\n');
 
-            // Collapse multiple newlines into one
-            const cleaned = text
-                .replace(/\n\s*\n/g, '\n')
-                .trim();
+            // 3. Rebuild the editor's inner HTML so each paragraph is a <div>
+            // This is what preserves the visual CSS spacing!
+            editor.innerHTML = paragraphs
+                .map(p => `<div>${p}</div>`)
+                .join('');
 
-            editor.innerText = cleaned;
-            showStatus("Squeezed!");
+            showStatus("Squeezed & Formatted!");
         }
 
         async function copyToClipboard() {
             const editor = document.getElementById('editor');
+            // We still use innerText for copying because it returns clean text 
+            // with single line breaks, ignoring our visual div margins.
             const text = editor.innerText;
             
             try {
                 await navigator.clipboard.writeText(text);
                 showStatus("Copied to clipboard!");
             } catch (err) {
-                // Fallback for older environments
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                showStatus("Copied!");
+                showStatus("Error copying.");
             }
         }
 
