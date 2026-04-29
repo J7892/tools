@@ -62,6 +62,21 @@
             padding: 8px !important;
         }
 
+        /* Styling to make the background button look like a simple highlighter */
+        .ql-background.ql-picker { display: none !important; }
+        .custom-highlighter {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 3px 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+        }
+        .custom-highlighter:hover { background-color: #f0f0f0; }
+        .custom-highlighter svg { width: 18px; height: 18px; }
+
         .custom-size-container {
             margin-left: 15px;
             padding-left: 15px;
@@ -184,7 +199,13 @@
     </div>
 </div>
 
-<template id="size-selector-template">
+<template id="toolbar-extras">
+    <button class="custom-highlighter" title="Highlight Yellow" onclick="applyHighlight()">
+        <svg viewBox="0 0 18 18">
+            <path class="ql-fill" d="M15.527,2.473a2.41,2.41,0,0,0-3.411,0L5.45,9.138A.494.494,0,0,0,5.305,9.5L5,13a.5.5,0,0,0,.572.572L9.073,13.2a.5.5,0,0,0,.364-.145l6.091-6.091A2.41,2.41,0,0,0,15.527,2.473ZM8.773,12.2,5.7,12.473,6.23,9.7l6.091-6.091,2.536,2.536Z"></path>
+            <rect class="ql-fill" height="2" rx="0.5" ry="0.5" width="12" x="3" y="15" style="fill: #ffff00;"></rect>
+        </svg>
+    </button>
     <div class="custom-size-container">
         <span>Size:</span>
         <select id="size-select" onchange="updateTextSize(this.value)">
@@ -204,16 +225,26 @@
         modules: {
             toolbar: [
                 ['bold', 'italic', 'underline', 'link'],
-                [{ 'background': ['#ffff00'] }], 
                 ['clean']
             ]
         },
         placeholder: 'Write something...'
     });
 
+    // Inject Custom Highlighter and Size Selector
     const toolbar = document.querySelector('.ql-toolbar');
-    const template = document.getElementById('size-selector-template');
+    const template = document.getElementById('toolbar-extras');
     toolbar.appendChild(template.content.cloneNode(true));
+
+    function applyHighlight() {
+        const range = quill.getSelection();
+        if (range) {
+            const currentFormat = quill.getFormat(range);
+            // Toggle highlight: if yellow, remove; else, add yellow.
+            const isHighlighted = currentFormat.background === '#ffff00' || currentFormat.background === 'yellow';
+            quill.format('background', isHighlighted ? false : '#ffff00');
+        }
+    }
 
     quill.root.addEventListener('paste', (e) => {
         const selection = quill.getSelection();
@@ -248,34 +279,19 @@
         }
     }
 
-    /**
-     * Squeeze Text - Smart Version
-     * Replaces multiple newlines with a single newline while 
-     * preserving existing bold, italic, and link formats.
-     */
     function squeezeText() {
         const delta = quill.getContents();
         const newDelta = { ops: [] };
-
         delta.ops.forEach((op, i) => {
             if (typeof op.insert === 'string') {
-                // Replace 2+ consecutive newlines with exactly one
                 let newString = op.insert.replace(/\n\n+/g, '\n');
-                
-                // If it's the first operation, trim leading newlines
                 if (i === 0) newString = newString.replace(/^\n+/, '');
-                
-                newDelta.ops.push({
-                    insert: newString,
-                    attributes: op.attributes
-                });
+                newDelta.ops.push({ insert: newString, attributes: op.attributes });
             } else {
                 newDelta.ops.push(op);
             }
         });
-
         quill.setContents(newDelta);
-        
         const btn = document.querySelector('button[onclick="squeezeText()"]');
         const originalText = btn.innerText;
         btn.innerText = "Squeezed!";
@@ -284,14 +300,10 @@
 
     const STORAGE_KEY = 'scratchpad_content';
     const savedContent = localStorage.getItem(STORAGE_KEY);
-    if (savedContent) {
-        quill.setContents(JSON.parse(savedContent));
-    }
+    if (savedContent) { quill.setContents(JSON.parse(savedContent)); }
 
     quill.on('text-change', (delta, oldDelta, source) => {
-        if (source === 'user') {
-            handleMarkdownHighlight();
-        }
+        if (source === 'user') { handleMarkdownHighlight(); }
         updateStats();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(quill.getContents()));
     });
@@ -317,7 +329,6 @@
     }
 
     function copyToClipboard() {
-        // Plain text for standard clipboard, but preserves text content
         navigator.clipboard.writeText(quill.getText()).then(() => {
             const btn = document.querySelector('button[onclick="copyToClipboard()"]');
             const originalText = btn.innerText;
