@@ -16,17 +16,24 @@
             background: var(--bg);
             color: var(--text);
             max-width: 900px;
-            margin: 50px auto;
+            /* Reduced top margin from 50px to 15px */
+            margin: 15px auto;
             padding: 20px;
         }
         h2 { 
             font-weight: 700;
             color: var(--accent);
-            margin-bottom: 20px;
+            /* Reduced bottom margin */
+            margin: 0 0 10px 0;
+        }
+        p.intro {
+            margin: 0 0 20px 0;
+            font-size: 14px;
+            color: #636e72;
         }
         #editor {
             width: 100%;
-            min-height: 450px;
+            min-height: 500px;
             padding: 25px;
             border: 2px solid var(--border);
             border-radius: 12px;
@@ -71,7 +78,7 @@
 <body>
 
     <h2>Paragraph Fixer</h2>
-    <p>Paste text below to fix line breaks, eliminate double spaces, and format quotes.</p>
+    <p class="intro">Paste text below to fix line breaks, eliminate double spaces, and format quotes.</p>
 
     <div id="editor" contenteditable="true" spellcheck="false"></div>
 
@@ -83,7 +90,6 @@
     </div>
 
     <script>
-        // Helper to refresh the visual 0.8 spacing divs
         function refreshEditor(text) {
             const editor = document.getElementById('editor');
             let paragraphs = text.split('\n');
@@ -97,8 +103,8 @@
             let text = editor.innerText;
 
             let cleaned = text
-                .replace(/[ ]{2,}/g, ' ')  
-                .replace(/\n\s*\n/g, '\n') 
+                .replace(/[ ]{2,}/g, ' ')  // Collapse double spaces
+                .replace(/\n\s*\n/g, '\n') // Collapse double line breaks
                 .trim();
             
             refreshEditor(cleaned);
@@ -109,14 +115,11 @@
             const editor = document.getElementById('editor');
             let text = editor.innerText;
 
-            // Logic for Smart Quotes
             let smart = text
-                // Double quotes
-                .replace(/"(?=\w)/g, '“')     // Opening double
-                .replace(/"/g, '”')            // Closing double
-                // Single quotes / Apostrophes
-                .replace(/'(?=\w)/g, '‘')     // Opening single
-                .replace(/'/g, '’');           // Closing single (and apostrophes)
+                .replace(/"(?=\w)/g, '“')     
+                .replace(/"/g, '”')            
+                .replace(/'(?=\w)/g, '‘')     
+                .replace(/'/g, '’');           
 
             refreshEditor(smart);
             showStatus("Quotes Curled!");
