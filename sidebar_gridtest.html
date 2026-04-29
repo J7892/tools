@@ -103,6 +103,8 @@
         .delete-btn:hover { color: var(--danger); }
         .note-item:hover .delete-btn { visibility: visible; }
 
+        .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
+
         #task-only-footer { display: none; height: 50px; background: #fff; border-top: 1px solid var(--border-color); align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 4000; flex-shrink: 0; }
         #task-only-footer.visible { display: flex; }
 
@@ -112,6 +114,7 @@
             .btn-text { display: none; }
             .native-new-btn { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
             #todo-container { height: 30% !important; width: 100% !important; }
+            .radio-group { display: none; } /* Hide radio toggles on mobile */
         }
     </style>
 </head>
@@ -150,12 +153,9 @@
                         <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">📅 Tasks</button>
                         <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">🔍 Focus Tasks</button>
                     </div>
-                    <div style="display:flex; gap:12px; align-items:center;">
-                        <div style="display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text);">
-                            <label><input type="radio" name="view-width" value="full" onclick="setWidth('full')" checked> Full</label>
-                            <label><input type="radio" name="view-width" value="narrow" onclick="setWidth('narrow')"> Narrow</label>
-                        </div>
-                        <button class="btn-tool" onclick="copyNote()">Copy</button>
+                    <div class="radio-group">
+                        <label><input type="radio" name="view-width" value="full" onclick="setWidth('full')" checked> Full</label>
+                        <label><input type="radio" name="view-width" value="narrow" onclick="setWidth('narrow')"> Narrow</label>
                     </div>
                 </div>
             </div>
@@ -305,7 +305,6 @@
     function loadNote(id) { const note = getNotesSafely().find(n => n.id === id); if (note) { currentNoteId = note.id; quill.setContents(note.content); renderNoteList(); } }
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
-    function copyNote() { navigator.clipboard.writeText(quill.getText()).then(() => { const s = document.getElementById('status'); s.innerText = "Copied!"; setTimeout(()=> s.innerText="Saved", 1500); }); }
 
     function importNotes(event) {
         const file = event.target.files[0];
