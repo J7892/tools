@@ -16,34 +16,47 @@
             background: var(--bg);
             color: var(--text);
             max-width: 900px;
-            /* Reduced top margin from 50px to 15px */
             margin: 15px auto;
             padding: 20px;
         }
         h2 { 
             font-weight: 700;
             color: var(--accent);
-            /* Reduced bottom margin */
-            margin: 0 0 10px 0;
+            margin: 0 0 5px 0;
         }
         p.intro {
             margin: 0 0 20px 0;
             font-size: 14px;
             color: #636e72;
         }
+        
+        /* Toolbar moved to the top */
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
         #editor {
             width: 100%;
-            min-height: 500px;
+            min-height: 600px;
             padding: 25px;
             border: 2px solid var(--border);
             border-radius: 12px;
             font-size: 16px;
             background: white;
             box-sizing: border-box;
-            margin-bottom: 20px;
             outline: none;
             overflow-y: auto;
             line-height: 1.5;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
         
         #editor div {
@@ -53,34 +66,38 @@
 
         #editor:focus { border-color: var(--accent); }
 
-        .controls {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
         button {
-            padding: 12px 24px;
-            font-size: 15px;
+            padding: 10px 20px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             transition: transform 0.1s, opacity 0.2s;
         }
         .btn-primary { background: var(--accent); color: white; }
         .btn-secondary { background: #636e72; color: white; }
-        .btn-outline { background: #fff; color: var(--accent); border: 2px solid var(--accent); padding: 10px 22px; }
+        .btn-outline { 
+            background: #fff; 
+            color: var(--accent); 
+            border: 2px solid var(--accent); 
+            padding: 8px 18px; 
+        }
         button:active { transform: scale(0.98); }
-        .status { font-size: 14px; color: #00b894; font-weight: 600; }
+        button:hover { opacity: 0.9; }
+
+        .status { 
+            font-size: 13px; 
+            color: #00b894; 
+            font-weight: 700;
+            margin-left: 5px;
+        }
     </style>
 </head>
 <body>
 
     <h2>Paragraph Fixer</h2>
-    <p class="intro">Paste text below to fix line breaks, eliminate double spaces, and format quotes.</p>
-
-    <div id="editor" contenteditable="true" spellcheck="false"></div>
+    <p class="intro">Fix line breaks, eliminate double spaces, and format quotes.</p>
 
     <div class="controls">
         <button class="btn-primary" onclick="fixText()">Fix Text</button>
@@ -88,6 +105,8 @@
         <button class="btn-secondary" onclick="copyToClipboard()">Copy to Clipboard</button>
         <span id="statusMessage" class="status"></span>
     </div>
+
+    <div id="editor" contenteditable="true" spellcheck="false" placeholder="Paste text here..."></div>
 
     <script>
         function refreshEditor(text) {
@@ -103,8 +122,8 @@
             let text = editor.innerText;
 
             let cleaned = text
-                .replace(/[ ]{2,}/g, ' ')  // Collapse double spaces
-                .replace(/\n\s*\n/g, '\n') // Collapse double line breaks
+                .replace(/[ ]{2,}/g, ' ')  
+                .replace(/\n\s*\n/g, '\n') 
                 .trim();
             
             refreshEditor(cleaned);
@@ -131,9 +150,9 @@
             
             try {
                 await navigator.clipboard.writeText(text);
-                showStatus("Copied to clipboard!");
+                showStatus("Copied!");
             } catch (err) {
-                showStatus("Error copying.");
+                showStatus("Error.");
             }
         }
 
