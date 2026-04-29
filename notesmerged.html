@@ -56,12 +56,13 @@
             display: none; 
         }
         #todo-container.visible { display: block; }
+        #todo-container.fullscreen { height: 100% !important; border-bottom: none; }
+        
         #todo-frame { 
             position: absolute; top: 0; left: 0; width: 125%; height: 125%; 
             transform: scale(0.8); transform-origin: top left; border: none; 
         }
         
-        /* Ghost overlay prevents iframe from intercepting mouse during drag */
         #ghost-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 9; }
 
         /* Resizer Bar */
@@ -79,6 +80,7 @@
             display: flex; flex-direction: column; padding: 10px 40px 10px 60px; 
             position: relative; min-width: 0; align-items: center; 
         }
+        .editor-area.hidden { display: none; }
         
         .content-width-wrapper { width: 100%; max-width: 100%; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; transition: max-width 0.3s ease; }
         .content-width-wrapper.narrow { max-width: 800px; }
@@ -140,6 +142,13 @@
         }
         .modal-overlay.active { display: flex; }
 
+        /* Full page Task controls */
+        #task-focus-controls { 
+            position: absolute; bottom: 20px; right: 20px; z-index: 1001; 
+            display: none;
+        }
+        #task-focus-controls.visible { display: flex; }
+
         @media (max-width: 768px) {
             .editor-area { padding: 5px; } 
             .toggle-sidebar { position: static; height: 32px; width: 36px; padding: 0; margin-right: 4px; border-radius: 4px; }
@@ -174,6 +183,10 @@
 
         <div id="resizer"></div>
 
+        <div id="task-focus-controls">
+            <button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 15px; font-weight:bold;">Focus Notes</button>
+        </div>
+
         <div class="editor-area">
             <div id="width-wrapper" class="content-width-wrapper">
                 <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
@@ -183,7 +196,8 @@
                 <div class="bottom-bar">
                     <div style="display:flex; gap:8px; align-items:center;">
                         <span id="status" style="font-size:0.8em; font-weight:600;">Saved</span>
-                        <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">📅 Show Tasks</button>
+                        <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">📅 Tasks</button>
+                        <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">🔍 Focus Tasks</button>
                     </div>
                     <div style="display:flex; gap:12px; align-items:center;">
                         <div class="radio-group">
@@ -232,11 +246,13 @@
     nativeBtn.onclick = createNewNote;
     customWrapper.appendChild(nativeBtn);
 
-    // --- Resizer Logic ---
     const resizer = document.getElementById('resizer');
     const todoContainer = document.getElementById('todo-container');
+    const editorArea = document.querySelector('.editor-area');
     const ghost = document.getElementById('ghost-overlay');
+    const taskFocusControls = document.getElementById('task-focus-controls');
 
+    // Resizer Logic
     resizer.addEventListener('mousedown', (e) => {
         ghost.style.display = 'block';
         const move = (e) => {
@@ -255,15 +271,29 @@
         document.addEventListener('mouseup', stop);
     });
 
+    function setViewMode(mode) {
+        if (mode === 'tasks') {
+            todoContainer.classList.add('visible', 'fullscreen');
+            resizer.classList.remove('visible');
+            editorArea.classList.add('hidden');
+            taskFocusControls.classList.add('visible');
+            localStorage.setItem('view-focus-pref', 'tasks');
+        } else {
+            todoContainer.classList.remove('fullscreen');
+            editorArea.classList.remove('hidden');
+            taskFocusControls.classList.remove('visible');
+            
+            const wasVisible = localStorage.getItem('ticktick-pref') === 'true';
+            todoContainer.classList.toggle('visible', wasVisible);
+            resizer.classList.toggle('visible', wasVisible);
+            
+            localStorage.setItem('view-focus-pref', 'notes');
+        }
+    }
+
     function toggleTickTick() {
-        const container = document.getElementById('todo-container');
-        const resizerBar = document.getElementById('resizer');
-        const btn = document.getElementById('ticktick-toggle');
-        
-        const isVisible = container.classList.toggle('visible');
-        resizerBar.classList.toggle('visible', isVisible);
-        
-        btn.innerText = isVisible ? "📅 Hide Tasks" : "📅 Show Tasks";
+        const isVisible = todoContainer.classList.toggle('visible');
+        resizer.classList.toggle('visible', isVisible);
         localStorage.setItem('ticktick-pref', isVisible);
     }
 
@@ -396,11 +426,15 @@
     window.onload = () => {
         renderNoteList();
         
-        // Restore height
         const savedHeight = localStorage.getItem('ticktick-height');
         if (savedHeight) todoContainer.style.height = savedHeight + '%';
 
-        if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
+        const focusPref = localStorage.getItem('view-focus-pref');
+        if (focusPref === 'tasks') {
+            setViewMode('tasks');
+        } else {
+            if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
+        }
         
         const wp = localStorage.getItem('width-pref') || 'full';
         setWidth(wp);
