@@ -310,27 +310,30 @@
         let index = text.indexOf('//');
         
         while (index !== -1) {
-            // Save the current selection (cursor position)
             const range = quill.getSelection();
             
+            // Fetch format of the slashes
             const format = quill.getFormat(index, 2);
             const isHighlighted = format.background === '#ffff00' || format.background === 'yellow';
             
-            // Delete the // 
+            // Clear formatting explicitly first to prevent state limbo
+            quill.removeFormat(index, 2);
             quill.deleteText(index, 2);
             
-            // Toggle highlight format
+            // Set the new formatting state
             quill.format('background', isHighlighted ? false : '#ffff00');
             
-            // CRITICAL: Refocus and put cursor back where it belongs
-            // if range.index was after the //, we need to subtract 2
+            // Force focus and selection recovery
             if (range) {
-                const newCursorPos = Math.max(0, range.index - 2);
-                quill.setSelection(newCursorPos, 0);
+                const newPos = Math.max(0, range.index - 2);
+                // Wrap in timeout to ensure DOM reconciliation 
+                setTimeout(() => {
+                    quill.focus();
+                    quill.setSelection(newPos, 0);
+                }, 1);
             }
-            quill.focus();
 
-            // Refresh loop
+            // Loop check
             text = quill.getText();
             index = text.indexOf('//');
         }
