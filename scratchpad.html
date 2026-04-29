@@ -9,9 +9,10 @@
     
     <style>
         :root {
-            --bg-color: #f8f9fa;
+            --bg-color: #f0f2f5;
             --border-color: #ccc;
             --toolbar-bg: #fff;
+            --max-narrow: 700px;
         }
 
         body, html {
@@ -19,28 +20,62 @@
             padding: 0;
             height: 100%;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            overflow: hidden;
             background: var(--bg-color);
-        }
-
-        #app-container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
         }
 
-        /* Editor container */
+        /* Width Toggle Controls */
+        #width-controls {
+            background: #fff;
+            padding: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        /* App Layout */
+        #app-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            margin: 0 auto;
+            background: #fff;
+            width: 100%; 
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Narrow Mode Class */
+        #app-wrapper.narrow-mode {
+            max-width: var(--max-narrow);
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            height: calc(100% - 100px);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Editor and Paragraph Spacing */
         #editor {
             flex-grow: 1;
-            background: #fff;
             font-size: 16px;
+            border: none !important;
+        }
+
+        /* This specifically adds spacing between paragraphs */
+        .ql-editor p {
+            margin-bottom: 1.2em !important;
         }
 
         /* Bottom Status Bar */
         #status-bar {
             background: var(--toolbar-bg);
             border-top: 1px solid var(--border-color);
-            padding: 8px 12px;
+            padding: 10px 15px;
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
@@ -61,35 +96,48 @@
         }
 
         button {
-            padding: 5px 10px;
+            padding: 6px 12px;
             cursor: pointer;
-            background: #eee;
+            background: #f8f9fa;
             border: 1px solid #bbb;
             border-radius: 4px;
             font-size: 12px;
-            transition: background 0.2s;
         }
 
         button:hover {
-            background: #ddd;
+            background: #e9ecef;
         }
 
-        /* Mobile/Sidebar Adjustments */
-        @media (max-width: 500px) {
+        /* Mobile/Narrow Logic */
+        @media (max-width: 768px) {
+            #width-controls {
+                display: none;
+            }
+            #app-wrapper.narrow-mode, #app-wrapper {
+                width: calc(100% - 20px);
+                margin: 10px auto !important;
+                height: calc(100% - 20px) !important;
+                max-width: none;
+            }
             #status-bar {
                 flex-direction: column;
                 align-items: flex-start;
-            }
-            .stats-group {
-                width: 100%;
-                justify-content: space-between;
             }
         }
     </style>
 </head>
 <body>
 
-<div id="app-container">
+<div id="width-controls">
+    <label>
+        <input type="radio" name="width-toggle" value="wide" checked onchange="toggleWidth('wide')"> Wide
+    </label>
+    <label>
+        <input type="radio" name="width-toggle" value="narrow" onchange="toggleWidth('narrow')"> Narrow
+    </label>
+</div>
+
+<div id="app-wrapper">
     <div id="editor"></div>
     
     <div id="status-bar">
@@ -115,12 +163,22 @@
         modules: {
             toolbar: [
                 ['bold', 'italic', 'underline'],
-                [{ 'background': [] }], // Highlighting
+                [{ 'background': [] }], 
                 ['clean']
             ]
         },
-        placeholder: 'Start typing...'
+        placeholder: 'Write something...'
     });
+
+    // --- Width Toggling ---
+    function toggleWidth(mode) {
+        const wrapper = document.getElementById('app-wrapper');
+        if (mode === 'narrow') {
+            wrapper.classList.add('narrow-mode');
+        } else {
+            wrapper.classList.remove('narrow-mode');
+        }
+    }
 
     // --- Local Storage Logic ---
     const STORAGE_KEY = 'scratchpad_content';
@@ -129,7 +187,6 @@
         quill.setContents(JSON.parse(savedContent));
     }
 
-    // Save on every change
     quill.on('text-change', () => {
         const delta = quill.getContents();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(delta));
@@ -137,28 +194,18 @@
         handleMarkdownHighlight();
     });
 
-    // --- Markdown Highlight Logic (// trigger) ---
+    // --- Markdown Highlight Logic (//) ---
     function handleMarkdownHighlight() {
         const text = quill.getText();
-        const range = quill.getSelection();
-        
-        // Find the sequence "//"
         if (text.includes('//')) {
             let index = text.indexOf('//');
             while (index !== -1) {
-                // Check if we are closing or opening
-                // For simplicity: this toggles yellow highlight for the current session session
                 const currentFormat = quill.getFormat(index, 2);
                 const isHighlighted = currentFormat.background === 'yellow' || currentFormat.background === '#ffff00';
 
-                // Delete the "//" characters
                 quill.deleteText(index, 2);
+                quill.formatText(index, text.length - index, 'background', isHighlighted ? false : 'yellow', 'user');
                 
-                // Toggle highlighting for the rest of the line/paragraph 
-                // or until the next "//" (handled by subsequent loops)
-                quill.format('background', isHighlighted ? false : 'yellow', 'user');
-                
-                // Update text variable and search again
                 const updatedText = quill.getText();
                 index = updatedText.indexOf('//');
             }
@@ -170,8 +217,6 @@
         const text = quill.getText().trim();
         const charCount = text.length;
         const words = text.length > 0 ? text.split(/\s+/).length : 0;
-        
-        // Custom Line Count: word count divided by 5, rounded up to nearest 5
         const lineCalc = Math.ceil((words / 5) / 5) * 5;
 
         document.getElementById('char-count').innerText = `Chars: ${charCount}`;
@@ -179,30 +224,26 @@
         document.getElementById('line-calc').innerText = `Lines: ${lineCalc}`;
     }
 
-    // --- Action Functions ---
-
+    // --- Actions ---
     function copyToClipboard() {
         const text = quill.getText();
-        navigator.clipboard.writeText(text).then(() => {
-            alert("Text copied to clipboard!");
-        });
+        navigator.clipboard.writeText(text).then(() => alert("Copied!"));
     }
 
     function exportToEmail() {
         const body = encodeURIComponent(quill.getText());
-        window.location.href = `mailto:?subject=Scratchpad Export&body=${body}`;
+        window.location.href = `mailto:?subject=Scratchpad&body=${body}`;
     }
 
     function exportToFile() {
-        const htmlContent = quill.root.innerHTML;
+        const htmlContent = `<html><head><style>.ql-editor p { margin-bottom: 1.2em; }</style></head><body>${quill.root.innerHTML}</body></html>`;
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'scratchpad_export.html';
+        a.download = 'scratchpad.html';
         a.click();
     }
 
-    // Initial stat update
     updateStats();
 </script>
 
