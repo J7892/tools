@@ -37,7 +37,6 @@
             width: 100%; 
             height: 100%;
             overflow: hidden;
-            /* Tiny bit of side padding in Wide Mode as requested */
             padding: 0 10px;
             box-sizing: border-box;
         }
@@ -46,12 +45,11 @@
         #app-wrapper.narrow-mode {
             max-width: var(--max-narrow);
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            /* Reduced top/bottom margin for narrow mode */
             margin: 10px auto; 
             height: calc(100% - 20px);
             border-radius: 6px;
             border: 1px solid var(--border-color);
-            padding: 0; /* Let the editor handle its own internal padding */
+            padding: 0; 
         }
 
         #editor {
@@ -60,9 +58,9 @@
             border: none !important;
         }
 
-        /* Paragraph Spacing */
+        /* Paragraph Spacing - Reduced by half as requested */
         .ql-editor p {
-            margin-bottom: 1.2em !important;
+            margin-bottom: 0.6em !important;
         }
 
         /* Bottom Status Bar */
@@ -113,7 +111,6 @@
             background: #e9ecef;
         }
 
-        /* Responsive Hiding */
         @media (max-width: 768px) {
             .toggle-group {
                 display: none;
@@ -164,7 +161,6 @@
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 <script>
-    // Initialize Quill
     const quill = new Quill('#editor', {
         theme: 'snow',
         modules: {
@@ -177,7 +173,6 @@
         placeholder: 'Write something...'
     });
 
-    // --- Width Toggling ---
     function toggleWidth(mode) {
         const wrapper = document.getElementById('app-wrapper');
         if (mode === 'narrow') {
@@ -187,7 +182,6 @@
         }
     }
 
-    // --- Local Storage Logic ---
     const STORAGE_KEY = 'scratchpad_content';
     const savedContent = localStorage.getItem(STORAGE_KEY);
     if (savedContent) {
@@ -201,7 +195,6 @@
         handleMarkdownHighlight();
     });
 
-    // --- Markdown Highlight Logic (//) ---
     function handleMarkdownHighlight() {
         const text = quill.getText();
         if (text.includes('//')) {
@@ -209,23 +202,18 @@
             while (index !== -1) {
                 const currentFormat = quill.getFormat(index, 2);
                 const isHighlighted = currentFormat.background === 'yellow' || currentFormat.background === '#ffff00';
-
                 quill.deleteText(index, 2);
-                // Highlight from current position to end of text or toggle off
                 quill.formatText(index, text.length - index, 'background', isHighlighted ? false : 'yellow', 'user');
-                
                 const updatedText = quill.getText();
                 index = updatedText.indexOf('//');
             }
         }
     }
 
-    // --- Statistics Logic ---
     function updateStats() {
         const text = quill.getText().trim();
         const charCount = text.length;
         const words = text.length > 0 ? text.split(/\s+/).length : 0;
-        // Formula: word count / 5, rounded up to nearest 5
         const lineCalc = Math.ceil((words / 5) / 5) * 5;
 
         document.getElementById('char-count').innerText = `Chars: ${charCount}`;
@@ -233,13 +221,12 @@
         document.getElementById('line-calc').innerText = `Lines: ${lineCalc}`;
     }
 
-    // --- Actions ---
     function copyToClipboard() {
         const text = quill.getText();
         navigator.clipboard.writeText(text).then(() => {
             const btn = document.querySelector('button[onclick="copyToClipboard()"]');
             const originalText = btn.innerText;
-            btn.innerText = "Saved!";
+            btn.innerText = "Copied!";
             setTimeout(() => btn.innerText = originalText, 1500);
         });
     }
@@ -250,7 +237,7 @@
     }
 
     function exportToFile() {
-        const htmlContent = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:20px;}.ql-editor p{margin-bottom:1.2em;}</style></head><body>${quill.root.innerHTML}</body></html>`;
+        const htmlContent = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:20px;}.ql-editor p{margin-bottom:0.6em;}</style></head><body>${quill.root.innerHTML}</body></html>`;
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -258,7 +245,6 @@
         a.click();
     }
 
-    // Run initial update
     updateStats();
 </script>
 
