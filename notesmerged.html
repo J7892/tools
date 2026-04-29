@@ -19,17 +19,6 @@
             --toolbar-bg: #fff;
         }
 
-        [data-theme="dark"] {
-            --bg-color: #1a1a1a;
-            --sidebar-bg: #2d2d2d;
-            --editor-bg: #2d2d2d;
-            --text-color: #e0e0e0;
-            --secondary-text: #aaa;
-            --border-color: #444;
-            --item-hover: #3d3d3d;
-            --toolbar-bg: #333;
-        }
-
         * { box-sizing: border-box; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
@@ -40,7 +29,7 @@
         /* Sidebar */
         .sidebar { 
             width: 280px; min-width: 280px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid var(--border-color); 
-            display: flex; flex-direction: column; transition: margin-left 0.3s ease, background 0.3s; 
+            display: flex; flex-direction: column; transition: margin-left 0.3s ease; 
             margin-left: -280px; height: 100vh; z-index: 2000;
         }
         .sidebar.open { margin-left: 0; }
@@ -76,7 +65,7 @@
         .editor-area { 
             flex-grow: 1; background: var(--editor-bg); 
             display: flex; flex-direction: column; padding: 10px 40px 10px 60px; 
-            position: relative; min-width: 0; align-items: center; transition: background 0.3s; 
+            position: relative; min-width: 0; align-items: center; 
         }
         
         .content-width-wrapper { width: 100%; max-width: 100%; display: flex; flex-direction: column; flex-grow: 1; min-height: 0; transition: max-width 0.3s ease; }
@@ -96,8 +85,6 @@
             border: none !important; flex-grow: 1; padding: 8px 12px !important; 
             display: flex; align-items: center; flex-wrap: nowrap; overflow-x: auto; 
         }
-        
-        /* Hide scrollbar but keep functionality */
         .ql-toolbar.ql-snow::-webkit-scrollbar { display: none; }
 
         .native-new-btn {
@@ -135,6 +122,9 @@
 
         .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 
+        .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
+        .radio-group label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 3000; justify-content: center; align-items: center;
@@ -151,6 +141,7 @@
             .native-new-btn .btn-text { display: none; }
             .native-new-btn { padding: 0; width: 32px; font-size: 18px; }
             #todo-container { height: 30%; }
+            .radio-group { display: none; } /* Hide width toggle on small screens */
         }
     </style>
 </head>
@@ -184,14 +175,13 @@
                     <div style="display:flex; gap:8px; align-items:center;">
                         <span id="status" style="font-size:0.8em; font-weight:600;">Saved</span>
                         <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">📅 Show Tasks</button>
-                        <button class="btn-tool" onclick="toggleTheme()" id="theme-toggle">🌙 Dark</button>
                     </div>
-                    <div style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <div class="radio-group">
+                            <label><input type="radio" name="view-width" value="full" onclick="setWidth('full')" checked> Full</label>
+                            <label><input type="radio" name="view-width" value="narrow" onclick="setWidth('narrow')"> Narrow</label>
+                        </div>
                         <button class="btn-tool" onclick="copyNote()">Copy</button>
-                        <select id="width-select" onchange="setWidth(this.value)" style="font-size:0.75em;">
-                            <option value="full">Full Width</option>
-                            <option value="narrow">Narrow (Centered)</option>
-                        </select>
                     </div>
                 </div>
             </div>
@@ -214,9 +204,7 @@
     const APP_VERSION = 1.1;
     let currentNoteId = null;
     let saveTimeout = null;
-    let isDirty = false;
 
-    // Initialize Quill without Bold/Italic to keep the header minimal
     var quill = new Quill('#editor-container', {
         modules: {
             toolbar: {
@@ -226,7 +214,6 @@
         theme: 'snow'
     });
 
-    // Toolbar Reconstruction
     const toolbarEl = document.querySelector('.ql-toolbar');
     const customWrapper = document.createElement('div');
     customWrapper.className = 'custom-toolbar-wrapper';
@@ -338,12 +325,10 @@
     }
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-    function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; }
     
-    function toggleTheme() {
-        const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', theme);
-        document.getElementById('theme-toggle').innerText = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+    function setWidth(mode) { 
+        document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; 
+        localStorage.setItem('width-pref', mode);
     }
 
     function copyNote() {
@@ -358,6 +343,11 @@
     window.onload = () => {
         renderNoteList();
         if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
+        
+        const wp = localStorage.getItem('width-pref') || 'full';
+        setWidth(wp);
+        document.querySelector(`input[value="${wp}"]`).checked = true;
+
         const lastId = localStorage.getItem('last-note-id');
         if (lastId) loadNote(parseInt(lastId)); else createNewNote();
         setTimeout(checkBackupPrompt, 1500);
