@@ -24,7 +24,6 @@
             color: var(--accent);
             margin-bottom: 20px;
         }
-        /* This container replaces the textarea */
         #editor {
             width: 100%;
             min-height: 450px;
@@ -32,21 +31,18 @@
             border: 2px solid var(--border);
             border-radius: 12px;
             font-size: 16px;
-            line-height: 1.4; /* Normal line height for reading */
             background: white;
             box-sizing: border-box;
             margin-bottom: 20px;
             outline: none;
             overflow-y: auto;
-            white-space: pre-wrap;
+            
+            /* THE FIX: pre-line respects \n and we can stretch the height of those breaks */
+            white-space: pre-line;
+            line-height: 1.8; 
+            word-spacing: 0.05em;
         }
         #editor:focus { border-color: var(--accent); }
-
-        /* Here is the magic: we inject visual space between blocks of text */
-        #editor div, #editor p {
-            margin-bottom: 0.8em;
-            display: block;
-        }
 
         .controls {
             display: flex;
@@ -71,9 +67,9 @@
 <body>
 
     <h2>Paragraph Squeezer</h2>
-    <p>Paste text below. It will automatically clean double-breaks and apply visual spacing.</p>
+    <p>Paste your text. The tool will collapse double-breaks but use a wide line-height to make them look like paragraphs.</p>
 
-    <div id="editor" contenteditable="true" placeholder="Paste your text here..."></div>
+    <div id="editor" contenteditable="true" spellcheck="false"></div>
 
     <div class="controls">
         <button class="btn-primary" onclick="squeezeText()">Squeeze & Clean</button>
@@ -84,18 +80,16 @@
     <script>
         function squeezeText() {
             const editor = document.getElementById('editor');
-            // We use innerText to get the raw text content
+            // innerText is better than textContent for preserving line breaks as \n
             let text = editor.innerText;
 
-            // 1. Collapse multiple breaks into one
+            // Collapse multiple newlines into one
             const cleaned = text
                 .replace(/\n\s*\n/g, '\n')
                 .trim();
 
-            // 2. Put it back. By setting innerText, the browser 
-            // will handle the "visual" wrapping for us.
             editor.innerText = cleaned;
-            showStatus("Cleaned & Spaced!");
+            showStatus("Cleaned & Tightened!");
         }
 
         function copyToClipboard() {
@@ -112,14 +106,6 @@
             status.innerText = msg;
             setTimeout(() => { status.innerText = ""; }, 2500);
         }
-
-        // Handle placeholder behavior for contenteditable
-        const editor = document.getElementById('editor');
-        editor.addEventListener('focus', function() {
-            if (this.innerText === this.getAttribute('placeholder')) {
-                this.innerText = '';
-            }
-        });
     </script>
 </body>
 </html>
