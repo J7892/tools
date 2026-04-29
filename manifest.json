@@ -1,6 +1,6 @@
 {
-  "name": "Sidebar",
-  "short_name": "Sidebar",
+  "name": "Notes and Tasks",
+  "short_name": "Notes/Tasks",
   "start_url": "notesmerged.html",
   "display": "standalone",
   "background_color": "#ffffff",
