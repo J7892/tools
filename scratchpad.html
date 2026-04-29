@@ -62,7 +62,6 @@
             padding: 8px !important;
         }
 
-        /* Styling to make the background button look like a simple highlighter */
         .ql-background.ql-picker { display: none !important; }
         .custom-highlighter {
             background: none;
@@ -182,7 +181,7 @@
         <div class="stats-group">
             <span id="char-count">Chars: 0</span>
             <span id="word-count">Words: 0</span>
-            <span id="line-calc">Lines: 0</span>
+            <span id="line-calc">Lines: ~0</span>
         </div>
 
         <div class="toggle-group">
@@ -231,7 +230,6 @@
         placeholder: 'Write something...'
     });
 
-    // Inject Custom Highlighter and Size Selector
     const toolbar = document.querySelector('.ql-toolbar');
     const template = document.getElementById('toolbar-extras');
     toolbar.appendChild(template.content.cloneNode(true));
@@ -240,7 +238,6 @@
         const range = quill.getSelection();
         if (range) {
             const currentFormat = quill.getFormat(range);
-            // Toggle highlight: if yellow, remove; else, add yellow.
             const isHighlighted = currentFormat.background === '#ffff00' || currentFormat.background === 'yellow';
             quill.format('background', isHighlighted ? false : '#ffff00');
         }
@@ -309,13 +306,23 @@
     });
 
     function handleMarkdownHighlight() {
-        const text = quill.getText();
-        const index = text.indexOf('//');
-        if (index !== -1) {
+        let text = quill.getText();
+        let index = text.indexOf('//');
+        
+        while (index !== -1) {
+            // Get format at the current index
             const format = quill.getFormat(index, 2);
             const isHighlighted = format.background === '#ffff00' || format.background === 'yellow';
+            
+            // Delete the // 
             quill.deleteText(index, 2);
+            
+            // Toggle global highlight format
             quill.format('background', isHighlighted ? false : '#ffff00');
+            
+            // Refresh text and find next instance
+            text = quill.getText();
+            index = text.indexOf('//');
         }
     }
 
@@ -325,7 +332,7 @@
         const lineCalc = Math.ceil((words / 5) / 5) * 5;
         document.getElementById('char-count').innerText = `Chars: ${text.length}`;
         document.getElementById('word-count').innerText = `Words: ${words}`;
-        document.getElementById('line-calc').innerText = `Lines: ${lineCalc}`;
+        document.getElementById('line-calc').innerText = `Lines: ~${lineCalc}`;
     }
 
     function copyToClipboard() {
