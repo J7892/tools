@@ -40,7 +40,6 @@
             height: 100vh; width: 100vw; overflow: hidden; display: flex; 
         }
         
-        /* Navigation Sidebar */
         .sidebar { 
             width: 280px; min-width: 280px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid var(--border-color); 
             display: flex; flex-direction: column; transition: margin-left 0.3s ease; 
@@ -57,27 +56,27 @@
         #todo-container.fullscreen { flex: 1; height: auto !important; width: 100% !important; border-bottom: none; }
         #todo-frame { position: absolute; top: 0; left: 0; width: 125%; height: 125%; transform: scale(0.8); transform-origin: top left; border: none; }
         
-        /* Fixed Ghost Overlay for Drags */
+        /* Ghost Overlay Shield */
         #ghost-overlay { 
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; 
-            cursor: row-resize; 
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+            z-index: 99999; background: transparent;
         }
 
-        /* Resizer Bar */
+        /* Resizer Bar - Vertical by default */
         #resizer { 
-            height: 12px; background: #f8f9fa; cursor: row-resize; width: 100%; 
-            z-index: 10; flex-shrink: 0; display: none; justify-content: center; align-items: center;
+            height: 14px; background: #f8f9fa; cursor: row-resize; width: 100%; 
+            z-index: 100; flex-shrink: 0; display: none; justify-content: center; align-items: center;
             border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);
+            user-select: none;
         }
         #resizer.visible { display: flex; }
-        #resizer::after { content: ""; width: 32px; height: 4px; background: #ced4da; border-radius: 4px; }
+        #resizer::after { content: ""; width: 40px; height: 4px; background: #ced4da; border-radius: 4px; }
 
         @media (min-width: 1000px) {
             .main-layout:not(.focus-tasks-active) { flex-direction: row-reverse; }
             #todo-container:not(.fullscreen) { height: 100% !important; width: 400px; border-bottom: none; border-left: 1px solid var(--border-color); }
-            #resizer:not(.hidden-by-focus) { width: 12px; height: 100%; cursor: col-resize; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-top: none; border-bottom: none; }
-            #resizer::after { width: 4px; height: 32px; }
-            #ghost-overlay { cursor: col-resize; }
+            #resizer:not(.hidden-by-focus) { width: 14px; height: 100%; cursor: col-resize; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-top: none; border-bottom: none; }
+            #resizer::after { width: 4px; height: 40px; }
         }
 
         /* Editor Area */
@@ -240,20 +239,23 @@
     const ghost = document.getElementById('ghost-overlay');
     const taskOnlyFooter = document.getElementById('task-only-footer');
 
+    // REBUILT DRAG LOGIC
     resizer.addEventListener('mousedown', (e) => {
         e.preventDefault();
         ghost.style.display = 'block';
+        // Force sync with current mode
         const isVerticalDrag = window.innerWidth < 1000;
+        ghost.style.cursor = isVerticalDrag ? 'row-resize' : 'col-resize';
         
-        const move = (e) => {
+        const onMouseMove = (moveEvent) => {
             if (isVerticalDrag) {
-                let h = (e.clientY / window.innerHeight) * 100;
+                let h = (moveEvent.clientY / window.innerHeight) * 100;
                 if (h > 10 && h < 85) {
                     todoContainer.style.height = h + '%';
                     localStorage.setItem('ticktick-height', h);
                 }
             } else {
-                let w = window.innerWidth - e.clientX;
+                let w = window.innerWidth - moveEvent.clientX;
                 if (w > 200 && w < window.innerWidth * 0.7) {
                     todoContainer.style.width = w + 'px';
                     localStorage.setItem('ticktick-width', w);
@@ -261,14 +263,14 @@
             }
         };
         
-        const stop = () => {
+        const onMouseUp = () => {
             ghost.style.display = 'none';
-            document.removeEventListener('mousemove', move);
-            document.removeEventListener('mouseup', stop);
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
         };
         
-        document.addEventListener('mousemove', move);
-        document.addEventListener('mouseup', stop);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
     });
 
     function setViewMode(mode) {
