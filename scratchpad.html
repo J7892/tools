@@ -13,6 +13,7 @@
             --border-color: #ccc;
             --toolbar-bg: #fff;
             --max-narrow: 700px;
+            --highlight-color: #ffff00;
         }
 
         body, html {
@@ -41,7 +42,6 @@
             box-sizing: border-box;
         }
 
-        /* Narrow Mode Class */
         #app-wrapper.narrow-mode {
             max-width: var(--max-narrow);
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
@@ -58,7 +58,6 @@
             border: none !important;
         }
 
-        /* Paragraph Spacing - Reduced by half as requested */
         .ql-editor p {
             margin-bottom: 0.6em !important;
         }
@@ -111,6 +110,7 @@
             background: #e9ecef;
         }
 
+        /* Responsive Hiding */
         @media (max-width: 768px) {
             .toggle-group {
                 display: none;
@@ -126,6 +126,11 @@
             #status-bar {
                 padding: 10px;
             }
+        }
+
+        /* Force Quill highlight button to look active when yellow is set */
+        .ql-snow .ql-toolbar button.ql-background[value="#ffff00"] {
+            background-color: #ffff00;
         }
     </style>
 </head>
@@ -161,14 +166,17 @@
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 <script>
+    // Initialize Quill with simplified background button
     const quill = new Quill('#editor', {
         theme: 'snow',
         modules: {
-            toolbar: [
-                ['bold', 'italic', 'underline'],
-                [{ 'background': [] }], 
-                ['clean']
-            ]
+            toolbar: {
+                container: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'background': ['#ffff00'] }], // Only Yellow allowed
+                    ['clean']
+                ]
+            }
         },
         placeholder: 'Write something...'
     });
@@ -188,25 +196,33 @@
         quill.setContents(JSON.parse(savedContent));
     }
 
-    quill.on('text-change', () => {
-        const delta = quill.getContents();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(delta));
+    // Main event listener
+    quill.on('text-change', (delta, oldDelta, source) => {
+        if (source === 'user') {
+            handleMarkdownHighlight();
+        }
         updateStats();
-        handleMarkdownHighlight();
+        
+        // Auto-save
+        const content = quill.getContents();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
     });
 
     function handleMarkdownHighlight() {
         const text = quill.getText();
-        if (text.includes('//')) {
-            let index = text.indexOf('//');
-            while (index !== -1) {
-                const currentFormat = quill.getFormat(index, 2);
-                const isHighlighted = currentFormat.background === 'yellow' || currentFormat.background === '#ffff00';
-                quill.deleteText(index, 2);
-                quill.formatText(index, text.length - index, 'background', isHighlighted ? false : 'yellow', 'user');
-                const updatedText = quill.getText();
-                index = updatedText.indexOf('//');
-            }
+        const index = text.indexOf('//');
+        
+        if (index !== -1) {
+            // Determine current state of highlight at that position
+            const format = quill.getFormat(index, 2);
+            const isCurrentlyHighlighted = format.background === '#ffff00' || format.background === 'yellow';
+
+            // Remove the // characters
+            quill.deleteText(index, 2);
+
+            // Toggle highlight for the cursor's current formatting
+            // This affects subsequent typing
+            quill.format('background', isCurrentlyHighlighted ? false : '#ffff00');
         }
     }
 
