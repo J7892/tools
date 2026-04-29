@@ -17,6 +17,7 @@
             --border-color: #ddd;
             --item-hover: #f0f0f0;
             --toolbar-bg: #fff;
+            --danger: #d9534f;
         }
 
         * { box-sizing: border-box; }
@@ -46,6 +47,13 @@
         }
         .note-item:hover { background: var(--item-hover); }
         .note-item.active { background: var(--item-hover); border-left: 4px solid #007bff; }
+        
+        .delete-btn { 
+            color: var(--secondary-text); font-weight: bold; padding: 2px 8px; 
+            visibility: hidden; cursor: pointer; font-size: 16px; border-radius: 4px;
+        }
+        .delete-btn:hover { color: var(--danger); background: rgba(217, 83, 79, 0.1); }
+        .note-item:hover .delete-btn { visibility: visible; }
 
         /* Main Layout Containers */
         .main-layout { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
@@ -282,11 +290,9 @@
             todoContainer.classList.remove('fullscreen');
             editorArea.classList.remove('hidden');
             taskFocusControls.classList.remove('visible');
-            
             const wasVisible = localStorage.getItem('ticktick-pref') === 'true';
             todoContainer.classList.toggle('visible', wasVisible);
             resizer.classList.toggle('visible', wasVisible);
-            
             localStorage.setItem('view-focus-pref', 'notes');
         }
     }
@@ -376,9 +382,34 @@
             if (searchTerm && !note.title.toLowerCase().includes(searchTerm)) return;
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
-            div.innerHTML = `<div style="flex-grow:1" onclick="loadNote(${note.id})"><b>${note.title}</b></div>`;
+            
+            const titleCont = document.createElement('div');
+            titleCont.style = "flex-grow:1; overflow:hidden;";
+            titleCont.onclick = () => loadNote(note.id);
+            titleCont.innerHTML = `<b>${note.title}</b>`;
+            
+            const delBtn = document.createElement('span');
+            delBtn.className = 'delete-btn';
+            delBtn.innerHTML = '&times;';
+            delBtn.onclick = (e) => { e.stopPropagation(); deleteNote(note.id); };
+
+            div.appendChild(titleCont);
+            div.appendChild(delBtn);
             list.appendChild(div);
         });
+    }
+
+    function deleteNote(id) {
+        if (confirm("Delete this note?")) {
+            let notes = getNotesSafely().filter(n => n.id !== id);
+            saveNotesInternal(notes);
+            if (currentNoteId === id) {
+                if (notes.length > 0) loadNote(notes[0].id);
+                else createNewNote();
+            } else {
+                renderNoteList();
+            }
+        }
     }
 
     function loadNote(id) {
@@ -425,21 +456,14 @@
 
     window.onload = () => {
         renderNoteList();
-        
         const savedHeight = localStorage.getItem('ticktick-height');
         if (savedHeight) todoContainer.style.height = savedHeight + '%';
-
         const focusPref = localStorage.getItem('view-focus-pref');
-        if (focusPref === 'tasks') {
-            setViewMode('tasks');
-        } else {
-            if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
-        }
-        
+        if (focusPref === 'tasks') setViewMode('tasks');
+        else if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
         const wp = localStorage.getItem('width-pref') || 'full';
         setWidth(wp);
         document.querySelector(`input[value="${wp}"]`).checked = true;
-
         const lastId = localStorage.getItem('last-note-id');
         if (lastId) loadNote(parseInt(lastId)); else createNewNote();
         setTimeout(checkBackupPrompt, 1500);
