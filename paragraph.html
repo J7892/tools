@@ -24,25 +24,30 @@
             color: var(--accent);
             margin-bottom: 20px;
         }
-        textarea {
+        /* This container replaces the textarea */
+        #editor {
             width: 100%;
-            height: 450px;
-            padding: 20px;
+            min-height: 450px;
+            padding: 25px;
             border: 2px solid var(--border);
             border-radius: 12px;
             font-size: 16px;
-            /* This line creates the 0.8em visual paragraph spacing */
-            line-height: 1.6;
+            line-height: 1.4; /* Normal line height for reading */
+            background: white;
             box-sizing: border-box;
             margin-bottom: 20px;
             outline: none;
-            transition: border-color 0.2s;
+            overflow-y: auto;
             white-space: pre-wrap;
         }
-        /* Custom styling to simulate paragraph gaps inside the textarea */
-        textarea:focus {
-            border-color: var(--accent);
+        #editor:focus { border-color: var(--accent); }
+
+        /* Here is the magic: we inject visual space between blocks of text */
+        #editor div, #editor p {
+            margin-bottom: 0.8em;
+            display: block;
         }
+
         .controls {
             display: flex;
             gap: 12px;
@@ -60,20 +65,15 @@
         .btn-primary { background: var(--accent); color: white; }
         .btn-secondary { background: #636e72; color: white; }
         button:active { transform: scale(0.98); }
-        button:hover { opacity: 0.9; }
-        .status { 
-            font-size: 14px; 
-            color: #00b894; 
-            font-weight: 600;
-        }
+        .status { font-size: 14px; color: #00b894; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <h2>Paragraph Squeezer</h2>
-    <p>Paste text with double line breaks. This tool will clean the data while keeping them visually distinct.</p>
+    <p>Paste text below. It will automatically clean double-breaks and apply visual spacing.</p>
 
-    <textarea id="inputText" placeholder="Paste your text here..."></textarea>
+    <div id="editor" contenteditable="true" placeholder="Paste your text here..."></div>
 
     <div class="controls">
         <button class="btn-primary" onclick="squeezeText()">Squeeze & Clean</button>
@@ -83,26 +83,28 @@
 
     <script>
         function squeezeText() {
-            const textArea = document.getElementById('inputText');
-            let text = textArea.value;
+            const editor = document.getElementById('editor');
+            // We use innerText to get the raw text content
+            let text = editor.innerText;
 
-            // 1. Convert all occurrences of multiple newlines (and any whitespace between them) 
-            // into a single newline character.
+            // 1. Collapse multiple breaks into one
             const cleaned = text
-                .replace(/\n\s*\n/g, '\n') 
+                .replace(/\n\s*\n/g, '\n')
                 .trim();
 
-            textArea.value = cleaned;
-            showStatus("Lines collapsed!");
+            // 2. Put it back. By setting innerText, the browser 
+            // will handle the "visual" wrapping for us.
+            editor.innerText = cleaned;
+            showStatus("Cleaned & Spaced!");
         }
 
         function copyToClipboard() {
-            const textArea = document.getElementById('inputText');
-            if (!textArea.value) return;
+            const editor = document.getElementById('editor');
+            const text = editor.innerText;
             
-            textArea.select();
-            document.execCommand('copy');
-            showStatus("Copied to clipboard!");
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus("Copied to clipboard!");
+            });
         }
 
         function showStatus(msg) {
@@ -110,6 +112,14 @@
             status.innerText = msg;
             setTimeout(() => { status.innerText = ""; }, 2500);
         }
+
+        // Handle placeholder behavior for contenteditable
+        const editor = document.getElementById('editor');
+        editor.addEventListener('focus', function() {
+            if (this.innerText === this.getAttribute('placeholder')) {
+                this.innerText = '';
+            }
+        });
     </script>
 </body>
 </html>
