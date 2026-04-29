@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Daily Planet</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #eee;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            background-color: #000;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            image-rendering: pixelated; /* Gives that sharp retro look */
+        }
+        #instructions {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="instructions">
+        ARROW KEYS / WASD to move. Get materials, head to the press!
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Audio System (Web Audio API for Retro Sounds) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    let bgmInterval;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new AudioContext();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playTone(freq, type, duration, vol = 0.1) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function playBGM() {
+        if (bgmInterval) clearInterval(bgmInterval);
+        const notes = [261.63, 329.63, 392.00, 523.25]; // C E G C
+        let step = 0;
+        bgmInterval = setInterval(() => {
+            if (gameState === 'playing') {
+                playTone(notes[step % notes.length], 'triangle', 0.15, 0.05);
+                step++;
+            }
+        }, 250);
+    }
+
+    function stopBGM() {
+        if (bgmInterval) clearInterval(bgmInterval);
+    }
+
+    // --- Game State & Variables ---
+    let gameState = 'start'; // start, playing, win, gameover
+    let keys = {};
+    let timer = 30;
+    let lastTime = 0;
+
+    const req = { stories: 4, photos: 2, ink: 5 };
+    const inv = { stories: 0, photos: 0, ink: 0 };
+
+    const player = { x: 50, y: 50, w: 20, h: 20, speed: 5, color: '#fff' };
+    const press = { x: 650, y: 50, w: 100, h: 80, color: '#2ecc71' };
+    let items = [];
+
+    // --- Setup & Input ---
+    window.addEventListener('keydown', (e) => {
+        keys[e.key.toLowerCase()] = true;
+        if (gameState === 'start' && e.key === 'Enter') {
+            initAudio();
+            startGame();
+        } else if ((gameState === 'win' || gameState === 'gameover') && e.key === 'Enter') {
+            startGame();
+        }
+    });
+    window.addEventListener('keyup', (e) => {
+        keys[e.key.toLowerCase()] = false;
+    });
+
+    function spawnItems() {
+        items = [];
+        const spawn = (type, count, color) => {
+            for (let i = 0; i < count; i++) {
+                items.push({
+                    x: Math.random() * (canvas.width - 60) + 30,
+                    y: Math.random() * (canvas.height - 150) + 100,
+                    w: 15, h: 15, type: type, color: color, collected: false
+                });
+            }
+        };
+        spawn('story', req.stories + 1, '#3498db'); // Blue
+        spawn('photo', req.photos + 1, '#e74c3c'); // Red/Magenta
+        spawn('ink', req.ink + 2, '#95a5a6');      // Gray
+    }
+
+    function startGame() {
+        player.x = 50; player.y = 50;
+        inv.stories = 0; inv.photos = 0; inv.ink = 0;
+        timer = 30;
+        spawnItems();
+        gameState = 'playing';
+        playBGM();
+    }
+
+    // --- Collision Detection ---
+    function isColliding(a, b) {
+        return a.x < b.x + b.w && a.x + a.w > b.x &&
+               a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    // --- Main Game Loop ---
+    function update(dt) {
+        if (gameState !== 'playing') return;
+
+        // Movement
+        if (keys['arrowup'] || keys['w']) player.y -= player.speed;
+        if (keys['arrowdown'] || keys['s']) player.y += player.speed;
+        if (keys['arrowleft'] || keys['a']) player.x -= player.speed;
+        if (keys['arrowright'] || keys['d']) player.x += player.speed;
+
+        // Boundaries
+        if (player.x < 0) player.x = 0;
+        if (player.y < 0) player.y = 0;
+        if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+        if (player.y + player.h > canvas.height) player.y = canvas.height - player.h;
+
+        // Item Collection
+        items.forEach(item => {
+            if (!item.collected && isColliding(player, item)) {
+                item.collected = true;
+                if (item.type === 'story') inv.stories++;
+                if (item.type === 'photo') inv.photos++;
+                if (item.type === 'ink') inv.ink++;
+                playTone(880, 'square', 0.1); // Pickup sound
+            }
+        });
+
+        // Press / Win Condition
+        if (isColliding(player, press)) {
+            if (inv.stories >= req.stories && inv.photos >= req.photos && inv.ink >= req.ink) {
+                gameState = 'win';
+                stopBGM();
+                playTone(440, 'sine', 0.2);
+                setTimeout(() => playTone(660, 'sine', 0.4), 200);
+                setTimeout(() => playTone(880, 'sine', 0.6), 400);
+            } else if (!press.warned) {
+                // Not enough items, bounce back slightly
+                player.x -= 10; 
+                playTone(150, 'sawtooth', 0.2);
+            }
+        }
+
+        // Timer
+        if (dt > 1000) {
+            timer--;
+            lastTime += 1000;
+            if (timer <= 0) {
+                gameState = 'gameover';
+                stopBGM();
+                playTone(200, 'sawtooth', 0.5);
+                setTimeout(() => playTone(150, 'sawtooth', 1.0), 500);
+            }
+        }
+    }
+
+    function draw() {
+        // Clear screen
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (gameState === 'start') {
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.font = '40px Courier New';
+            ctx.fillText('THE DAILY REPORTER', canvas.width/2, 200);
+            ctx.font = '20px Courier New';
+            ctx.fillText('PRESS ENTER TO START', canvas.width/2, 300);
+            
+            ctx.font = '16px Courier New';
+            ctx.fillStyle = '#3498db'; ctx.fillText('■ Stories (Need 4)', canvas.width/2, 400);
+            ctx.fillStyle = '#e74c3c'; ctx.fillText('■ Photos  (Need 2)', canvas.width/2, 430);
+            ctx.fillStyle = '#95a5a6'; ctx.fillText('■ Ink     (Need 5)', canvas.width/2, 460);
+            return;
+        }
+
+        // Draw Press
+        ctx.fillStyle = press.color;
+        ctx.fillRect(press.x, press.y, press.w, press.h);
+        ctx.fillStyle = '#000';
+        ctx.font = '16px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText('PRINT', press.x + press.w/2, press.y + 35);
+        ctx.fillText('PRESS', press.x + press.w/2, press.y + 55);
+
+        // Draw Items
+        items.forEach(item => {
+            if (!item.collected) {
+                ctx.fillStyle = item.color;
+                ctx.fillRect(item.x, item.y, item.w, item.h);
+            }
+        });
+
+        // Draw Player
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x, player.y, player.w, player.h);
+
+        // Draw HUD
+        ctx.fillStyle = '#222';
+        ctx.fillRect(0, 0, canvas.width, 40);
+        
+        ctx.font = '18px Courier New';
+        ctx.textAlign = 'left';
+        
+        ctx.fillStyle = inv.stories >= req.stories ? '#2ecc71' : '#3498db';
+        ctx.fillText(`Stories: ${inv.stories}/${req.stories}`, 20, 25);
+        
+        ctx.fillStyle = inv.photos >= req.photos ? '#2ecc71' : '#e74c3c';
+        ctx.fillText(`Photos: ${inv.photos}/${req.photos}`, 200, 25);
+        
+        ctx.fillStyle = inv.ink >= req.ink ? '#2ecc71' : '#95a5a6';
+        ctx.fillText(`Ink: ${inv.ink}/${req.ink}`, 380, 25);
+
+        ctx.fillStyle = timer <= 10 ? '#e74c3c' : '#fff';
+        ctx.textAlign = 'right';
+        ctx.fillText(`Time: ${timer}s`, canvas.width - 20, 25);
+
+        // Overlay states
+        if (gameState === 'win') {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#2ecc71';
+            ctx.textAlign = 'center';
+            ctx.font = '50px Courier New';
+            ctx.fillText('EXTRA! EXTRA!', canvas.width/2, 250);
+            ctx.font = '20px Courier New';
+            ctx.fillStyle = '#fff';
+            ctx.fillText('PAPER PUBLISHED ON TIME!', canvas.width/2, 300);
+            ctx.fillText('PRESS ENTER TO PLAY AGAIN', canvas.width/2, 400);
+        } else if (gameState === 'gameover') {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#e74c3c';
+            ctx.textAlign = 'center';
+            ctx.font = '50px Courier New';
+            ctx.fillText('YOU MISSED THE DEADLINE!', canvas.width/2, 250);
+            ctx.font = '20px Courier New';
+            ctx.fillStyle = '#fff';
+            ctx.fillText('PRESS ENTER TO TRY AGAIN', canvas.width/2, 350);
+        }
+    }
+
+    function loop(timestamp) {
+        let dt = timestamp - lastTime;
+        update(dt);
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // Start loop
+    requestAnimationFrame((timestamp) => {
+        lastTime = timestamp;
+        loop(timestamp);
+    });
+
+</script>
+</body>
+</html>
