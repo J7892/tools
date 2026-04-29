@@ -14,7 +14,6 @@
             --toolbar-bg: #fff;
             --max-narrow: 700px;
             --highlight-color: #ffff00;
-            /* Default global text size */
             --editor-font-size: 16px;
         }
 
@@ -44,6 +43,7 @@
             box-sizing: border-box;
         }
 
+        /* Narrow Mode - Now active by default via class */
         #app-wrapper.narrow-mode {
             max-width: var(--max-narrow);
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
@@ -60,7 +60,6 @@
             border: none !important;
         }
 
-        /* Ensure Quill inner editor inherits the global size */
         .ql-editor {
             font-size: var(--editor-font-size) !important;
         }
@@ -117,7 +116,6 @@
             background: #e9ecef;
         }
 
-        /* Responsive Hiding */
         @media (max-width: 850px) {
             .controls-group {
                 border: none;
@@ -127,7 +125,7 @@
 
         @media (max-width: 600px) {
             .toggle-label {
-                display: none; /* Hide Wide/Narrow text on very small screens */
+                display: none; 
             }
             #app-wrapper.narrow-mode, #app-wrapper {
                 width: 100%;
@@ -142,7 +140,7 @@
 </head>
 <body>
 
-<div id="app-wrapper">
+<div id="app-wrapper" class="narrow-mode">
     <div id="editor"></div>
     
     <div id="status-bar">
@@ -164,8 +162,8 @@
             </div>
 
             <div class="toggle-label">
-                <label><input type="radio" name="width-toggle" value="wide" checked onchange="toggleWidth('wide')"> Wide</label>
-                <label><input type="radio" name="width-toggle" value="narrow" onchange="toggleWidth('narrow')"> Narrow</label>
+                <label><input type="radio" name="width-toggle" value="wide" onchange="toggleWidth('wide')"> Wide</label>
+                <label><input type="radio" name="width-toggle" value="narrow" checked onchange="toggleWidth('narrow')"> Narrow</label>
             </div>
         </div>
 
@@ -194,13 +192,11 @@
         placeholder: 'Write something...'
     });
 
-    // --- Global Text Size Logic ---
     function updateTextSize(size) {
         document.documentElement.style.setProperty('--editor-font-size', size);
         localStorage.setItem('scratchpad_text_size', size);
     }
 
-    // Load saved size preference
     const savedSize = localStorage.getItem('scratchpad_text_size');
     if (savedSize) {
         updateTextSize(savedSize);
