@@ -28,7 +28,6 @@
             overflow: hidden;
         }
 
-        /* App Layout Container */
         #app-wrapper {
             flex-grow: 1;
             display: flex;
@@ -43,7 +42,6 @@
             box-sizing: border-box;
         }
 
-        /* Narrow Mode - Default */
         #app-wrapper.narrow-mode {
             max-width: var(--max-narrow);
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
@@ -54,7 +52,6 @@
             padding: 0; 
         }
 
-        /* Toolbar Custom Styling */
         .ql-toolbar.ql-snow {
             border: none !important;
             border-bottom: 1px solid var(--border-color) !important;
@@ -64,7 +61,6 @@
             padding: 8px !important;
         }
 
-        /* Custom Font Selector in Top Toolbar */
         .custom-size-container {
             margin-left: 15px;
             padding-left: 15px;
@@ -96,7 +92,6 @@
             margin-bottom: 0.6em !important;
         }
 
-        /* Bottom Status Bar */
         #status-bar {
             background: var(--toolbar-bg);
             border-top: 1px solid var(--border-color);
@@ -141,14 +136,11 @@
             background: #e9ecef;
         }
 
-        /* MOBILE/NARROW SCREEN FIXES */
         @media (max-width: 600px) {
-            /* Hide the entire toggle group (radio buttons + text) */
             .toggle-group {
                 display: none !important;
             }
             
-            /* Ensure the editor fills the screen regardless of narrow-mode class */
             #app-wrapper.narrow-mode, #app-wrapper {
                 width: 100% !important;
                 margin: 0 !important;
@@ -184,6 +176,7 @@
         </div>
 
         <div class="actions-group">
+            <button class="action-btn" onclick="squeezeText()">Squeeze</button>
             <button class="action-btn" onclick="copyToClipboard()">Copy</button>
             <button class="action-btn" onclick="exportToEmail()">Email</button>
             <button class="action-btn" onclick="exportToFile()">Export</button>
@@ -218,7 +211,6 @@
         placeholder: 'Write something...'
     });
 
-    // Inject Text Size Selector
     const toolbar = document.querySelector('.ql-toolbar');
     const template = document.getElementById('size-selector-template');
     toolbar.appendChild(template.content.cloneNode(true));
@@ -241,6 +233,23 @@
         } else {
             wrapper.classList.remove('narrow-mode');
         }
+    }
+
+    function squeezeText() {
+        // Get the plain text from Quill
+        const currentText = quill.getText();
+        
+        // Collapse double/triple breaks into single breaks and trim
+        const squeezed = currentText.replace(/\n\s*\n/g, '\n').trim();
+        
+        // Set the text back into Quill (this resets formatting, which is standard for a 'clean' squeeze)
+        quill.setText(squeezed);
+        
+        // Visual feedback
+        const btn = document.querySelector('button[onclick="squeezeText()"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Cleaned!";
+        setTimeout(() => btn.innerText = originalText, 1500);
     }
 
     const STORAGE_KEY = 'scratchpad_content';
