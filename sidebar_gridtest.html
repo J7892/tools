@@ -28,7 +28,7 @@
             height: 100vh; width: 100vw; overflow: hidden; display: flex; 
         }
         
-        /* Navigation Sidebar (Left) */
+        /* Navigation Sidebar */
         .sidebar { 
             width: 280px; min-width: 280px; background: var(--sidebar-bg); padding: 15px; border-right: 1px solid var(--border-color); 
             display: flex; flex-direction: column; transition: margin-left 0.3s ease; 
@@ -37,34 +37,20 @@
         .sidebar.open { margin-left: 0; }
         #sidebar-search { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; outline: none; font-size: 0.85em; }
 
-        /* Main Layout */
-        .main-layout { 
-            flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; 
-        }
+        .main-layout { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
 
         /* TickTick Frame Styling */
-        #todo-container { 
-            height: 40%; width: 100%; overflow: hidden; position: relative; flex-shrink: 0; display: none; 
-        }
+        #todo-container { height: 40%; width: 100%; overflow: hidden; position: relative; flex-shrink: 0; display: none; }
         #todo-container.visible { display: block; border-bottom: 1px solid var(--border-color); }
         #todo-container.fullscreen { flex: 1; height: auto !important; width: 100% !important; border-bottom: none; }
-        
-        #todo-frame { 
-            position: absolute; top: 0; left: 0; width: 125%; height: 125%; 
-            transform: scale(0.8); transform-origin: top left; border: none; 
-        }
-        
+        #todo-frame { position: absolute; top: 0; left: 0; width: 125%; height: 125%; transform: scale(0.8); transform-origin: top left; border: none; }
         #ghost-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 2001; }
 
         /* Resizer Bar */
-        #resizer { 
-            height: 8px; background: #f8f9fa; cursor: row-resize; width: 100%; 
-            z-index: 10; flex-shrink: 0; display: none; justify-content: center; align-items: center;
-        }
+        #resizer { height: 8px; background: #f8f9fa; cursor: row-resize; width: 100%; z-index: 10; flex-shrink: 0; display: none; justify-content: center; align-items: center; }
         #resizer.visible { display: flex; }
         #resizer::after { content: ""; width: 32px; height: 3px; background: #ced4da; border-radius: 3px; }
 
-        /* Desktop Mode Switch (Large Screens) */
         @media (min-width: 1000px) {
             .main-layout:not(.focus-tasks-active) { flex-direction: row-reverse; }
             #todo-container:not(.fullscreen) { height: 100% !important; width: 400px; border-bottom: none; border-left: 1px solid var(--border-color); }
@@ -73,36 +59,32 @@
         }
 
         /* Editor Area */
-        .editor-area { 
-            flex: 1; background: var(--editor-bg); 
-            display: flex; flex-direction: column; padding: 10px 40px; 
-            position: relative; min-width: 0; align-items: center; overflow: hidden;
-        }
+        .editor-area { flex: 1; background: var(--editor-bg); display: flex; flex-direction: column; padding: 10px 40px; position: relative; min-width: 0; align-items: center; overflow: hidden; }
         .editor-area.hidden { display: none; }
-        
         .content-width-wrapper { width: 100%; max-width: 100%; display: flex; flex-direction: column; height: 100%; min-height: 0; transition: max-width 0.3s ease; }
         .content-width-wrapper.narrow { max-width: 800px; }
-
         .editor-content-wrapper { flex: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; margin-top: 10px; position: relative; }
         
+        /* Toolbar Alignment Fixes */
         .custom-toolbar-wrapper { 
             display: flex; align-items: center; background: var(--toolbar-bg); 
             border: 1px solid var(--border-color); border-bottom: none; 
             border-top-left-radius: 4px; border-top-right-radius: 4px; 
-            padding: 0 10px; width: 100%; min-height: 42px; gap: 10px;
+            padding: 0 10px; width: 100%; min-height: 48px; gap: 5px;
         }
 
-        .ql-toolbar.ql-snow { border: none !important; flex: 1; display: flex; align-items: center; padding: 0 !important; }
+        #toolbar-container { flex-grow: 1; display: flex; align-items: center; }
+        .ql-toolbar.ql-snow { border: none !important; padding: 0 !important; display: flex; align-items: center; }
         
-        .ql-highlight { position: relative !important; width: 28px !important; height: 24px !important; display: inline-block; vertical-align: middle; }
+        .ql-highlight { position: relative !important; width: 28px !important; height: 24px !important; display: inline-block; }
         .ql-highlight::after { 
             content: "H"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: var(--highlight); padding: 0 5px; border-radius: 2px; border: 1px solid #ccc; 
             font-weight: bold; font-size: 12px; color: #333; pointer-events: none;
         }
 
-        .native-new-btn { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 0 16px; font-weight: 600; font-size: 12px; cursor: pointer; height: 30px; white-space: nowrap; flex-shrink: 0; }
-        .toggle-sidebar { background: #333; color: white; padding: 0 12px; cursor: pointer; border-radius: 4px; border: none; font-size: 1.1em; height: 30px; display: flex; align-items: center; justify-content: center; }
+        .native-new-btn { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 0 16px; font-weight: 600; font-size: 12px; cursor: pointer; height: 32px; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
+        .toggle-sidebar { background: #333; color: white; padding: 0 12px; cursor: pointer; border-radius: 4px; border: none; font-size: 1.1em; height: 32px; display: flex; align-items: center; justify-content: center; }
 
         .ql-container.ql-snow { flex: 1; border: 1px solid var(--border-color) !important; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
         .ql-editor { flex: 1; overflow-y: auto; padding: 20px; line-height: 1.4; }
@@ -112,36 +94,23 @@
         .bottom-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border-color); width: 100%; background: var(--editor-bg); flex-shrink: 0; }
         .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 
-        /* Sidebar Note Items */
+        /* Sidebar Items */
         .note-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
-        .note-item { 
-            padding: 12px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; 
-            display: flex; justify-content: space-between; align-items: flex-start; 
-            border-radius: 4px; transition: background 0.2s; position: relative;
-        }
+        .note-item { padding: 12px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; border-radius: 4px; position: relative; }
         .note-item:hover { background: var(--item-hover); }
         .note-item.active { background: var(--item-hover); border-left: 4px solid #007bff; }
-        
-        .delete-btn { 
-            color: var(--secondary-text); font-weight: bold; padding: 2px 8px; 
-            visibility: hidden; cursor: pointer; font-size: 18px; border-radius: 4px;
-            z-index: 10;
-        }
-        .delete-btn:hover { color: var(--danger); background: rgba(217, 83, 79, 0.1); }
+        .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; visibility: hidden; cursor: pointer; font-size: 18px; z-index: 10; }
+        .delete-btn:hover { color: var(--danger); }
         .note-item:hover .delete-btn { visibility: visible; }
 
-        /* Persistent Task Mode Footer */
-        #task-only-footer { 
-            display: none; height: 50px; background: #fff; border-top: 1px solid var(--border-color);
-            align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 4000; flex-shrink: 0;
-        }
+        #task-only-footer { display: none; height: 50px; background: #fff; border-top: 1px solid var(--border-color); align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 4000; flex-shrink: 0; }
         #task-only-footer.visible { display: flex; }
 
         @media (max-width: 768px) {
             .editor-area { padding: 10px; } 
             .toggle-sidebar { width: 32px; padding: 0; }
             .btn-text { display: none; }
-            .native-new-btn { width: 32px; padding: 0; font-size: 16px; }
+            .native-new-btn { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
             #todo-container { height: 30% !important; width: 100% !important; }
         }
     </style>
@@ -149,7 +118,7 @@
 <body>
 
     <div id="sidebar" class="sidebar">
-        <button class="native-new-btn" style="width:100%; margin-bottom:10px;" onclick="createNewNote()">+ New Note</button>
+        <button class="native-new-btn" style="width:100%; margin-bottom:10px; margin-left: 0;" onclick="createNewNote()">+ New Note</button>
         <div class="search-container"><input type="text" id="sidebar-search" placeholder="Search titles & content..." oninput="renderNoteList()"></div>
         <div id="note-list" class="note-list"></div>
         <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border-color);">
@@ -164,9 +133,7 @@
             <iframe id="todo-frame" src="https://ticktick.com/webapp/#q/week/tasks"></iframe>
             <div id="ghost-overlay"></div>
         </div>
-
         <div id="resizer"></div>
-
         <div class="editor-area">
             <div id="width-wrapper" class="content-width-wrapper">
                 <div class="editor-content-wrapper">
@@ -193,10 +160,7 @@
                 </div>
             </div>
         </div>
-
-        <div id="task-only-footer">
-            <button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 20px; font-weight:bold; font-size: 14px;">Focus Notes</button>
-        </div>
+        <div id="task-only-footer"><button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 20px; font-weight:bold;">Focus Notes</button></div>
     </div>
 
 <script src="quill.js"></script>
@@ -236,8 +200,7 @@
         theme: 'snow'
     });
 
-    const qlToolbar = document.querySelector('.ql-toolbar');
-    document.getElementById('toolbar-container').appendChild(qlToolbar);
+    document.getElementById('toolbar-container').appendChild(document.querySelector('.ql-toolbar'));
 
     const mainLayout = document.getElementById('main-layout');
     const resizer = document.getElementById('resizer');
@@ -249,27 +212,16 @@
     resizer.addEventListener('mousedown', (e) => {
         ghost.style.display = 'block';
         const isVerticalDrag = window.innerWidth < 1000;
-        
         const move = (e) => {
             if (isVerticalDrag) {
                 let h = (e.clientY / window.innerHeight) * 100;
-                if (h > 10 && h < 85) {
-                    todoContainer.style.height = h + '%';
-                    localStorage.setItem('ticktick-height', h);
-                }
+                if (h > 10 && h < 85) { todoContainer.style.height = h + '%'; localStorage.setItem('ticktick-height', h); }
             } else {
                 let w = window.innerWidth - e.clientX;
-                if (w > 200 && w < window.innerWidth * 0.7) {
-                    todoContainer.style.width = w + 'px';
-                    localStorage.setItem('ticktick-width', w);
-                }
+                if (w > 200 && w < window.innerWidth * 0.7) { todoContainer.style.width = w + 'px'; localStorage.setItem('ticktick-width', w); }
             }
         };
-        const stop = () => {
-            ghost.style.display = 'none';
-            document.removeEventListener('mousemove', move);
-            document.removeEventListener('mouseup', stop);
-        };
+        const stop = () => { ghost.style.display = 'none'; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', stop); };
         document.addEventListener('mousemove', move);
         document.addEventListener('mouseup', stop);
     });
@@ -278,7 +230,6 @@
         if (mode === 'tasks') {
             mainLayout.classList.add('focus-tasks-active');
             todoContainer.classList.add('visible', 'fullscreen');
-            resizer.classList.remove('visible');
             resizer.classList.add('hidden-by-focus');
             editorArea.classList.add('hidden');
             taskOnlyFooter.classList.add('visible');
@@ -296,41 +247,12 @@
         }
     }
 
-    function toggleTickTick() {
-        const isVisible = todoContainer.classList.toggle('visible');
-        resizer.classList.toggle('visible', isVisible);
-        localStorage.setItem('ticktick-pref', isVisible);
-    }
-
-    function createNewNote() {
-        currentNoteId = Date.now();
-        quill.setText(`\n`, 'user');
-        quill.focus();
-    }
-
-    function exportNotes() {
-        const raw = localStorage.getItem('my-github-notes');
-        const blob = new Blob([raw], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `notes_backup_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-    }
-
-    function getNotesSafely() {
-        try {
-            const raw = localStorage.getItem('my-github-notes');
-            if (!raw) return [];
-            const parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : (parsed.data || []);
-        } catch (e) { return []; }
-    }
-
-    function saveNotesInternal(notes) {
-        localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes }));
-        renderNoteList();
-    }
-
+    function toggleTickTick() { const isVisible = todoContainer.classList.toggle('visible'); resizer.classList.toggle('visible', isVisible); localStorage.setItem('ticktick-pref', isVisible); }
+    function createNewNote() { currentNoteId = Date.now(); quill.setText(`\n`, 'user'); quill.focus(); }
+    function exportNotes() { const raw = localStorage.getItem('my-github-notes'); const blob = new Blob([raw], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `notes_backup_${new Date().toISOString().split('T')[0]}.json`; a.click(); }
+    function getNotesSafely() { try { const raw = localStorage.getItem('my-github-notes'); if (!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : (parsed.data || []); } catch (e) { return []; } }
+    function saveNotesInternal(notes) { localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes })); renderNoteList(); }
+    
     quill.on('text-change', (delta, old, source) => {
         if (source === 'user') {
             const selection = quill.getSelection();
@@ -353,11 +275,7 @@
         let fullText = quill.getText().trim();
         let firstLine = fullText.split('\n')[0].trim() || 'Untitled Note';
         let notes = getNotesSafely();
-        const noteData = { 
-            id: currentNoteId || Date.now(), title: firstLine, 
-            content: quill.getContents(), plainText: quill.getText(),
-            date: new Date().toISOString() 
-        };
+        const noteData = { id: currentNoteId || Date.now(), title: firstLine, content: quill.getContents(), plainText: quill.getText(), date: new Date().toISOString() };
         const idx = notes.findIndex(n => n.id === currentNoteId);
         if (idx > -1) notes[idx] = noteData; else { notes.push(noteData); currentNoteId = noteData.id; }
         saveNotesInternal(notes);
@@ -371,42 +289,20 @@
         const notes = getNotesSafely();
         const searchTerm = document.getElementById('sidebar-search').value.toLowerCase().trim();
         notes.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(note => {
-            let searchableContent = note.plainText || "";
-            if (searchTerm && !(note.title || "").toLowerCase().includes(searchTerm) && !searchableContent.toLowerCase().includes(searchTerm)) return;
+            if (searchTerm && !(note.title || "").toLowerCase().includes(searchTerm) && !(note.plainText || "").toLowerCase().includes(searchTerm)) return;
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
-            
-            // Rebuilt Note Item Structure
-            const contentCont = document.createElement('div');
-            contentCont.style = "flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;";
-            contentCont.onclick = () => loadNote(note.id);
-            contentCont.innerHTML = `<b>${note.title || "Untitled"}</b>
-                                     <div style="font-size:0.75em; color:var(--secondary-text);">${new Date(note.date).toLocaleDateString()}</div>`;
-            
-            const delBtn = document.createElement('span');
-            delBtn.className = 'delete-btn';
-            delBtn.innerHTML = '&times;';
-            delBtn.onclick = (e) => { e.stopPropagation(); deleteNote(note.id); };
-
-            div.appendChild(contentCont);
-            div.appendChild(delBtn);
+            div.innerHTML = `<div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;" onclick="loadNote(${note.id})">
+                                <b>${note.title || "Untitled"}</b>
+                                <div style="font-size:0.75em; color:var(--secondary-text);">${new Date(note.date).toLocaleDateString()}</div>
+                             </div>
+                             <span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>`;
             list.appendChild(div);
         });
     }
 
-    function deleteNote(id) {
-        if (confirm("Delete note?")) {
-            let notes = getNotesSafely().filter(n => n.id !== id);
-            saveNotesInternal(notes);
-            if (currentNoteId === id) { if (notes.length > 0) loadNote(notes[0].id); else createNewNote(); }
-        }
-    }
-
-    function loadNote(id) {
-        const note = getNotesSafely().find(n => n.id === id);
-        if (note) { currentNoteId = note.id; quill.setContents(note.content); renderNoteList(); }
-    }
-
+    function deleteNote(id) { if (confirm("Delete note?")) { let notes = getNotesSafely().filter(n => n.id !== id); saveNotesInternal(notes); if (currentNoteId === id) { if (notes.length > 0) loadNote(notes[0].id); else createNewNote(); } } }
+    function loadNote(id) { const note = getNotesSafely().find(n => n.id === id); if (note) { currentNoteId = note.id; quill.setContents(note.content); renderNoteList(); } }
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
     function copyNote() { navigator.clipboard.writeText(quill.getText()).then(() => { const s = document.getElementById('status'); s.innerText = "Copied!"; setTimeout(()=> s.innerText="Saved", 1500); }); }
@@ -435,15 +331,11 @@
         const savedWidth = localStorage.getItem('ticktick-width');
         if (window.innerWidth < 1000 && savedHeight) todoContainer.style.height = savedHeight + '%';
         if (window.innerWidth >= 1000 && savedWidth) todoContainer.style.width = savedWidth + 'px';
-
         const focusPref = localStorage.getItem('view-focus-pref');
-        if (focusPref === 'tasks') setViewMode('tasks');
-        else if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
-        
+        if (focusPref === 'tasks') setViewMode('tasks'); else if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
         const wp = localStorage.getItem('width-pref') || 'full';
         setWidth(wp);
         document.querySelector(`input[value="${wp}"]`).checked = true;
-
         const lastId = localStorage.getItem('last-note-id');
         if (lastId) loadNote(parseInt(lastId)); else createNewNote();
     };
