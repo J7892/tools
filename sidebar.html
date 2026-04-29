@@ -37,10 +37,17 @@
         #note-list { 
             width: 0; transition: 0.3s; background: #f4f4f4; 
             border-right: 1px solid #ccc; overflow-y: auto; font-size: 12px;
-            flex-shrink: 0;
+            flex-shrink: 0; display: flex; flex-direction: column;
         }
         #note-list.open { width: 180px; }
         
+        #sidebar-search {
+            margin: 8px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;
+            font-size: 11px; outline: none; width: calc(100% - 16px); box-sizing: border-box;
+        }
+
+        #list-items { flex-grow: 1; overflow-y: auto; }
+
         .note-item { 
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer; 
@@ -118,8 +125,9 @@
         .toolbar-footer { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 4px 8px; background: #f8f9fa; font-size: 11px; border-top: 1px solid #ccc; 
-            flex-shrink: 0; color: #666;
+            flex-shrink: 0; color: #666; flex-wrap: wrap; gap: 4px;
         }
+        .status-group { display: flex; gap: 8px; align-items: center; }
         .footer-btn { 
             background: #e9ecef; border: 1px solid #ced4da; padding: 4px 8px; 
             border-radius: 3px; cursor: pointer; font-size: 11px; color: #495057;
@@ -138,15 +146,23 @@
 
     <div id="editor-wrapper">
         <div id="note-list">
-            <div style="padding: 10px; font-weight: bold; border-bottom: 1px solid #ccc;">My Notes</div>
+            <div style="padding: 10px; font-weight: bold; border-bottom: 1px solid #ccc; flex-shrink: 0;">My Notes</div>
+            <input type="text" id="sidebar-search" placeholder="Search..." oninput="updateListUI()">
             <div id="list-items"></div>
         </div>
 
         <div id="editor-container">
             <div id="editor"></div>
             <div class="toolbar-footer">
-                <span id="save-status">Ready</span>
-                <button class="footer-btn" onclick="exportNotes()">Export HTML</button>
+                <div class="status-group">
+                    <span id="save-status" style="font-weight: 600;">Ready</span>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                    <button class="footer-btn" onclick="copyNote(event)">Copy</button>
+                    <button class="footer-btn" onclick="exportNotes()">Backup</button>
+                    <button class="footer-btn" onclick="document.getElementById('import-input').click()">Import</button>
+                    <input type="file" id="import-input" style="display:none" accept=".json" onchange="importNotes(event)">
+                </div>
             </div>
         </div>
     </div>
@@ -195,7 +211,7 @@
             }
         });
 
-        // SoftBreak implementation for Shift+Enter (matches standalone app)
+        // SoftBreak implementation for Shift+Enter 
         const Embed = Quill.import('blots/embed');
         class SoftBreak extends Embed {
             static create(value) { return super.create(value); }
@@ -258,7 +274,7 @@
 
         quill.on('text-change', (delta, oldDelta, source) => {
             if (source !== 'user') return; 
-            
+
             // Check for custom slash-slash highlighting shortcut
             const selection = quill.getSelection();
             if (selection && selection.index >= 2) {
@@ -325,6 +341,51 @@
             }
         }
 
+        function copyNote(event) {
+            const text = quill.getText();
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.innerText;
+                btn.innerText = "Copied!";
+                setTimeout(() => btn.innerText = originalText, 1500);
+            });
+        }
+
+        function exportNotes() {
+            const raw = localStorage.getItem('my-github-notes');
+            if (!raw) return alert("Nothing to backup.");
+            const blob = new Blob([raw], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const now = new Date();
+            a.href = url;
+            a.download = `notes_backup_${now.toISOString().split('T')[0]}.json`;
+            a.click();
+            localStorage.setItem('last-backup-date', now.toISOString());
+        }
+
+        function importNotes(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    const newData = Array.isArray(imported) ? imported : (imported.data || []);
+                    if (confirm("Merge imported notes?")) {
+                        const existing = getNotesSafely();
+                        const existingIds = new Set(existing.map(n => n.id));
+                        const merged = [...existing, ...newData.filter(n => !existingIds.has(n.id))];
+                        saveNotesInternal(merged);
+                        alert("Import successful.");
+                        updateListUI();
+                    }
+                } catch (err) { alert("Invalid file."); }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
         // UI and Sync Updates
         function toggleList() {
             document.getElementById('note-list').classList.toggle('open');
@@ -334,8 +395,12 @@
             const listContainer = document.getElementById('list-items');
             listContainer.innerHTML = '';
             const notes = getNotesSafely();
+            const searchInput = document.getElementById('sidebar-search');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
             
             notes.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(note => {
+                if (searchTerm && !(note.title || '').toLowerCase().includes(searchTerm)) return;
+
                 const item = document.createElement('div');
                 item.className = 'note-item';
                 if (note.id === currentNoteId) item.style.background = "#e8f0fe";
@@ -388,7 +453,7 @@
             }
         });
 
-        // Resizer & Export
+        // Resizer 
         const resizer = document.getElementById('resizer');
         const todoContainer = document.getElementById('todo-container');
         const ghost = document.getElementById('ghost-overlay');
@@ -405,14 +470,6 @@
                 document.removeEventListener('mousemove', move);
             });
         });
-
-        function exportNotes() {
-            const blob = new Blob([quill.root.innerHTML], {type: 'text/html'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `note_${currentNoteId}.html`;
-            a.click();
-        }
 
         // Initialization
         const initialNotes = getNotesSafely();
