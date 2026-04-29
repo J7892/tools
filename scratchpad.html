@@ -14,7 +14,6 @@
             --toolbar-bg: #fff;
             --max-narrow: 700px;
             --highlight-color: #ffff00;
-            /* Global text size variable */
             --editor-font-size: 16px;
         }
 
@@ -89,7 +88,6 @@
             border: none !important;
         }
 
-        /* Global formatting */
         .ql-editor {
             font-size: var(--editor-font-size) !important;
         }
@@ -143,18 +141,27 @@
             background: #e9ecef;
         }
 
-        /* Mobile Adjustments */
+        /* MOBILE/NARROW SCREEN FIXES */
         @media (max-width: 600px) {
-            .toggle-label-text {
-                display: none; 
+            /* Hide the entire toggle group (radio buttons + text) */
+            .toggle-group {
+                display: none !important;
             }
+            
+            /* Ensure the editor fills the screen regardless of narrow-mode class */
             #app-wrapper.narrow-mode, #app-wrapper {
-                width: 100%;
+                width: 100% !important;
                 margin: 0 !important;
                 height: 100% !important;
-                max-width: none;
-                border: none;
-                border-radius: 0;
+                max-width: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+
+            .custom-size-container {
+                margin-left: 5px;
+                padding-left: 5px;
             }
         }
     </style>
@@ -172,8 +179,8 @@
         </div>
 
         <div class="toggle-group">
-            <label><input type="radio" name="width-toggle" value="wide" onchange="toggleWidth('wide')"> <span class="toggle-label-text">Wide</span></label>
-            <label><input type="radio" name="width-toggle" value="narrow" checked onchange="toggleWidth('narrow')"> <span class="toggle-label-text">Narrow</span></label>
+            <label><input type="radio" name="width-toggle" value="wide" onchange="toggleWidth('wide')"> <span>Wide</span></label>
+            <label><input type="radio" name="width-toggle" value="narrow" checked onchange="toggleWidth('narrow')"> <span>Narrow</span></label>
         </div>
 
         <div class="actions-group">
@@ -199,39 +206,34 @@
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 <script>
-    // Initialize Quill
     const quill = new Quill('#editor', {
         theme: 'snow',
         modules: {
             toolbar: [
                 ['bold', 'italic', 'underline'],
-                [{ 'background': ['#ffff00'] }], // Only Yellow
+                [{ 'background': ['#ffff00'] }], 
                 ['clean']
             ]
         },
         placeholder: 'Write something...'
     });
 
-    // --- Inject Text Size Selector into Top Toolbar ---
+    // Inject Text Size Selector
     const toolbar = document.querySelector('.ql-toolbar');
     const template = document.getElementById('size-selector-template');
     toolbar.appendChild(template.content.cloneNode(true));
 
-    // --- Global Text Size Logic ---
     function updateTextSize(size) {
         document.documentElement.style.setProperty('--editor-font-size', size);
         localStorage.setItem('scratchpad_text_size', size);
-        // Sync the select value if called programmatically
         document.getElementById('size-select').value = size;
     }
 
-    // Load saved preference
     const savedSize = localStorage.getItem('scratchpad_text_size');
     if (savedSize) {
         updateTextSize(savedSize);
     }
 
-    // --- Width Toggling ---
     function toggleWidth(mode) {
         const wrapper = document.getElementById('app-wrapper');
         if (mode === 'narrow') {
@@ -241,7 +243,6 @@
         }
     }
 
-    // --- Persistence ---
     const STORAGE_KEY = 'scratchpad_content';
     const savedContent = localStorage.getItem(STORAGE_KEY);
     if (savedContent) {
@@ -256,23 +257,17 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(quill.getContents()));
     });
 
-    // --- "//" Markdown Highlight Logic ---
     function handleMarkdownHighlight() {
         const text = quill.getText();
         const index = text.indexOf('//');
         if (index !== -1) {
             const format = quill.getFormat(index, 2);
             const isHighlighted = format.background === '#ffff00' || format.background === 'yellow';
-            
-            // Delete the slashes
             quill.deleteText(index, 2);
-            
-            // Toggle highlight state for future typing
             quill.format('background', isHighlighted ? false : '#ffff00');
         }
     }
 
-    // --- Stats ---
     function updateStats() {
         const text = quill.getText().trim();
         const words = text.length > 0 ? text.split(/\s+/).length : 0;
@@ -282,7 +277,6 @@
         document.getElementById('line-calc').innerText = `Lines: ${lineCalc}`;
     }
 
-    // --- Actions ---
     function copyToClipboard() {
         navigator.clipboard.writeText(quill.getText()).then(() => {
             const btn = document.querySelector('button[onclick="copyToClipboard()"]');
