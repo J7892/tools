@@ -8,7 +8,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
-            max-width: 900px; /* Slightly wider to accommodate the row */
+            max-width: 900px;
             margin: 40px auto;
             padding: 0 20px;
             background-color: #f4f7f6;
@@ -18,6 +18,7 @@
         h1 {
             text-align: center;
             color: #2c3e50;
+            margin-bottom: 30px;
         }
 
         .container {
@@ -40,46 +41,53 @@
         }
 
         .button-group {
-            display: flex; /* Changed to flex for tighter horizontal control */
-            flex-wrap: nowrap; /* Forces them onto one line */
+            display: flex;
+            flex-wrap: nowrap;
             gap: 8px;
             justify-content: space-between;
         }
 
         button {
-            flex: 1; /* Allows buttons to grow/shrink equally */
-            padding: 10px 4px; /* Reduced padding */
+            flex: 1;
+            padding: 10px 2px;
             border: none;
             border-radius: 4px;
-            background-color: #3498db;
             color: white;
             font-weight: 600;
-            font-size: 13px; /* Smaller font to ensure fit */
+            font-size: 13px;
             cursor: pointer;
-            transition: background 0.2s;
-            white-space: nowrap; /* Prevents text inside buttons from wrapping */
+            transition: opacity 0.2s, transform 0.1s;
+            white-space: nowrap;
         }
 
         button:hover {
-            background-color: #2980b9;
+            opacity: 0.85;
         }
 
         button:active {
             transform: translateY(1px);
         }
 
+        /* Subtle tonal variations for distinction */
+        .btn-1 { background-color: #2980b9; }
+        .btn-2 { background-color: #2e86c1; }
+        .btn-3 { background-color: #3498db; }
+        .btn-4 { background-color: #5dade2; }
+        .btn-5 { background-color: #85c1e9; }
+
         .copy-btn {
             background-color: #27ae60;
             margin-top: 15px;
             width: 100%;
             font-size: 16px;
+            padding: 12px;
         }
 
         .copy-btn:hover {
             background-color: #219150;
+            opacity: 1;
         }
 
-        /* Mobile fallback: allow wrap only on very small screens */
         @media (max-width: 600px) {
             .button-group {
                 flex-wrap: wrap;
@@ -98,11 +106,11 @@
         <textarea id="textInput" placeholder="Type or paste your content here..."></textarea>
 
         <div class="button-group">
-            <button onclick="convert('sentence')">Sentence case</button>
-            <button onclick="convert('lower')">lower case</button>
-            <button onclick="convert('upper')">UPPER CASE</button>
-            <button onclick="convert('capitalized')">Capitalized</button>
-            <button onclick="convert('title')">Title Case</button>
+            <button class="btn-1" onclick="convert('sentence')">Sentence case</button>
+            <button class="btn-2" onclick="convert('title')">Title Case</button>
+            <button class="btn-3" onclick="convert('lower')">lowercase</button>
+            <button class="btn-4" onclick="convert('upper')">UPPERCASE</button>
+            <button class="btn-5" onclick="convert('capitalized')">Capitalized</button>
         </div>
 
         <button class="copy-btn" onclick="copyText()">Copy to Clipboard</button>
@@ -138,9 +146,16 @@
         }
 
         function copyText() {
+            if (!textInput.value) return;
             textInput.select();
             document.execCommand('copy');
-            alert('Text copied to clipboard!');
+            
+            const copyBtn = document.querySelector('.copy-btn');
+            const originalText = copyBtn.innerText;
+            copyBtn.innerText = 'Copied!';
+            setTimeout(() => {
+                copyBtn.innerText = originalText;
+            }, 2000);
         }
     </script>
 
