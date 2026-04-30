@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>THE DAILY PRESS — Retro Newspaper Game</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
+
+  :root {
+    --green: #33ff66;
+    --dark-green: #00aa33;
+    --black: #0a0a0a;
+    --amber: #ffb000;
+    --red: #ff3333;
+    --blue: #3399ff;
+    --white: #e8e8e8;
+    --dim: #1a1a1a;
+    --panel: #111;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--green);
+    font-family: 'Press Start 2P', monospace;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    image-rendering: pixelated;
+  }
+
+  /* CRT scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    border-radius: 8px;
+    box-shadow: inset 0 0 80px rgba(0,0,0,0.6);
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  #screen {
+    width: min(900px, 98vw);
+    height: min(620px, 96vh);
+    border: 3px solid var(--green);
+    box-shadow: 0 0 20px var(--green), inset 0 0 10px rgba(51,255,102,0.05);
+    position: relative;
+    overflow: hidden;
+    background: var(--black);
+  }
+
+  /* ========== TITLE SCREEN ========== */
+  #title-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: var(--black);
+  }
+  .title-masthead {
+    font-family: 'VT323', monospace;
+    font-size: clamp(48px, 8vw, 76px);
+    color: var(--amber);
+    text-shadow: 0 0 12px var(--amber), 4px 4px 0 #553300;
+    letter-spacing: 2px;
+    animation: flicker 3s infinite;
+    text-align: center;
+  }
+  .title-sub {
+    font-size: 8px;
+    color: var(--green);
+    letter-spacing: 3px;
+    text-align: center;
+  }
+  .title-instructions {
+    font-size: 7px;
+    color: #555;
+    text-align: center;
+    line-height: 2.2;
+    margin-top: 10px;
+  }
+  .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes flicker {
+    0%,95%,100% { opacity: 1; }
+    96% { opacity: 0.6; }
+    98% { opacity: 0.9; }
+  }
+  .title-press {
+    font-size: 10px;
+    color: var(--green);
+    margin-top: 20px;
+  }
+  .pixel-paper {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: #444;
+    text-align: center;
+    line-height: 1.6;
+    border: 1px solid #333;
+    padding: 8px 16px;
+    margin-top: 4px;
+  }
+
+  /* ========== MAIN GAME ========== */
+  #game-screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+  }
+  #hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: var(--dim);
+    border-bottom: 2px solid var(--green);
+    font-size: 7px;
+    flex-shrink: 0;
+  }
+  .hud-section { display: flex; gap: 16px; align-items: center; }
+  .hud-label { color: #555; }
+  .hud-val { color: var(--amber); }
+  #deadline-bar-wrap {
+    width: 120px;
+    height: 10px;
+    border: 1px solid var(--green);
+    background: #000;
+  }
+  #deadline-bar {
+    height: 100%;
+    background: var(--green);
+    transition: width 0.1s, background 0.3s;
+  }
+
+  #main-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ========== NEWSROOM ========== */
+  #newsroom {
+    flex: 1;
+    position: relative;
+    background: var(--black);
+    overflow: hidden;
+    border-right: 2px solid #222;
+  }
+  #newsroom-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(51,255,102,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(51,255,102,0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* Tiles */
+  .tile {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'VT323', monospace;
+    font-size: 11px;
+    cursor: default;
+    user-select: none;
+    border: 2px solid transparent;
+  }
+  .tile-icon { font-size: 28px; line-height: 1; }
+  .tile-label { font-size: 9px; margin-top: 3px; text-align: center; }
+
+  .tile-reporter { color: var(--blue); border-color: #113; background: #050d1a; }
+  .tile-photo    { color: #cc66ff;     border-color: #1a0033; background: #0d0019; }
+  .tile-source   { color: var(--amber); border-color: #221100; background: #110900; }
+  .tile-printer  { color: var(--green); border-color: #003311; background: #001a08; }
+  .tile-editor   { color: #ff9966;     border-color: #220a00; background: #110500; }
+
+  .tile.collected { opacity: 0.3; }
+  .tile.ready { box-shadow: 0 0 8px currentColor; }
+
+  /* Player */
+  #player {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    z-index: 10;
+    transition: left 0.08s, top 0.08s;
+  }
+  .player-sprite {
+    font-family: 'VT323', monospace;
+    font-size: 28px;
+    line-height: 1;
+    text-align: center;
+    color: var(--white);
+    animation: playerBob 0.4s step-end infinite;
+    display: block;
+  }
+  @keyframes playerBob {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+
+  /* Stories floating above newsroom items */
+  .story-bubble {
+    position: absolute;
+    background: #0a1a0a;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'VT323', monospace;
+    font-size: 13px;
+    padding: 3px 7px;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: float 2s ease-in-out infinite alternate;
+    z-index: 5;
+  }
+  @keyframes float {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-6px); }
+  }
+
+  /* ========== SIDEBAR: PAPER LAYOUT ========== */
+  #sidebar {
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  #sidebar-title {
+    padding: 8px;
+    font-size: 7px;
+    color: var(--amber);
+    border-bottom: 1px solid #333;
+    text-align: center;
+    letter-spacing: 2px;
+  }
+  #paper-layout {
+    flex: 1;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .slot {
+    border: 1px dashed #333;
+    padding: 8px;
+    min-height: 50px;
+    position: relative;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .slot-label {
+    font-size: 6px;
+    color: #444;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .slot-content {
+    font-family: 'VT323', monospace;
+    font-size: 13px;
+    color: var(--white);
+    line-height: 1.4;
+    min-height: 24px;
+  }
+  .slot.filled {
+    border-color: var(--green);
+    background: rgba(51,255,102,0.04);
+  }
+  .slot.filled .slot-label { color: var(--dark-green); }
+  .slot.headline-slot { min-height: 60px; }
+  .slot.photo-slot { min-height: 80px; text-align: center; }
+  .slot-photo-img { font-size: 40px; line-height: 1; }
+
+  #print-btn {
+    margin: 8px;
+    padding: 10px;
+    background: transparent;
+    border: 2px solid var(--green);
+    color: var(--green);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.2s, color 0.2s;
+    letter-spacing: 1px;
+  }
+  #print-btn:hover, #print-btn:focus {
+    background: var(--green);
+    color: var(--black);
+    outline: none;
+  }
+  #print-btn:disabled {
+    border-color: #333;
+    color: #333;
+    cursor: not-allowed;
+    background: transparent;
+  }
+
+  /* ========== INVENTORY BAR ========== */
+  #inventory-bar {
+    display: flex;
+    padding: 6px 10px;
+    gap: 8px;
+    border-top: 2px solid #222;
+    background: var(--dim);
+    flex-shrink: 0;
+  }
+  .inv-label { font-size: 6px; color: #555; margin-right: 4px; }
+  .inv-item {
+    background: #0a1a0a;
+    border: 1px solid #2a4a2a;
+    color: var(--green);
+    font-family: 'VT323', monospace;
+    font-size: 12px;
+    padding: 3px 7px;
+    white-space: nowrap;
+  }
+  .inv-item.photo { color: #cc66ff; border-color: #4a2a6a; background: #0d0019; }
+  .inv-empty { color: #333; font-size: 10px; font-family: 'VT323', monospace; }
+
+  /* ========== STATUS / DIALOGUE ========== */
+  #status-box {
+    position: absolute;
+    bottom: 48px;
+    left: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.92);
+    border: 1px solid var(--amber);
+    padding: 8px 12px;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: var(--amber);
+    z-index: 20;
+    display: none;
+    max-width: 480px;
+  }
+  #status-box.visible { display: block; }
+
+  /* ========== FRONT PAGE RESULT ========== */
+  #result-screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--black);
+    z-index: 50;
+    gap: 12px;
+  }
+  #result-screen.visible { display: flex; }
+  .result-paper {
+    background: #f5f0e0;
+    color: #111;
+    width: 340px;
+    padding: 16px;
+    border: 3px solid #222;
+    box-shadow: 8px 8px 0 #333;
+    font-family: 'VT323', monospace;
+  }
+  .result-masthead {
+    font-size: 32px;
+    text-align: center;
+    border-bottom: 3px double #111;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+  .result-dateline {
+    font-size: 11px;
+    text-align: center;
+    color: #555;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #999;
+    padding-bottom: 4px;
+  }
+  .result-headline {
+    font-size: 22px;
+    font-weight: bold;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .result-body { font-size: 14px; color: #333; line-height: 1.5; margin-bottom: 8px; }
+  .result-photo { text-align: center; font-size: 44px; margin: 6px 0; }
+  .result-score { font-size: 11px; color: #555; text-align: right; }
+  .result-buttons { display: flex; gap: 12px; margin-top: 10px; }
+  .result-btn {
+    padding: 8px 14px;
+    background: transparent;
+    border: 2px solid var(--green);
+    color: var(--green);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    cursor: pointer;
+  }
+  .result-btn:hover { background: var(--green); color: var(--black); }
+
+  /* ========== CONTROLS LEGEND ========== */
+  #controls-hint {
+    font-size: 6px;
+    color: #333;
+    text-align: center;
+    padding: 4px;
+    border-top: 1px solid #1a1a1a;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+
+  /* Interaction prompt */
+  .interact-prompt {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: var(--amber);
+    white-space: nowrap;
+    animation: blink 0.7s step-end infinite;
+    z-index: 15;
+    pointer-events: none;
+  }
+
+  /* Score pop */
+  .score-pop {
+    position: absolute;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: var(--amber);
+    pointer-events: none;
+    z-index: 30;
+    animation: scorePop 1.2s forwards;
+  }
+  @keyframes scorePop {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-40px) scale(1.4); }
+  }
+
+  /* NPC speech */
+  .npc-speech {
+    position: absolute;
+    background: #000;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-family: 'VT323', monospace;
+    font-size: 12px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    z-index: 12;
+    pointer-events: none;
+    animation: fadeInOut 3s forwards;
+  }
+  @keyframes fadeInOut {
+    0%,20% { opacity: 1; }
+    80%,100%  { opacity: 0; }
+  }
+
+  /* Day counter */
+  #day-banner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    background: rgba(0,0,0,0.85);
+    pointer-events: none;
+    animation: dayBanner 2s forwards;
+  }
+  @keyframes dayBanner {
+    0%,60% { opacity: 1; }
+    100%   { opacity: 0; }
+  }
+  .day-banner-text {
+    font-size: 24px;
+    color: var(--amber);
+    text-shadow: 0 0 20px var(--amber);
+    text-align: center;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div id="screen">
+
+  <!-- TITLE SCREEN -->
+  <div id="title-screen">
+    <div class="title-masthead">THE DAILY PRESS</div>
+    <div class="title-sub">★ A RETRO NEWSROOM ADVENTURE ★</div>
+    <div class="pixel-paper">
+      ┌──────────────────────────────┐<br>
+      │  SCOOP ◆ WRITE ◆ PRINT  │<br>
+      └──────────────────────────────┘
+    </div>
+    <div class="title-instructions">
+      ARROW KEYS — Move around the newsroom<br>
+      SPACE / ENTER — Interact with people &amp; objects<br>
+      P — Place item in paper layout<br>
+      PRINT EDITION — Publish when ready!
+    </div>
+    <div class="title-press blink">▶ PRESS ENTER TO START ◀</div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen">
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-section">
+        <span class="hud-label">DAY</span><span class="hud-val" id="hud-day">1</span>
+        <span class="hud-label">SCORE</span><span class="hud-val" id="hud-score">0</span>
+        <span class="hud-label">EDITION</span><span class="hud-val" id="hud-edition">1</span>
+      </div>
+      <div class="hud-section">
+        <span class="hud-label">DEADLINE</span>
+        <div id="deadline-bar-wrap">
+          <div id="deadline-bar" style="width:100%"></div>
+        </div>
+      </div>
+      <div class="hud-section">
+        <span class="hud-label">✎</span><span class="hud-val" id="hud-stories">0/2</span>
+        <span class="hud-label">📷</span><span class="hud-val" id="hud-photos">0/1</span>
+      </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div id="main-area">
+      <!-- NEWSROOM -->
+      <div id="newsroom">
+        <div id="newsroom-grid"></div>
+        <div id="player">
+          <span class="player-sprite" id="player-sprite">🧑</span>
+          <div class="interact-prompt" id="interact-prompt" style="display:none">[SPACE]</div>
+        </div>
+        <!-- Tiles and NPCs placed by JS -->
+      </div>
+
+      <!-- SIDEBAR -->
+      <div id="sidebar">
+        <div id="sidebar-title">★ LAYOUT DESK ★</div>
+        <div id="paper-layout">
+          <div class="slot headline-slot" id="slot-headline">
+            <div class="slot-label">HEADLINE STORY</div>
+            <div class="slot-content" id="sc-headline">— empty —</div>
+          </div>
+          <div class="slot" id="slot-story2">
+            <div class="slot-label">SECOND STORY</div>
+            <div class="slot-content" id="sc-story2">— empty —</div>
+          </div>
+          <div class="slot photo-slot" id="slot-photo">
+            <div class="slot-label">PHOTO</div>
+            <div class="slot-content" id="sc-photo">
+              <div class="slot-photo-img">📷</div>
+              <div style="font-size:11px;color:#333">no photo</div>
+            </div>
+          </div>
+          <div class="slot" id="slot-caption">
+            <div class="slot-label">PHOTO CAPTION</div>
+            <div class="slot-content" id="sc-caption">— empty —</div>
+          </div>
+        </div>
+        <button id="print-btn" disabled>[ PRINT EDITION ]</button>
+      </div>
+    </div>
+
+    <!-- INVENTORY BAR -->
+    <div id="inventory-bar">
+      <span class="inv-label">BAG:</span>
+      <span id="inv-display" class="inv-empty">— nothing —</span>
+    </div>
+
+    <!-- CONTROLS HINT -->
+    <div id="controls-hint">
+      ARROWS: MOVE &nbsp;|&nbsp; SPACE/ENTER: INTERACT &nbsp;|&nbsp; P: PLACE IN LAYOUT
+    </div>
+
+    <!-- STATUS BOX -->
+    <div id="status-box"></div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="result-screen">
+    <div class="result-paper" id="result-paper">
+      <!-- filled by JS -->
+    </div>
+    <div class="result-buttons">
+      <button class="result-btn" id="next-day-btn">NEXT EDITION</button>
+      <button class="result-btn" id="restart-btn">RESTART</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ========================================
+// AUDIO ENGINE — Web Audio API chiptune
+// ========================================
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+
+function beep(freq, dur, type='square', vol=0.18, delay=0) {
+  const o = AC.createOscillator();
+  const g = AC.createGain();
+  o.connect(g); g.connect(AC.destination);
+  o.type = type;
+  o.frequency.setValueAtTime(freq, AC.currentTime + delay);
+  g.gain.setValueAtTime(0, AC.currentTime + delay);
+  g.gain.linearRampToValueAtTime(vol, AC.currentTime + delay + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + delay + dur);
+  o.start(AC.currentTime + delay);
+  o.stop(AC.currentTime + delay + dur + 0.01);
+}
+
+function sfxCollect() { beep(440,0.08); beep(660,0.1,undefined,undefined,0.08); }
+function sfxPlace()    { beep(330,0.06,'sawtooth'); beep(550,0.08,undefined,undefined,0.06); }
+function sfxDeny()     { beep(200,0.12,'sawtooth',0.15); beep(180,0.1,'sawtooth',0.12,0.1); }
+function sfxPrint()    {
+  [200,240,300,380,480,600,750,900].forEach((f,i) => beep(f,0.1,'square',0.12,i*0.06));
+}
+function sfxStep()     { beep(80,0.04,'square',0.05); }
+function sfxTalk()     { [320,380,340,420].forEach((f,i) => beep(f,0.05,'square',0.1,i*0.04)); }
+function sfxWin()      {
+  const melody = [523,659,784,1047,784,1047,1319];
+  melody.forEach((f,i) => beep(f,0.15,'square',0.2,i*0.14));
+}
+function sfxDeadline() { beep(150,0.3,'sawtooth',0.3); beep(120,0.4,'sawtooth',0.25,0.3); }
+
+// Background music loop (simple arpeggiated chord)
+let bgMusicNodes = [];
+let bgMusicRunning = false;
+let bgInterval = null;
+
+const SCALE = [261,294,330,349,392,440,494,523];
+const CHORD_SEQS = [
+  [0,2,4,7], [5,7,2,4], [3,5,0,2], [4,2,5,7]
+];
+let chordIdx = 0, noteIdx = 0;
+
+function startBGMusic() {
+  if (bgMusicRunning) return;
+  bgMusicRunning = true;
+  bgInterval = setInterval(() => {
+    const chord = CHORD_SEQS[chordIdx % CHORD_SEQS.length];
+    const scaleNote = SCALE[chord[noteIdx % chord.length]];
+    beep(scaleNote, 0.18, 'square', 0.04);
+    if (Math.random() > 0.7) beep(scaleNote * 2, 0.12, 'triangle', 0.02);
+    noteIdx++;
+    if (noteIdx % 4 === 0) chordIdx++;
+  }, 200);
+}
+
+function stopBGMusic() {
+  if (!bgMusicRunning) return;
+  bgMusicRunning = false;
+  clearInterval(bgInterval);
+}
+
+// ========================================
+// GAME DATA
+// ========================================
+
+const HEADLINES = [
+  ["MAYOR BANS PIGEONS FROM CITY HALL", "Sources say feathers found in council minutes"],
+  ["LOCAL CAT WINS MUNICIPAL ELECTION", "Promises to nap more, spend less"],
+  ["GIANT DONUT ROLLS DOWN MAIN STREET", "Traffic chaos as glazed menace heads downtown"],
+  ["ROBOT APPLIES FOR JOURNALISM JOB", "Editor says it lacks 'the nose for news'"],
+  ["COFFEE SHORTAGE DECLARED EMERGENCY", "City hall switches to decaf, pandemonium ensues"],
+  ["DINOSAUR BONES FOUND UNDER BUS STOP", "Transit authority proposes naming new line T-REX"],
+  ["POLITICIAN SPEAKS FOR 6 HOURS STRAIGHT", "Audience escapes through fire exit"],
+  ["LOCAL BAKERY BAKES WORLD'S LONGEST BAGUETTE", "Unable to fit in any vehicle"],
+  ["ALIENS SPOTTED AT FARMERS MARKET", "Purchased kale; said to be 'fine, actually'"],
+  ["TIME TRAVELLER TIPS BADLY AT DINER", "Paid in coins from 2087"],
+];
+
+const SOURCES = [
+  "A city official who refused to be named",
+  "An anonymous golden retriever",
+  "A spokesperson for the concerned pigeon",
+  "Local historian and part-time mime",
+  "The mayor's potted fern",
+  "Three raccoons in a trenchcoat",
+  "A retired fortune cookie writer",
+  "Self-described 'vibes journalist'",
+];
+
+const PHOTOS = [
+  { emoji: "🐈", caption: "A cat surveys the scene" },
+  { emoji: "🏛️", caption: "City Hall, where it all began" },
+  { emoji: "🌮", caption: "Evidence, preserved in taco form" },
+  { emoji: "🚁", caption: "Aerial view of chaos" },
+  { emoji: "📜", caption: "The controversial document in question" },
+  { emoji: "🦕", caption: "Artist's rendering of the situation" },
+  { emoji: "🍩", caption: "The donut, before consuming three cars" },
+  { emoji: "👽", caption: "Blurry image confirms everything" },
+];
+
+const NPC_LINES = [
+  "Deadline's in 20 minutes!",
+  "Did you get the scoop yet?",
+  "Front page needs a splash!",
+  "Editor wants a photo!",
+  "Scoop it before The Tribune does!",
+  "I heard something big at city hall...",
+  "Don't forget a quote from a source!",
+  "The presses are waiting!",
+  "This better sell papers!",
+];
+
+// Tile types and their positions
+function buildTileLayout(roomW, roomH) {
+  // Reporter NPCs (give stories), Sources, Photographer, Editor, Printer
+  return [
+    { id:'reporter1', type:'reporter', x:80,  y:60,  emoji:'🧑‍💼', label:'REPORTER' },
+    { id:'reporter2', type:'reporter', x:290, y:120, emoji:'👩‍💼', label:'REPORTER' },
+    { id:'source1',   type:'source',   x:160, y:200, emoji:'🕵️',  label:'SOURCE'   },
+    { id:'source2',   type:'source',   x:380, y:60,  emoji:'🧓',  label:'SOURCE'   },
+    { id:'photo1',    type:'photo',    x:80,  y:240, emoji:'📸',  label:'PHOTO'    },
+    { id:'photo2',    type:'photo',    x:330, y:210, emoji:'🤳',  label:'PHOTO'    },
+    { id:'editor',    type:'editor',   x:200, y:100, emoji:'👔',  label:'EDITOR'   },
+    { id:'printer',   type:'printer',  x: 420, y:170, emoji:'🖨️', label:'PRINTER'  },
+  ];
+}
+
+// ========================================
+// GAME STATE
+// ========================================
+const STATE = {
+  screen: 'title',
+  px: 220, py: 140,
+  speed: 3,
+  inventory: [],    // { type:'story'|'photo', data, id }
+  layout: { headline: null, story2: null, photo: null, caption: null },
+  tiles: [],
+  score: 0,
+  day: 1,
+  edition: 1,
+  deadline: 100,    // 0–100
+  deadlineRate: 0.04, // % per frame
+  nearTile: null,
+  statusTimer: null,
+  stepCounter: 0,
+  headlinesPool: [...HEADLINES].sort(()=>Math.random()-0.5),
+  photosPool: [...PHOTOS].sort(()=>Math.random()-0.5),
+  sourcesPool: [...SOURCES].sort(()=>Math.random()-0.5),
+  currentHeadlines: [],
+  currentPhotos: [],
+  currentSources: [],
+  gameOver: false,
+  keys: {},
+};
+
+// ========================================
+// DOM REFS
+// ========================================
+const titleScreen  = document.getElementById('title-screen');
+const gameScreen   = document.getElementById('game-screen');
+const resultScreen = document.getElementById('result-screen');
+const newsroom     = document.getElementById('newsroom');
+const playerEl     = document.getElementById('player');
+const playerSprite = document.getElementById('player-sprite');
+const interactPrompt = document.getElementById('interact-prompt');
+const statusBox    = document.getElementById('status-box');
+const invDisplay   = document.getElementById('inv-display');
+const deadlineBar  = document.getElementById('deadline-bar');
+const printBtn     = document.getElementById('print-btn');
+const hudScore     = document.getElementById('hud-score');
+const hudDay       = document.getElementById('hud-day');
+const hudEdition   = document.getElementById('hud-edition');
+const hudStories   = document.getElementById('hud-stories');
+const hudPhotos    = document.getElementById('hud-photos');
+
+// ========================================
+// TITLE → GAME
+// ========================================
+document.addEventListener('keydown', e => {
+  if (STATE.screen === 'title' && (e.key === 'Enter' || e.key === ' ')) {
+    AC.resume();
+    startGame();
+    return;
+  }
+  if (STATE.screen === 'game') {
+    STATE.keys[e.key] = true;
+    if (e.key === ' ' || e.key === 'Enter') interact();
+    if (e.key === 'p' || e.key === 'P') placeItem();
+    e.preventDefault();
+  }
+});
+document.addEventListener('keyup', e => { STATE.keys[e.key] = false; });
+
+// ========================================
+// START / NEW DAY
+// ========================================
+function startGame() {
+  STATE.screen = 'game';
+  STATE.score = 0;
+  STATE.day = 1;
+  STATE.edition = 1;
+  titleScreen.style.display = 'none';
+  gameScreen.style.display = 'flex';
+  resultScreen.classList.remove('visible');
+  startDay();
+}
+
+function startDay() {
+  STATE.px = 120; STATE.py = 130;
+  STATE.inventory = [];
+  STATE.layout = { headline: null, story2: null, photo: null, caption: null };
+  STATE.deadline = 100;
+  STATE.gameOver = false;
+  STATE.nearTile = null;
+
+  // Pick content for this edition
+  const h1 = STATE.headlinesPool.pop() || HEADLINES[Math.floor(Math.random()*HEADLINES.length)];
+  const h2 = STATE.headlinesPool.pop() || HEADLINES[Math.floor(Math.random()*HEADLINES.length)];
+  if (STATE.headlinesPool.length < 3) STATE.headlinesPool = [...HEADLINES].sort(()=>Math.random()-0.5);
+  const p1 = STATE.photosPool.pop() || PHOTOS[Math.floor(Math.random()*PHOTOS.length)];
+  const p2 = STATE.photosPool.pop() || PHOTOS[Math.floor(Math.random()*PHOTOS.length)];
+  if (STATE.photosPool.length < 2) STATE.photosPool = [...PHOTOS].sort(()=>Math.random()-0.5);
+  const s1 = STATE.sourcesPool.pop() || SOURCES[Math.floor(Math.random()*SOURCES.length)];
+  const s2 = STATE.sourcesPool.pop() || SOURCES[Math.floor(Math.random()*SOURCES.length)];
+
+  STATE.currentHeadlines = [
+    { id:'h1', headline: h1[0], body: h1[1] },
+    { id:'h2', headline: h2[0], body: h2[1] },
+  ];
+  STATE.currentPhotos = [
+    { id:'p1', emoji: p1.emoji, caption: p1.caption },
+    { id:'p2', emoji: p2.emoji, caption: p2.caption },
+  ];
+  STATE.currentSources = [
+    { id:'s1', quote: `"${s1}"` },
+    { id:'s2', quote: `"${s2}"` },
+  ];
+
+  // Build tiles
+  STATE.tiles = buildTileLayout(newsroom.offsetWidth, newsroom.offsetHeight);
+
+  // Assign content to tiles
+  const reporters = STATE.tiles.filter(t=>t.type==='reporter');
+  const sources   = STATE.tiles.filter(t=>t.type==='source');
+  const photos    = STATE.tiles.filter(t=>t.type==='photo');
+  reporters[0].content = STATE.currentHeadlines[0];
+  reporters[1].content = STATE.currentHeadlines[1];
+  sources[0].content = STATE.currentSources[0];
+  sources[1].content = STATE.currentSources[1];
+  photos[0].content = STATE.currentPhotos[0];
+  photos[1].content = STATE.currentPhotos[1];
+
+  renderTiles();
+  updateHUD();
+  updateLayout();
+  updateInventoryBar();
+  checkPrintReady();
+
+  // Day banner
+  const banner = document.createElement('div');
+  banner.id = 'day-banner';
+  banner.innerHTML = `<div class="day-banner-text">EDITION ${STATE.edition}<br><span style="font-size:14px;color:#aaa">DAY ${STATE.day}</span></div>`;
+  newsroom.appendChild(banner);
+  setTimeout(() => banner.remove(), 2100);
+
+  startBGMusic();
+  if (STATE.edition === 1 && STATE.day === 1) {
+    requestAnimationFrame(ts => { lastTime = ts; gameLoop(ts); });
+  }
+}
+
+// ========================================
+// RENDER TILES
+// ========================================
+function renderTiles() {
+  // Remove old tiles
+  newsroom.querySelectorAll('.tile,.story-bubble,.npc-speech').forEach(el=>el.remove());
+
+  STATE.tiles.forEach(t => {
+    const el = document.createElement('div');
+    el.className = `tile tile-${t.type}${t.collected?' collected':' ready'}`;
+    el.id = 'tile-'+t.id;
+    el.style.left = t.x + 'px';
+    el.style.top  = t.y + 'px';
+    el.innerHTML = `<span class="tile-icon">${t.emoji}</span><span class="tile-label">${t.label}</span>`;
+    newsroom.appendChild(el);
+
+    // Bubble showing content hint
+    if (!t.collected && t.content) {
+      const bub = document.createElement('div');
+      bub.className = 'story-bubble';
+      bub.id = 'bubble-'+t.id;
+      const hint = t.type==='reporter' ? t.content.headline.substring(0,22)+'…'
+                 : t.type==='source'   ? 'SOURCE QUOTE'
+                 : t.type==='photo'    ? t.content.emoji+' PHOTO'
+                 : '';
+      if (hint) {
+        bub.textContent = hint;
+        bub.style.left = (t.x - 10) + 'px';
+        bub.style.top  = (t.y - 26) + 'px';
+        newsroom.appendChild(bub);
+      }
+    }
+  });
+}
+
+// ========================================
+// GAME LOOP
+// ========================================
+let lastTime = 0;
+function gameLoop(ts) {
+  if (STATE.screen !== 'game' || STATE.gameOver) return;
+  const dt = Math.min((ts - lastTime) / 16.67, 3);
+  lastTime = ts;
+
+  handleMovement(dt);
+  updateDeadline(dt);
+  checkProximity();
+  updatePlayerPos();
+  updateNPCLines(ts);
+
+  requestAnimationFrame(gameLoop);
+}
+
+function handleMovement(dt) {
+  const spd = STATE.speed * dt;
+  let moved = false;
+  let nx = STATE.px, ny = STATE.py;
+  if (STATE.keys['ArrowLeft']  || STATE.keys['a'] || STATE.keys['A']) { nx -= spd; moved = true; }
+  if (STATE.keys['ArrowRight'] || STATE.keys['d'] || STATE.keys['D']) { nx += spd; moved = true; }
+  if (STATE.keys['ArrowUp']    || STATE.keys['w'] || STATE.keys['W']) { ny -= spd; moved = true; }
+  if (STATE.keys['ArrowDown']  || STATE.keys['s'] || STATE.keys['S']) { ny += spd; moved = true; }
+
+  // Bounds (newsroom only, not sidebar)
+  const nw = newsroom.offsetWidth - 32, nh = newsroom.offsetHeight - 32;
+  nx = Math.max(0, Math.min(nw, nx));
+  ny = Math.max(0, Math.min(nh, ny));
+  STATE.px = nx; STATE.py = ny;
+
+  // Step sound
+  if (moved) {
+    STATE.stepCounter++;
+    if (STATE.stepCounter % 18 === 0) sfxStep();
+  }
+}
+
+function updatePlayerPos() {
+  playerEl.style.left = STATE.px + 'px';
+  playerEl.style.top  = STATE.py + 'px';
+}
+
+// Deadline ticks down
+function updateDeadline(dt) {
+  STATE.deadline -= STATE.deadlineRate * dt;
+  if (STATE.deadline < 0) STATE.deadline = 0;
+
+  const pct = STATE.deadline;
+  deadlineBar.style.width = pct + '%';
+  deadlineBar.style.background = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--amber)' : 'var(--red)';
+
+  if (pct <= 0) {
+    // GAME OVER — force print whatever we have
+    sfxDeadline();
+    showResult(true);
+  }
+}
+
+// ========================================
+// PROXIMITY DETECTION
+// ========================================
+const INTERACT_DIST = 52;
+
+function checkProximity() {
+  let nearest = null, nearestDist = Infinity;
+  STATE.tiles.forEach(t => {
+    if (t.collected) return;
+    const cx = t.x + 32, cy = t.y + 32;
+    const px = STATE.px + 16, py = STATE.py + 16;
+    const d = Math.hypot(cx - px, cy - py);
+    if (d < INTERACT_DIST && d < nearestDist) {
+      nearestDist = d;
+      nearest = t;
+    }
+  });
+  STATE.nearTile = nearest;
+  interactPrompt.style.display = nearest ? 'block' : 'none';
+
+  // Highlight nearest tile
+  STATE.tiles.forEach(t => {
+    const el = document.getElementById('tile-'+t.id);
+    if (el) el.style.boxShadow = (t === nearest) ? '0 0 14px currentColor' : '';
+  });
+}
+
+// ========================================
+// INTERACTION
+// ========================================
+function interact() {
+  if (!STATE.nearTile) { sfxDeny(); return; }
+  const t = STATE.nearTile;
+  if (t.collected) { sfxDeny(); return; }
+
+  // Check inventory not full
+  const alreadyHasType = STATE.inventory.find(i => i.type === t.type);
+
+  if (t.type === 'printer') {
+    // Can only interact with printer when layout is ready
+    if (checkPrintReady()) { printEdition(); }
+    else { sfxDeny(); showStatus("Printer needs stories + photo first!"); }
+    return;
+  }
+  if (t.type === 'editor') {
+    sfxTalk();
+    showStatus("EDITOR: Get me a headline and a photo — or I'll replace you with a chatbot!");
+    npcSpeak(t, "Need that front page NOW!");
+    return;
+  }
+
+  // Collect content
+  if (t.content) {
+    // Check inv capacity: max 2 stories + 1 photo
+    if (t.type === 'reporter') {
+      const stories = STATE.inventory.filter(i=>i.type==='story');
+      if (stories.length >= 2) { sfxDeny(); showStatus("Bag full! Place a story first (press P)."); return; }
+      STATE.inventory.push({ type:'story', data: t.content, id: t.id });
+    } else if (t.type === 'source') {
+      STATE.inventory.push({ type:'source', data: t.content, id: t.id });
+    } else if (t.type === 'photo') {
+      const photos = STATE.inventory.filter(i=>i.type==='photo');
+      if (photos.length >= 1) { sfxDeny(); showStatus("Can only carry one photo at a time!"); return; }
+      STATE.inventory.push({ type:'photo', data: t.content, id: t.id });
+    }
+    t.collected = true;
+    sfxCollect();
+    spawnScorePop(STATE.px, STATE.py, '+10');
+    STATE.score += 10;
+    updateInventoryBar();
+    updateHUD();
+    renderTiles();
+    checkPrintReady();
+    npcSpeak(t, collectLine(t.type));
+  }
+}
+
+function collectLine(type) {
+  const lines = {
+    reporter: ["Got the scoop!", "This is HUGE.", "Breaking news!"],
+    source: ["Don't quote me on that.", "Off the record...", "That's my story."],
+    photo: ["That'll be front page!", "Perfect shot!"],
+  };
+  const arr = lines[type] || ["..."];
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+// ========================================
+// PLACE ITEM IN LAYOUT
+// ========================================
+function placeItem() {
+  if (STATE.inventory.length === 0) { sfxDeny(); showStatus("Nothing in your bag to place!"); return; }
+
+  const item = STATE.inventory[0]; // place first item
+
+  if (item.type === 'story') {
+    if (!STATE.layout.headline) {
+      STATE.layout.headline = item;
+      sfxPlace();
+      showStatus(`Placed headline: "${item.data.headline.substring(0,40)}"`);
+    } else if (!STATE.layout.story2) {
+      STATE.layout.story2 = item;
+      sfxPlace();
+      showStatus("Second story placed!");
+    } else {
+      sfxDeny(); showStatus("Both story slots are full!"); return;
+    }
+  } else if (item.type === 'source') {
+    if (STATE.layout.headline) {
+      STATE.layout.headline.data.source = item.data.quote;
+      sfxPlace();
+      showStatus("Source added to headline story!");
+    } else { sfxDeny(); showStatus("Place a headline story first!"); return; }
+  } else if (item.type === 'photo') {
+    if (!STATE.layout.photo) {
+      STATE.layout.photo = item;
+      STATE.layout.caption = item.data.caption;
+      sfxPlace();
+      showStatus("Photo placed!");
+    } else { sfxDeny(); showStatus("Photo slot full!"); return; }
+  }
+
+  // Remove placed item from inventory
+  STATE.inventory.shift();
+  updateInventoryBar();
+  updateLayout();
+  checkPrintReady();
+  spawnScorePop(STATE.px, STATE.py, '+20');
+  STATE.score += 20;
+  updateHUD();
+}
+
+// ========================================
+// UPDATE UI
+// ========================================
+function updateLayout() {
+  const l = STATE.layout;
+  // Headline
+  const sh = document.getElementById('slot-headline');
+  const sc_h = document.getElementById('sc-headline');
+  if (l.headline) {
+    sh.classList.add('filled');
+    sc_h.textContent = l.headline.data.headline;
+  } else {
+    sh.classList.remove('filled');
+    sc_h.textContent = '— empty —';
+  }
+  // Story2
+  const ss2 = document.getElementById('slot-story2');
+  const sc_s2 = document.getElementById('sc-story2');
+  if (l.story2) {
+    ss2.classList.add('filled');
+    sc_s2.textContent = l.story2.data.headline;
+  } else {
+    ss2.classList.remove('filled');
+    sc_s2.textContent = '— empty —';
+  }
+  // Photo
+  const sp = document.getElementById('slot-photo');
+  const sc_p = document.getElementById('sc-photo');
+  if (l.photo) {
+    sp.classList.add('filled');
+    sc_p.innerHTML = `<div class="slot-photo-img">${l.photo.data.emoji}</div>`;
+  } else {
+    sp.classList.remove('filled');
+    sc_p.innerHTML = `<div class="slot-photo-img">📷</div><div style="font-size:11px;color:#333">no photo</div>`;
+  }
+  // Caption
+  const sca = document.getElementById('slot-caption');
+  const sc_ca = document.getElementById('sc-caption');
+  if (l.caption) {
+    sca.classList.add('filled');
+    sc_ca.textContent = l.caption;
+  } else {
+    sca.classList.remove('filled');
+    sc_ca.textContent = '— empty —';
+  }
+}
+
+function checkPrintReady() {
+  const l = STATE.layout;
+  const ready = !!(l.headline && l.photo);
+  printBtn.disabled = !ready;
+  return ready;
+}
+
+function updateInventoryBar() {
+  const inv = STATE.inventory;
+  if (inv.length === 0) {
+    invDisplay.innerHTML = '<span class="inv-empty">— nothing —</span>';
+    return;
+  }
+  invDisplay.innerHTML = inv.map(i => {
+    const cls = i.type === 'photo' ? 'inv-item photo' : 'inv-item';
+    const label = i.type === 'story' ? '✎ '+i.data.headline.substring(0,22)+'…'
+                : i.type === 'source' ? '💬 '+i.data.quote.substring(0,18)+'…'
+                : '📷 '+i.data.emoji+' '+i.data.caption.substring(0,16)+'…';
+    return `<span class="${cls}">${label}</span>`;
+  }).join('');
+}
+
+function updateHUD() {
+  hudScore.textContent = STATE.score;
+  hudDay.textContent = STATE.day;
+  hudEdition.textContent = STATE.edition;
+  const stories = (STATE.layout.headline ? 1:0) + (STATE.layout.story2 ? 1:0);
+  const photos  = STATE.layout.photo ? 1 : 0;
+  hudStories.textContent = stories+'/2';
+  hudPhotos.textContent  = photos+'/1';
+}
+
+// ========================================
+// STATUS BOX
+// ========================================
+function showStatus(msg, dur=3000) {
+  statusBox.textContent = msg;
+  statusBox.classList.add('visible');
+  clearTimeout(STATE.statusTimer);
+  STATE.statusTimer = setTimeout(() => statusBox.classList.remove('visible'), dur);
+}
+
+// ========================================
+// NPC SPEECH BUBBLES
+// ========================================
+let lastNPCTime = 0;
+function updateNPCLines(ts) {
+  if (ts - lastNPCTime > 8000) {
+    lastNPCTime = ts;
+    const npcTiles = STATE.tiles.filter(t => t.type === 'reporter' || t.type === 'editor');
+    if (npcTiles.length) {
+      const t = npcTiles[Math.floor(Math.random()*npcTiles.length)];
+      npcSpeak(t, NPC_LINES[Math.floor(Math.random()*NPC_LINES.length)]);
+    }
+  }
+}
+
+function npcSpeak(tile, text) {
+  newsroom.querySelectorAll(`.npc-speech[data-id="${tile.id}"]`).forEach(el=>el.remove());
+  const el = document.createElement('div');
+  el.className = 'npc-speech';
+  el.dataset.id = tile.id;
+  el.textContent = text;
+  el.style.left = (tile.x + 68) + 'px';
+  el.style.top  = (tile.y) + 'px';
+  newsroom.appendChild(el);
+  setTimeout(() => el.remove(), 3100);
+}
+
+// ========================================
+// SCORE POP
+// ========================================
+function spawnScorePop(x, y, text) {
+  const el = document.createElement('div');
+  el.className = 'score-pop';
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  newsroom.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+// ========================================
+// PRINT EDITION
+// ========================================
+printBtn.addEventListener('click', () => {
+  if (checkPrintReady()) printEdition();
+});
+
+function printEdition() {
+  sfxPrint();
+  stopBGMusic();
+  showResult(false);
+}
+
+function showResult(fromDeadline) {
+  STATE.gameOver = true;
+  STATE.screen = 'result';
+
+  // Score bonuses
+  let bonus = 0;
+  if (STATE.layout.headline) bonus += 50;
+  if (STATE.layout.story2)   bonus += 30;
+  if (STATE.layout.photo)    bonus += 40;
+  if (STATE.layout.caption)  bonus += 10;
+  if (STATE.deadline > 50)   bonus += 50;
+  else if (STATE.deadline > 20) bonus += 20;
+  if (fromDeadline && !STATE.layout.headline) bonus = 0;
+  STATE.score += bonus;
+  if (bonus > 0) STATE.score = Math.max(0, STATE.score);
+
+  const date = new Date();
+  const dateStr = `Vol. ${STATE.edition}, No. ${STATE.day} — ${date.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
+  const hl = STATE.layout.headline;
+  const s2 = STATE.layout.story2;
+  const ph = STATE.layout.photo;
+
+  let paperHTML = `
+    <div class="result-masthead">THE DAILY PRESS</div>
+    <div class="result-dateline">${dateStr} &nbsp;|&nbsp; Price: 25¢</div>
+  `;
+  if (hl) {
+    paperHTML += `<div class="result-headline">${hl.data.headline}</div>`;
+    paperHTML += `<div class="result-body">${hl.data.body}${hl.data.source ? '<br><em>— '+hl.data.source+'</em>' : ''}</div>`;
+  } else {
+    paperHTML += `<div class="result-headline" style="color:#999">[ No headline filed ]</div>`;
+  }
+  if (ph) {
+    paperHTML += `<div class="result-photo">${ph.data.emoji}</div>`;
+    if (STATE.layout.caption) paperHTML += `<div style="font-size:10px;color:#777;text-align:center;margin-bottom:6px;font-style:italic">${STATE.layout.caption}</div>`;
+  }
+  if (s2) {
+    paperHTML += `<div style="font-size:13px;border-top:1px solid #ccc;padding-top:6px;margin-top:4px"><strong>${s2.data.headline}</strong><br><span style="color:#555">${s2.data.body}</span></div>`;
+  }
+  paperHTML += `<div class="result-score">EDITION SCORE: ${STATE.score} pts${fromDeadline?' ⚠ DEADLINE MISSED':''}</div>`;
+
+  document.getElementById('result-paper').innerHTML = paperHTML;
+  resultScreen.classList.add('visible');
+  sfxWin();
+}
+
+// ========================================
+// NEXT DAY / RESTART
+// ========================================
+document.getElementById('next-day-btn').addEventListener('click', () => {
+  resultScreen.classList.remove('visible');
+  STATE.screen = 'game';
+  STATE.day++;
+  STATE.edition++;
+  STATE.deadlineRate = Math.min(0.04 + STATE.edition * 0.005, 0.12); // harder each edition
+  STATE.gameOver = false;
+  startDay();
+  requestAnimationFrame(ts => { lastTime = ts; gameLoop(ts); });
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  resultScreen.classList.remove('visible');
+  STATE.screen = 'title';
+  STATE.score = 0;
+  STATE.day = 1;
+  STATE.edition = 1;
+  STATE.deadlineRate = 0.04;
+  titleScreen.style.display = 'flex';
+  gameScreen.style.display = 'none';
+  stopBGMusic();
+});
+
+// ========================================
+// KICK OFF
+// ========================================
+// Title screen key listener already set above
+// Game starts on Enter from title screen
+</script>
+</body>
+</html>
