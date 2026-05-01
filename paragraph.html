@@ -117,9 +117,11 @@
             let processed = lines.map(line => {
                 if (!line.trim()) return line;
 
-                // 1. Un-yell words, but protect acronyms and 1-letter words (like 'A' or 'I')
+                // 1. Un-yell words, but protect acronyms and 1-letter words
                 let words = line.split(/(\s+)/);
                 let unyelled = words.map(word => {
+                    // INTENTIONAL FEATURE: By stripping punctuation before checking the whitelist,
+                    // edge cases like "RCMP," or "(NATO)" will still correctly register as protected.
                     let justLetters = word.replace(/[^A-Z]/gi, '');
                     
                     if (justLetters.length > 1 && word === word.toUpperCase() && !/\d/.test(word)) {
@@ -147,17 +149,20 @@
 
         function smartQuotes() {
             const editor = document.getElementById('editor');
+            
+            // INTENTIONAL FEATURE: Extracting innerText here completely bypasses HTML DOM elements,
+            // meaning rogue <div> tags won't interfere with the regex anchors searching for line starts.
             let text = editor.innerText;
             
             let smart = text
-                // Opening double quotes
-                .replace(/(^|[\s\[\(\-])"/g, '$1“')
+                // Opening double quotes (Added 'm' flag for explicit true-line-start matching)
+                .replace(/(^|[\s\[\(\-])"/gm, '$1“')
                 // Closing double quotes
                 .replace(/"/g, '”')
-                // Opening single quotes
-                .replace(/(^|[\s\[\(\-])'/g, '$1‘')
+                // Opening single quotes (Added 'm' flag)
+                .replace(/(^|[\s\[\(\-])'/gm, '$1‘')
                 // Fix for year contractions (e.g. '94) -> changes back to apostrophe
-                .replace(/(^|[\s\[\(\-])‘(?=\d{2})/g, '$1’')
+                .replace(/(^|[\s\[\(\-])‘(?=\d{2})/gm, '$1’')
                 // Closing single quotes / apostrophes
                 .replace(/'/g, '’');
                 
