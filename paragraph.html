@@ -103,71 +103,71 @@
         }
 
         function sentenceCase() {
-            const editor = document.getElementById('editor');
-            let text = editor.innerText;
-            let lines = text.split(/\r?\n/);
+            try {
+                const editor = document.getElementById('editor');
+                let text = editor.innerText;
+                let lines = text.split(/\r?\n/);
 
-            // Add or remove acronyms specific to your workflow here
-            const whitelist = [
-                'US', 'UN', 'EU', 'MP', 'PM', 'USA', 'UK', 'RCMP', 'GST', 'HST', 
-                'CEO', 'CFO', 'CTO', 'COVID', 'NDP', 'CBC', 'CTV', 'MLA', 'MPP', 
-                'WHO', 'NATO', 'UNICEF', 'NAFTA'
-            ];
+                const whitelist = [
+                    'US', 'UN', 'EU', 'MP', 'PM', 'USA', 'UK', 'RCMP', 'GST', 'HST', 
+                    'CEO', 'CFO', 'CTO', 'COVID', 'NDP', 'CBC', 'CTV', 'MLA', 'MPP', 
+                    'WHO', 'NATO', 'UNICEF', 'NAFTA'
+                ];
 
-            let processed = lines.map(line => {
-                if (!line.trim()) return line;
+                let processed = lines.map(line => {
+                    if (!line.trim()) return line;
 
-                // 1. Un-yell words, but protect acronyms and 1-letter words
-                let words = line.split(/(\s+)/);
-                let unyelled = words.map(word => {
-                    // INTENTIONAL FEATURE: By stripping punctuation before checking the whitelist,
-                    // edge cases like "RCMP," or "(NATO)" will still correctly register as protected.
-                    let justLetters = word.replace(/[^A-Z]/gi, '');
-                    
-                    if (justLetters.length > 1 && word === word.toUpperCase() && !/\d/.test(word)) {
-                        if (whitelist.includes(justLetters)) {
-                            return word; // Protected by whitelist
+                    // 1. Un-yell Words (Smarter Logic for Alphanumerics)
+                    let words = line.split(/(\s+)/);
+                    let unyelled = words.map(word => {
+                        // Extract ONLY the letters to check if the word is "yelling"
+                        let justLetters = word.replace(/[^A-Za-z]/g, '');
+                        
+                        // If there is more than 1 letter, and ALL the letters are capitalized
+                        if (justLetters.length > 1 && justLetters === justLetters.toUpperCase()) {
+                            if (whitelist.includes(justLetters)) {
+                                return word; // Protected by whitelist (e.g., COVID-19)
+                            }
+                            return word.toLowerCase(); // Lowers everything (e.g., $2-BILLION -> $2-billion)
                         }
-                        return word.toLowerCase(); // Yelling -> Lowercase
-                    }
-                    return word;
-                }).join('');
+                        return word;
+                    }).join('');
 
-                // 2. Capitalize First Letter of Paragraph
-                let step1 = unyelled.replace(/^([^\p{L}]*)([\p{L}])/u, (match, p1, p2) => p1 + p2.toUpperCase());
+                    // 2. Capitalize First Letter of Paragraph
+                    // Swapped \p{L} for standard a-zA-Z to prevent silent browser crashes
+                    let step1 = unyelled.replace(/^([^a-zA-ZÀ-ÿ]*)([a-zA-ZÀ-ÿ])/, (match, p1, p2) => p1 + p2.toUpperCase());
 
-                // 3. Capitalize First Letter of Sentences
-                let step2 = step1.replace(/([.!?][^\p{L}]+)([\p{L}])/gu, (match, p1, p2) => p1 + p2.toUpperCase());
+                    // 3. Capitalize First Letter of Sentences
+                    let step2 = step1.replace(/([.!?][^a-zA-ZÀ-ÿ]+)([a-zA-ZÀ-ÿ])/g, (match, p1, p2) => p1 + p2.toUpperCase());
 
-                return step2;
-            });
+                    return step2;
+                });
 
-            // Route through refreshEditor for DOM consistency
-            refreshEditor(processed.join('\n'));
-            showStatus("Sentence Case Applied!");
+                refreshEditor(processed.join('\n'));
+                showStatus("Sentence Case Applied!");
+            } catch (err) {
+                showStatus("Error Applying Case.");
+                console.error(err);
+            }
         }
 
         function smartQuotes() {
-            const editor = document.getElementById('editor');
-            
-            // INTENTIONAL FEATURE: Extracting innerText here completely bypasses HTML DOM elements,
-            // meaning rogue <div> tags won't interfere with the regex anchors searching for line starts.
-            let text = editor.innerText;
-            
-            let smart = text
-                // Opening double quotes (Added 'm' flag for explicit true-line-start matching)
-                .replace(/(^|[\s\[\(\-])"/gm, '$1“')
-                // Closing double quotes
-                .replace(/"/g, '”')
-                // Opening single quotes (Added 'm' flag)
-                .replace(/(^|[\s\[\(\-])'/gm, '$1‘')
-                // Fix for year contractions (e.g. '94) -> changes back to apostrophe
-                .replace(/(^|[\s\[\(\-])‘(?=\d{2})/gm, '$1’')
-                // Closing single quotes / apostrophes
-                .replace(/'/g, '’');
+            try {
+                const editor = document.getElementById('editor');
+                let text = editor.innerText;
                 
-            refreshEditor(smart);
-            showStatus("Quotes Curled!");
+                let smart = text
+                    .replace(/(^|[\s\[\(\-])"/gm, '$1“')
+                    .replace(/"/g, '”')
+                    .replace(/(^|[\s\[\(\-])'/gm, '$1‘')
+                    .replace(/(^|[\s\[\(\-])‘(?=\d{2})/gm, '$1’')
+                    .replace(/'/g, '’');
+                    
+                refreshEditor(smart);
+                showStatus("Quotes Curled!");
+            } catch (err) {
+                showStatus("Error Applying Quotes.");
+            }
         }
 
         async function copyToClipboard() {
