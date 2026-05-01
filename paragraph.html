@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paragraph Fixer</title>
+    <title>Paragraph Fixed</title>
     <style>
         :root {
             --bg: #f8f9fa;
@@ -30,7 +30,6 @@
             color: #636e72;
         }
         
-        /* Toolbar moved to the top */
         .controls {
             display: flex;
             gap: 10px;
@@ -66,9 +65,9 @@
 
         #editor:focus { border-color: var(--accent); }
 
-        button {
-            padding: 10px 20px;
-            font-size: 14px;
+        button, select {
+            padding: 10px 18px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             border: none;
@@ -81,7 +80,13 @@
             background: #fff; 
             color: var(--accent); 
             border: 2px solid var(--accent); 
-            padding: 8px 18px; 
+        }
+        select.btn-outline {
+            appearance: none;
+            padding-right: 30px;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230984e3' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
         }
         button:active { transform: scale(0.98); }
         button:hover { opacity: 0.9; }
@@ -96,17 +101,30 @@
 </head>
 <body>
 
-    <h2>Paragraph Fixer</h2>
-    <p class="intro">Fix line breaks, eliminate double spaces, and format quotes.</p>
+    <h2>Paragraph Fixed</h2>
+    <p class="intro">Comprehensive tool for cleaning line breaks, spaces, and formatting.</p>
 
     <div class="controls">
-        <button class="btn-primary" onclick="fixText()">Fix Text</button>
+        <button class="btn-primary" onclick="fixAll()">Fix Text</button>
+        
+        <select class="btn-outline" onchange="runTool(this)">
+            <option value="" disabled selected>Tools</option>
+            <option value="fixParagraphs">Fix Double Paragraphs</option>
+            <option value="fixSpaces">Fix Double Spaces</option>
+            <option value="removeEdgeSpace">Remove White Space</option>
+            <option value="removeTabs">Remove Tabs</option>
+            <option value="unbreakSentences">Un-break Sentences</option>
+            <option value="enDash">Fix Dashes - En-Dash</option>
+            <option value="emDash">Fix Dashes - Em-Dash</option>
+        </select>
+
         <button class="btn-outline" onclick="smartQuotes()">Smart Quotes</button>
+        <button class="btn-outline" onclick="sentenceCase()">Sentence Case</button>
         <button class="btn-secondary" onclick="copyToClipboard()">Copy to Clipboard</button>
         <span id="statusMessage" class="status"></span>
     </div>
 
-    <div id="editor" contenteditable="true" spellcheck="false" placeholder="Paste text here..."></div>
+    <div id="editor" contenteditable="true" spellcheck="false"></div>
 
     <script>
         function refreshEditor(text) {
@@ -117,39 +135,84 @@
                 .join('');
         }
 
-        function fixText() {
+        // The master "Fix All" function
+        function fixAll() {
             const editor = document.getElementById('editor');
             let text = editor.innerText;
 
             let cleaned = text
-                .replace(/[ ]{2,}/g, ' ')  
-                .replace(/\n\s*\n/g, '\n') 
+                .replace(/\t/g, ' ')
+                .replace(/--/g, '—')
+                .replace(/[ ]{2,}/g, ' ')
+                .replace(/([^.!?\n])\n([^.!?\n])/g, '$1 $2')
+                .split('\n')
+                .map(line => line.trimEnd())
+                .join('\n')
+                .replace(/\n\s*\n/g, '\n')
                 .trim();
             
             refreshEditor(cleaned);
-            showStatus("Fixed!");
+            showStatus("All Fixed!");
+        }
+
+        // Tool Selector Logic
+        function runTool(select) {
+            const editor = document.getElementById('editor');
+            let text = editor.innerText;
+            let action = select.value;
+            let result = text;
+
+            switch(action) {
+                case "fixParagraphs":
+                    result = text.replace(/\n\s*\n/g, '\n');
+                    break;
+                case "fixSpaces":
+                    result = text.replace(/[ ]{2,}/g, ' ');
+                    break;
+                case "removeEdgeSpace":
+                    result = text.trim();
+                    break;
+                case "removeTabs":
+                    result = text.replace(/\t/g, ' ');
+                    break;
+                case "unbreakSentences":
+                    result = text.replace(/([^.!?\n])\n([^.!?\n])/g, '$1 $2');
+                    break;
+                case "enDash":
+                    result = text.replace(/--|—/g, '–');
+                    break;
+                case "emDash":
+                    result = text.replace(/--|–/g, '—');
+                    break;
+            }
+
+            refreshEditor(result);
+            showStatus("Tool Applied!");
+            select.selectedIndex = 0; // Reset dropdown
+        }
+
+        function sentenceCase() {
+            const editor = document.getElementById('editor');
+            let text = editor.innerText.toLowerCase();
+            let fixed = text.replace(/(^\s*\w|[.!?]\s+\w)/g, c => c.toUpperCase());
+            refreshEditor(fixed);
+            showStatus("Sentence Case!");
         }
 
         function smartQuotes() {
             const editor = document.getElementById('editor');
             let text = editor.innerText;
-
             let smart = text
-                .replace(/"(?=\w)/g, '“')     
-                .replace(/"/g, '”')            
-                .replace(/'(?=\w)/g, '‘')     
-                .replace(/'/g, '’');           
-
+                .replace(/"(?=\w)/g, '“').replace(/"/g, '”')
+                .replace(/'(?=\w)/g, '‘').replace(/'/g, '’');
             refreshEditor(smart);
             showStatus("Quotes Curled!");
         }
 
         async function copyToClipboard() {
             const editor = document.getElementById('editor');
-            const text = editor.innerText;
-            
             try {
-                await navigator.clipboard.writeText(text);
+                await navigator.clipboard.writeText(editor.innerText);
                 showStatus("Copied!");
             } catch (err) {
                 showStatus("Error.");
