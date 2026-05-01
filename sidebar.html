@@ -143,12 +143,50 @@
         #task-only-footer { display: none; height: 50px; background: #fff; border-top: 1px solid var(--border-color); align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 4000; flex-shrink: 0; }
         #task-only-footer.visible { display: flex; }
 
+        /* Zen Mode (Collapse Toolbars) Button */
+        .zen-toggle-btn {
+            position: absolute;
+            bottom: 65px;
+            right: 15px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            cursor: pointer;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #555;
+            opacity: 0.4;
+            transition: opacity 0.2s ease, bottom 0.2s ease;
+        }
+        .zen-toggle-btn:hover {
+            opacity: 1;
+            background: var(--item-hover);
+        }
+
+        /* Zen Mode State Triggers */
+        .editor-area.zen-mode .custom-toolbar-wrapper,
+        .editor-area.zen-mode .bottom-bar {
+            display: none !important;
+        }
+        .editor-area.zen-mode .zen-toggle-btn {
+            bottom: 15px;
+            opacity: 0.7;
+        }
+
         @media (max-width: 768px) {
             .editor-area { padding: 10px; } 
             .toggle-sidebar { width: 32px; padding: 0; }
             .btn-text { display: none; }
             .native-new-btn { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
             .radio-group { display: none; }
+            .zen-toggle-btn { right: 10px; bottom: 60px; }
+            .editor-area.zen-mode .zen-toggle-btn { bottom: 10px; }
         }
     </style>
 </head>
@@ -201,6 +239,8 @@
                     </div>
                 </div>
             </div>
+            <!-- The new Zen Mode Toggle Button -->
+            <button id="zen-toggle-btn" class="zen-toggle-btn" onclick="toggleZenMode()" title="Hide Toolbars">⤢</button>
         </div>
         <div id="task-only-footer"><button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 20px; font-weight:bold;">Notes</button></div>
     </div>
@@ -318,6 +358,16 @@
     function toggleTickTick() { const isVisible = todoContainer.classList.toggle('visible'); resizer.classList.toggle('visible', isVisible); localStorage.setItem('ticktick-pref', isVisible); }
     function createNewNote() { currentNoteId = Date.now(); quill.setText(`\n`, 'user'); quill.focus(); }
     
+    // Zen Mode Function
+    function toggleZenMode() {
+        const editorArea = document.querySelector('.editor-area');
+        const btn = document.getElementById('zen-toggle-btn');
+        const isZen = editorArea.classList.toggle('zen-mode');
+        
+        btn.innerHTML = isZen ? '⤡' : '⤢';
+        btn.title = isZen ? "Show Toolbars" : "Hide Toolbars";
+    }
+
     function exportFullDatabase() { 
         const raw = localStorage.getItem('my-github-notes'); 
         const blob = new Blob([raw], { type: 'application/json' }); 
