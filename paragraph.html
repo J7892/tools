@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paragraph Fixer-2</title>
+    <title>Paragraph Fixer</title>
     <style>
         :root {
             --bg: #f8f9fa;
@@ -43,7 +43,7 @@
 <body>
 
     <h2>Paragraph Fixer</h2>
-    <p class="intro">Clean messy text, format quotes, and fix capitalization while protecting proper nouns.</p>
+    <p class="intro">Clean messy text, format quotes, and fix capitalization while protecting acronyms.</p>
 
     <div class="controls">
         <button class="btn-primary" onclick="fixAll()">Fix Text</button>
@@ -69,7 +69,6 @@
         function refreshEditor(text) {
             const editor = document.getElementById('editor');
             let paragraphs = text.split(/\r?\n/);
-            // Added || '<br>' so empty lines remain clickable and don't collapse
             editor.innerHTML = paragraphs.map(p => `<div>${p || '<br>'}</div>`).join('');
         }
 
@@ -106,44 +105,62 @@
         function sentenceCase() {
             const editor = document.getElementById('editor');
             let text = editor.innerText;
-
-            // Split into physical lines first to guarantee paragraph starts are caught
             let lines = text.split(/\r?\n/);
+
+            // Add or remove acronyms specific to your workflow here
+            const whitelist = [
+                'US', 'UN', 'EU', 'MP', 'PM', 'USA', 'UK', 'RCMP', 'GST', 'HST', 
+                'CEO', 'CFO', 'CTO', 'COVID', 'NDP', 'CBC', 'CTV', 'MLA', 'MPP', 
+                'WHO', 'NATO', 'UNICEF', 'NAFTA'
+            ];
 
             let processed = lines.map(line => {
                 if (!line.trim()) return line;
 
-                // 1. Un-yell words (ALL CAPS > 2 letters) to protect acronyms
+                // 1. Un-yell words, but protect acronyms and 1-letter words (like 'A' or 'I')
                 let words = line.split(/(\s+)/);
                 let unyelled = words.map(word => {
                     let justLetters = word.replace(/[^A-Z]/gi, '');
-                    if (justLetters.length > 2 && word === word.toUpperCase() && !/\d/.test(word)) {
-                        return word.toLowerCase();
+                    
+                    if (justLetters.length > 1 && word === word.toUpperCase() && !/\d/.test(word)) {
+                        if (whitelist.includes(justLetters)) {
+                            return word; // Protected by whitelist
+                        }
+                        return word.toLowerCase(); // Yelling -> Lowercase
                     }
                     return word;
                 }).join('');
 
                 // 2. Capitalize First Letter of Paragraph
-                // [\p{L}] finds the first Unicode letter, ignoring quotes/spaces before it
                 let step1 = unyelled.replace(/^([^\p{L}]*)([\p{L}])/u, (match, p1, p2) => p1 + p2.toUpperCase());
 
                 // 3. Capitalize First Letter of Sentences
-                // Looks for .!? followed by non-letters (like quotes or spaces), then a letter
                 let step2 = step1.replace(/([.!?][^\p{L}]+)([\p{L}])/gu, (match, p1, p2) => p1 + p2.toUpperCase());
 
                 return step2;
             });
 
-            // Rebuild HTML
-            editor.innerHTML = processed.map(p => `<div>${p || '<br>'}</div>`).join('');
+            // Route through refreshEditor for DOM consistency
+            refreshEditor(processed.join('\n'));
             showStatus("Sentence Case Applied!");
         }
 
         function smartQuotes() {
             const editor = document.getElementById('editor');
-            let smart = editor.innerText
-                .replace(/"(?=\w)/g, '“').replace(/"/g, '”')
-                .replace(/'(?=\w)/g, '‘').replace(/'/g, '’');
+            let text = editor.innerText;
+            
+            let smart = text
+                // Opening double quotes
+                .replace(/(^|[\s\[\(\-])"/g, '$1“')
+                // Closing double quotes
+                .replace(/"/g, '”')
+                // Opening single quotes
+                .replace(/(^|[\s\[\(\-])'/g, '$1‘')
+                // Fix for year contractions (e.g. '94) -> changes back to apostrophe
+                .replace(/(^|[\s\[\(\-])‘(?=\d{2})/g, '$1’')
+                // Closing single quotes / apostrophes
+                .replace(/'/g, '’');
+                
             refreshEditor(smart);
             showStatus("Quotes Curled!");
         }
