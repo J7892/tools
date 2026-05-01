@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Notes and Tasks</title>
     
+    <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#333333">
     <link rel="manifest" href="/manifest.json">
     <script>
@@ -323,6 +324,9 @@
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
         a.download = `notes_tasks_full_backup_${new Date().toISOString().split('T')[0]}.json`; 
         a.click(); 
+        
+        // Record the backup timestamp
+        localStorage.setItem('last-backup-date', Date.now());
     }
 
     function emailNote() {
@@ -414,6 +418,22 @@
         reader.readAsText(file);
     }
 
+    // Daily Backup Check Logic
+    function checkDailyBackup() {
+        const lastBackup = localStorage.getItem('last-backup-date');
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+        if (!lastBackup || (now - parseInt(lastBackup)) > oneDay) {
+            if (confirm("It's been over a day since your last backup. Would you like to download a backup database now?")) {
+                exportFullDatabase();
+            } else {
+                // Reset the timer even if they click cancel so they aren't spammed on every refresh today
+                localStorage.setItem('last-backup-date', now);
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         renderNoteList();
         const savedHeight = localStorage.getItem('ticktick-height');
@@ -427,6 +447,9 @@
         document.querySelector(`input[value="${wp}"]`).checked = true;
         const lastId = localStorage.getItem('last-note-id');
         if (lastId) loadNote(parseInt(lastId)); else createNewNote();
+        
+        // Trigger the backup check
+        checkDailyBackup();
     });
 </script>
 </body>
