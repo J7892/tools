@@ -19,94 +19,33 @@
             margin: 15px auto;
             padding: 20px;
         }
-        h2 { 
-            font-weight: 700;
-            color: var(--accent);
-            margin: 0 0 5px 0;
-        }
-        p.intro {
-            margin: 0 0 20px 0;
-            font-size: 14px;
-            color: #636e72;
-        }
-        
+        h2 { font-weight: 700; color: var(--accent); margin: 0 0 5px 0; }
+        p.intro { margin: 0 0 20px 0; font-size: 14px; color: #636e72; }
         .controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-            padding: 10px 0;
-            background: var(--bg);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+            margin-bottom: 15px; padding: 10px 0; background: var(--bg);
+            position: sticky; top: 0; z-index: 10;
         }
-
         #editor {
-            width: 100%;
-            min-height: 600px;
-            padding: 25px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            font-size: 16px;
-            background: white;
-            box-sizing: border-box;
-            outline: none;
-            overflow-y: auto;
-            line-height: 1.5;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            width: 100%; min-height: 600px; padding: 25px; border: 2px solid var(--border);
+            border-radius: 12px; font-size: 16px; background: white; box-sizing: border-box;
+            outline: none; overflow-y: auto; line-height: 1.5; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
-        
-        #editor div {
-            margin-bottom: 0.8em;
-            min-height: 1em;
-        }
-
-        #editor:focus { border-color: var(--accent); }
-
-        button, select {
-            padding: 10px 18px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            border-radius: 6px;
-            transition: transform 0.1s, opacity 0.2s;
-        }
+        #editor div { margin-bottom: 0.8em; min-height: 1em; }
+        button, select { padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; border-radius: 6px; }
         .btn-primary { background: var(--accent); color: white; }
         .btn-secondary { background: #636e72; color: white; }
-        .btn-outline { 
-            background: #fff; 
-            color: var(--accent); 
-            border: 2px solid var(--accent); 
-        }
-        select.btn-outline {
-            appearance: none;
-            padding-right: 30px;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230984e3' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-        }
-        button:active { transform: scale(0.98); }
-        button:hover { opacity: 0.9; }
-
-        .status { 
-            font-size: 13px; 
-            color: #00b894; 
-            font-weight: 700;
-            margin-left: 5px;
-        }
+        .btn-outline { background: #fff; color: var(--accent); border: 2px solid var(--accent); }
+        .status { font-size: 13px; color: #00b894; font-weight: 700; margin-left: 5px; }
     </style>
 </head>
 <body>
 
     <h2>Paragraph Fixed</h2>
-    <p class="intro">Comprehensive tool for cleaning line breaks, spaces, and formatting.</p>
+    <p class="intro">Clean messy text, format quotes, and fix capitalization without losing proper nouns.</p>
 
     <div class="controls">
         <button class="btn-primary" onclick="fixAll()">Fix Text</button>
-        
         <select class="btn-outline" onchange="runTool(this)">
             <option value="" disabled selected>Tools</option>
             <option value="fixParagraphs">Fix Double Paragraphs</option>
@@ -117,7 +56,6 @@
             <option value="enDash">Fix Dashes - En-Dash</option>
             <option value="emDash">Fix Dashes - Em-Dash</option>
         </select>
-
         <button class="btn-outline" onclick="smartQuotes()">Smart Quotes</button>
         <button class="btn-outline" onclick="sentenceCase()">Sentence Case</button>
         <button class="btn-secondary" onclick="copyToClipboard()">Copy to Clipboard</button>
@@ -130,79 +68,63 @@
         function refreshEditor(text) {
             const editor = document.getElementById('editor');
             let paragraphs = text.split('\n');
-            editor.innerHTML = paragraphs
-                .map(p => `<div>${p}</div>`)
-                .join('');
+            editor.innerHTML = paragraphs.map(p => `<div>${p}</div>`).join('');
         }
 
-        // The master "Fix All" function
         function fixAll() {
             const editor = document.getElementById('editor');
-            let text = editor.innerText;
-
-            let cleaned = text
+            let cleaned = editor.innerText
                 .replace(/\t/g, ' ')
                 .replace(/--/g, '—')
                 .replace(/[ ]{2,}/g, ' ')
                 .replace(/([^.!?\n])\n([^.!?\n])/g, '$1 $2')
-                .split('\n')
-                .map(line => line.trimEnd())
-                .join('\n')
-                .replace(/\n\s*\n/g, '\n')
-                .trim();
-            
+                .split('\n').map(line => line.trimEnd()).join('\n')
+                .replace(/\n\s*\n/g, '\n').trim();
             refreshEditor(cleaned);
             showStatus("All Fixed!");
         }
 
-        // Tool Selector Logic
         function runTool(select) {
             const editor = document.getElementById('editor');
             let text = editor.innerText;
             let action = select.value;
             let result = text;
-
-            switch(action) {
-                case "fixParagraphs":
-                    result = text.replace(/\n\s*\n/g, '\n');
-                    break;
-                case "fixSpaces":
-                    result = text.replace(/[ ]{2,}/g, ' ');
-                    break;
-                case "removeEdgeSpace":
-                    result = text.trim();
-                    break;
-                case "removeTabs":
-                    result = text.replace(/\t/g, ' ');
-                    break;
-                case "unbreakSentences":
-                    result = text.replace(/([^.!?\n])\n([^.!?\n])/g, '$1 $2');
-                    break;
-                case "enDash":
-                    result = text.replace(/--|—/g, '–');
-                    break;
-                case "emDash":
-                    result = text.replace(/--|–/g, '—');
-                    break;
-            }
-
+            if(action === "fixParagraphs") result = text.replace(/\n\s*\n/g, '\n');
+            if(action === "fixSpaces") result = text.replace(/[ ]{2,}/g, ' ');
+            if(action === "removeEdgeSpace") result = text.trim();
+            if(action === "removeTabs") result = text.replace(/\t/g, ' ');
+            if(action === "unbreakSentences") result = text.replace(/([^.!?\n])\n([^.!?\n])/g, '$1 $2');
+            if(action === "enDash") result = text.replace(/--|—/g, '–');
+            if(action === "emDash") result = text.replace(/--|–/g, '—');
             refreshEditor(result);
             showStatus("Tool Applied!");
-            select.selectedIndex = 0; // Reset dropdown
+            select.selectedIndex = 0;
         }
 
         function sentenceCase() {
             const editor = document.getElementById('editor');
-            let text = editor.innerText.toLowerCase();
-            let fixed = text.replace(/(^\s*\w|[.!?]\s+\w)/g, c => c.toUpperCase());
+            let text = editor.innerText;
+
+            // 1. Only lowercase words that are FULLY uppercase (fixing "YELLING") 
+            // but ignore short acronyms or mixed-case proper nouns.
+            let words = text.split(/(\s+)/);
+            let processed = words.map(word => {
+                if (word.length > 3 && word === word.toUpperCase() && !/\d/.test(word)) {
+                    return word.toLowerCase();
+                }
+                return word;
+            }).join('');
+
+            // 2. Capitalize the start of sentences
+            let fixed = processed.replace(/(^\s*\w|[.!?]\s+\w)/g, c => c.toUpperCase());
+
             refreshEditor(fixed);
-            showStatus("Sentence Case!");
+            showStatus("Smart Case Applied!");
         }
 
         function smartQuotes() {
             const editor = document.getElementById('editor');
-            let text = editor.innerText;
-            let smart = text
+            let smart = editor.innerText
                 .replace(/"(?=\w)/g, '“').replace(/"/g, '”')
                 .replace(/'(?=\w)/g, '‘').replace(/'/g, '’');
             refreshEditor(smart);
@@ -210,13 +132,10 @@
         }
 
         async function copyToClipboard() {
-            const editor = document.getElementById('editor');
             try {
-                await navigator.clipboard.writeText(editor.innerText);
+                await navigator.clipboard.writeText(document.getElementById('editor').innerText);
                 showStatus("Copied!");
-            } catch (err) {
-                showStatus("Error.");
-            }
+            } catch (err) { showStatus("Error."); }
         }
 
         function showStatus(msg) {
