@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paragraph Fixer</title>
+    <title>Paragraph Fixer-2</title>
     <style>
         :root {
             --bg: #f8f9fa;
@@ -68,9 +68,9 @@
     <script>
         function refreshEditor(text) {
             const editor = document.getElementById('editor');
-            // Ensure we split by all possible newline types
             let paragraphs = text.split(/\r?\n/);
-            editor.innerHTML = paragraphs.map(p => `<div>${p}</div>`).join('');
+            // Added || '<br>' so empty lines remain clickable and don't collapse
+            editor.innerHTML = paragraphs.map(p => `<div>${p || '<br>'}</div>`).join('');
         }
 
         function fixAll() {
@@ -107,25 +107,35 @@
             const editor = document.getElementById('editor');
             let text = editor.innerText;
 
-            // 1. Fix "YELLING" words first: Lowercase words that are ALL CAPS and > 2 chars
-            // We do this word-by-word so we don't touch proper nouns like 'Jan.' or 'François'
-            let yellingFixed = text.split(/(\s+)/).map(word => {
-                if (word.length > 2 && word === word.toUpperCase() && !/\d/.test(word)) {
-                    return word.toLowerCase();
-                }
-                return word;
-            }).join('');
+            // Split into physical lines first to guarantee paragraph starts are caught
+            let lines = text.split(/\r?\n/);
 
-            // 2. Capitalization Logic
-            // This Regex finds:
-            // (a) Start of string: ^\s*\w
-            // (b) Start of new line: \n\s*\w
-            // (c) After punctuation: [.!?]\s+\w
-            let fixed = yellingFixed.replace(/(^\s*\w|[\.\!\?]\s+\w|\n\s*\w)/g, function(match) {
-                return match.toUpperCase();
+            let processed = lines.map(line => {
+                if (!line.trim()) return line;
+
+                // 1. Un-yell words (ALL CAPS > 2 letters) to protect acronyms
+                let words = line.split(/(\s+)/);
+                let unyelled = words.map(word => {
+                    let justLetters = word.replace(/[^A-Z]/gi, '');
+                    if (justLetters.length > 2 && word === word.toUpperCase() && !/\d/.test(word)) {
+                        return word.toLowerCase();
+                    }
+                    return word;
+                }).join('');
+
+                // 2. Capitalize First Letter of Paragraph
+                // [\p{L}] finds the first Unicode letter, ignoring quotes/spaces before it
+                let step1 = unyelled.replace(/^([^\p{L}]*)([\p{L}])/u, (match, p1, p2) => p1 + p2.toUpperCase());
+
+                // 3. Capitalize First Letter of Sentences
+                // Looks for .!? followed by non-letters (like quotes or spaces), then a letter
+                let step2 = step1.replace(/([.!?][^\p{L}]+)([\p{L}])/gu, (match, p1, p2) => p1 + p2.toUpperCase());
+
+                return step2;
             });
 
-            refreshEditor(fixed);
+            // Rebuild HTML
+            editor.innerHTML = processed.map(p => `<div>${p || '<br>'}</div>`).join('');
             showStatus("Sentence Case Applied!");
         }
 
