@@ -105,27 +105,35 @@
         function sentenceCase() {
             const editor = document.getElementById('editor');
             let text = editor.innerText;
-            
-            // 1. Smarter lowercase: only lowercase words that are 100% UPPERCASE
-            let words = text.split(/(\s+)/);
-            let processed = words.map(word => {
-                if (word.length > 2 && word === word.toUpperCase() && !/\d/.test(word)) {
-                    return word.toLowerCase();
-                }
-                return word;
-            }).join('');
 
-            // 2. Fix Sentence Capitalization
-            // This regex targets: 
-            // - Start of the string (^)
-            // - After punctuation and whitespace ([.!?]\s+)
-            // - Start of a new line/paragraph (\n)
-            let fixed = processed.replace(/(^\s*\w|[\.\!\?]\s+\w|\n\s*\w)/g, function(match) {
-                return match.toUpperCase();
+            // Step 1: Breakdown text into paragraphs
+            let paragraphs = text.split('\n');
+
+            let processedParagraphs = paragraphs.map(para => {
+                if (!para.trim()) return para;
+
+                // Step 2: Handle "Yelling" words (Smart Lowercase)
+                // We split by words and only lowercase fully uppercase words > 2 chars
+                let words = para.split(/(\s+)/);
+                let smartLower = words.map(word => {
+                    if (word.length > 2 && word === word.toUpperCase() && !/\d/.test(word)) {
+                        return word.toLowerCase();
+                    }
+                    return word;
+                }).join('');
+
+                // Step 3: Capitalize first letter of paragraph AND first letter after [.!?]
+                // Force the very first character of the paragraph to be uppercase
+                let capitalized = smartLower.replace(/^\s*\w/, c => c.toUpperCase());
+                
+                // Then fix sentences within that paragraph
+                capitalized = capitalized.replace(/([.!?]\s+)(\w)/g, (match, p1, p2) => p1 + p2.toUpperCase());
+
+                return capitalized;
             });
 
-            refreshEditor(fixed);
-            showStatus("Smart Case Applied!");
+            refreshEditor(processedParagraphs.join('\n'));
+            showStatus("Sentence Case Fixed!");
         }
 
         function smartQuotes() {
