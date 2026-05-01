@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paragraph Fixer-2</title>
+    <title>Paragraph Fixer-3</title>
     <style>
         :root {
             --bg: #f8f9fa;
@@ -31,7 +31,8 @@
             border-radius: 12px; font-size: 16px; background: white; box-sizing: border-box;
             outline: none; overflow-y: auto; line-height: 1.5; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
-        #editor div { margin-bottom: 0.8em; min-height: 1em; }
+        /* This creates the 0.8em visual spacing */
+        #editor div { margin-bottom: 0.8em; min-height: 1.5em; }
         #editor:focus { border-color: var(--accent); }
         button, select { padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; border-radius: 6px; }
         .btn-primary { background: var(--accent); color: white; }
@@ -66,10 +67,10 @@
     <div id="editor" contenteditable="true" spellcheck="false"></div>
 
     <script>
+        // Standardizes the UI by putting text into <div> containers for 0.8em spacing
         function refreshEditor(text) {
             const editor = document.getElementById('editor');
-            // Standardize newlines before splitting to avoid empty div issues
-            let paragraphs = text.split(/\n/);
+            const paragraphs = text.split(/\n/);
             editor.innerHTML = paragraphs.map(p => `<div>${p}</div>`).join('');
         }
 
@@ -105,15 +106,21 @@
 
         function sentenceCase() {
             const editor = document.getElementById('editor');
-            // We get the raw text first to ensure we have clean paragraphs
-            let text = editor.innerText;
-            let lines = text.split('\n');
+            const paragraphs = editor.querySelectorAll('div');
+            
+            // If the editor is just raw text without divs, fix that first
+            if (paragraphs.length === 0) {
+                refreshEditor(editor.innerText);
+                return sentenceCase();
+            }
 
-            let processed = lines.map(line => {
-                if (!line.trim()) return line;
+            paragraphs.forEach(div => {
+                let text = div.innerText;
+                if (!text.trim()) return;
 
                 // 1. Smart Lowercase: only lowercase words that are 100% UPPERCASE and > 2 chars
-                let words = line.split(/(\s+)/);
+                // This protects Proper Nouns like 'François' or 'GST'
+                let words = text.split(/(\s+)/);
                 let step1 = words.map(word => {
                     if (word.length > 2 && word === word.toUpperCase() && !/\d/.test(word)) {
                         return word.toLowerCase();
@@ -124,13 +131,12 @@
                 // 2. Capitalize the absolute first letter of the paragraph
                 let step2 = step1.replace(/^\s*\w/, c => c.toUpperCase());
 
-                // 3. Capitalize first letter after [.!?] followed by space
+                // 3. Capitalize first letter after sentence terminators [.!?]
                 let step3 = step2.replace(/([.!?]\s+)(\w)/g, (match, p1, p2) => p1 + p2.toUpperCase());
 
-                return step3;
+                div.innerText = step3;
             });
 
-            refreshEditor(processed.join('\n'));
             showStatus("Sentence Case Fixed!");
         }
 
