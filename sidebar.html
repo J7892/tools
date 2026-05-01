@@ -114,14 +114,10 @@
         .ql-editor p:last-child { margin-bottom: 0 !important; }
         .ql-editor > *:first-child { font-size: 1.5em !important; font-weight: bold !important; margin-bottom: 0.8em !important; }
 
-        /* Bottom Bar */
         .bottom-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border-color); width: 100%; background: var(--editor-bg); flex-shrink: 0; }
-        .bottom-bar-desktop-left, .bottom-bar-desktop-right { display: flex; gap: 8px; align-items: center; }
         .status-container { width: 65px; display: inline-block; flex-shrink: 0; }
         #status { font-size: 0.8em; font-weight: 600; }
         .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; }
-        .mobile-toggle-btn { display: none; }
-        .bottom-bar-mobile-menu { display: none; }
 
         /* Sidebar Note Items */
         .note-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
@@ -153,24 +149,6 @@
             .btn-text { display: none; }
             .native-new-btn { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
             .radio-group { display: none; }
-            
-            /* Responsive Bottom Bar Adjustments */
-            .bottom-bar { flex-direction: column; align-items: stretch; padding: 8px 0; }
-            .bottom-bar-desktop-left { justify-content: space-between; width: 100%; }
-            .hide-on-mobile { display: none !important; }
-            .mobile-toggle-btn { display: block; padding: 6px 12px; }
-            
-            .bottom-bar-mobile-menu { 
-                display: none; 
-                flex-direction: row; 
-                flex-wrap: wrap;
-                gap: 8px; 
-                padding-top: 10px; 
-                margin-top: 8px; 
-                border-top: 1px solid var(--border-color); 
-            }
-            .bottom-bar.expanded .bottom-bar-mobile-menu { display: flex; }
-            .bottom-bar.expanded .mobile-toggle-btn { background: #e0e0e0; }
         }
     </style>
 </head>
@@ -205,17 +183,15 @@
                     </div>
                     <div id="editor-container"></div>
                 </div>
-                
-                <div class="bottom-bar" id="bottom-toolbar">
-                    <div class="bottom-bar-desktop-left">
+                <div class="bottom-bar">
+                    <div style="display:flex; gap:8px; align-items:center;">
                         <div class="status-container">
                             <span id="status">Saved</span>
                         </div>
-                        <button class="btn-tool mobile-toggle-btn" onclick="document.getElementById('bottom-toolbar').classList.toggle('expanded')">Tools ▼</button>
-                        <button class="btn-tool hide-on-mobile" onclick="toggleTickTick()">Tasks</button>
-                        <button class="btn-tool hide-on-mobile" onclick="setViewMode('tasks')">Focus Tasks</button>
+                        <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">Tasks</button>
+                        <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">Focus Tasks</button>
                     </div>
-                    <div class="bottom-bar-desktop-right hide-on-mobile">
+                    <div style="display:flex; gap:8px; align-items:center;">
                         <button class="btn-tool" onclick="emailNote()">Email</button>
                         <button class="btn-tool" onclick="exportSingleNote()">Export</button>
                         <div class="radio-group">
@@ -223,15 +199,7 @@
                             <label><input type="radio" name="view-width" value="narrow" onclick="setWidth('narrow')"> Narrow</label>
                         </div>
                     </div>
-                    <!-- This menu is hidden by default on mobile until 'Tools' is clicked -->
-                    <div class="bottom-bar-mobile-menu">
-                        <button class="btn-tool" onclick="toggleTickTick()">Tasks</button>
-                        <button class="btn-tool" onclick="setViewMode('tasks')">Focus Tasks</button>
-                        <button class="btn-tool" onclick="emailNote()">Email</button>
-                        <button class="btn-tool" onclick="exportSingleNote()">Export</button>
-                    </div>
                 </div>
-
             </div>
         </div>
         <div id="task-only-footer"><button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 20px; font-weight:bold;">Notes</button></div>
@@ -357,6 +325,7 @@
         a.download = `notes_tasks_full_backup_${new Date().toISOString().split('T')[0]}.json`; 
         a.click(); 
         
+        // Record the backup timestamp
         localStorage.setItem('last-backup-date', Date.now());
     }
 
@@ -449,15 +418,17 @@
         reader.readAsText(file);
     }
 
+    // Daily Backup Check Logic
     function checkDailyBackup() {
         const lastBackup = localStorage.getItem('last-backup-date');
         const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000; 
+        const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
         if (!lastBackup || (now - parseInt(lastBackup)) > oneDay) {
             if (confirm("It's been over a day since your last backup. Would you like to download a backup database now?")) {
                 exportFullDatabase();
             } else {
+                // Reset the timer even if they click cancel so they aren't spammed on every refresh today
                 localStorage.setItem('last-backup-date', now);
             }
         }
@@ -477,6 +448,7 @@
         const lastId = localStorage.getItem('last-note-id');
         if (lastId) loadNote(parseInt(lastId)); else createNewNote();
         
+        // Trigger the backup check
         checkDailyBackup();
     });
 </script>
