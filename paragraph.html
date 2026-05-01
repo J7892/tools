@@ -66,147 +66,150 @@
     <div id="editor" contenteditable="true" spellcheck="false"></div>
 
     <script>
-        // NORMALIZED READ: Safely extract text from the editor, handling div/br/p tags
-function getNormalizedText() {
-    const editor = document.getElementById('editor');
-    let html = editor.innerHTML;
-    // Replace divs and breaks with newlines, strip remaining tags, decode HTML entities
-    let text = html
-        .replace(/<div[^>]*><br><\/div>/gi, '\n')
-        .replace(/<div[^>]*>/gi, '\n')
-        .replace(/<br[^>]*>/gi, '\n')
-        .replace(/<p[^>]*>/gi, '\n')
-        .replace(/<[^>]+>/g, '');
-    
-    // Decode basic HTML entities that innerHTML might create
-    const txt = document.createElement("textarea");
-    txt.innerHTML = text;
-    return txt.value;
-}
-
-function refreshEditor(text) {
-    const editor = document.getElementById('editor');
-    let paragraphs = text.split(/\r?\n/);
-    editor.innerHTML = paragraphs.map(p => `<div>${p || '<br>'}</div>`).join('');
-}
-
-// The Master Pipeline
-function fixAll() {
-    let text = getNormalizedText();
-    
-    // 1. Core structural cleanup (spaces, tabs)
-    // NOTE: unbreakSentences removed per feedback
-    let cleaned = text
-        .replace(/\t/g, ' ')
-        .replace(/--/g, '—')
-        .replace(/[ ]{2,}/g, ' ')
-        .split('\n').map(line => line.trimEnd()).join('\n')
-        .replace(/\n\s*\n/g, '\n').trim();
-    
-    refreshEditor(cleaned); // Apply structural fixes to DOM
-
-    // 2. Pass DOM to Case Fixer
-    sentenceCase(true);
-
-    // 3. Pass DOM to Smart Quotes
-    smartQuotes(true);
-
-    // 4. Declare Victory
-    showStatus("All Fixed!");
-}
-
-function runTool(select) {
-    let text = getNormalizedText();
-    let action = select.value;
-    let result = text;
-    
-    if(action === "fixParagraphs") result = text.replace(/\n\s*\n/g, '\n');
-    if(action === "fixSpaces") result = text.replace(/[ ]{2,}/g, ' ');
-    if(action === "removeEdgeSpace") result = text.trim();
-    if(action === "removeTabs") result = text.replace(/\t/g, ' ');
-    // Kept here as an optional tool, but removed from fixAll
-    if(action === "unbreakSentences") result = text.replace(/([^.!?\n])\n([^.!?\n])/g, '$1 $2');
-    if(action === "enDash") result = text.replace(/--|—/g, '–');
-    if(action === "emDash") result = text.replace(/--|–/g, '—');
-    
-    refreshEditor(result);
-    showStatus("Tool Applied!");
-    select.selectedIndex = 0;
-}
-
-function sentenceCase(silent = false) {
-    try {
-        let text = getNormalizedText();
-        let lines = text.split(/\r?\n/);
-
-        const whitelist = [
-            'US', 'UN', 'EU', 'MP', 'PM', 'USA', 'UK', 'RCMP', 'GST', 'HST', 
-            'CEO', 'CFO', 'CTO', 'COVID', 'NDP', 'CBC', 'CTV', 'MLA', 'MPP', 
-            'WHO', 'NATO', 'UNICEF', 'NAFTA'
-        ];
-
-        let processed = lines.map(line => {
-            if (!line.trim()) return line;
-
-            let words = line.split(/(\s+)/);
-            let unyelled = words.map(word => {
-                let justLetters = word.replace(/[^A-Za-z]/g, '');
-                if (justLetters.length > 1 && justLetters === justLetters.toUpperCase()) {
-                    if (whitelist.includes(justLetters)) {
-                        return word; 
-                    }
-                    return word.toLowerCase(); 
-                }
-                return word;
-            }).join('');
-
-            // Updated Regex: À-ÖØ-öø-ÿ skips the × and ÷ math symbols
-            let step1 = unyelled.replace(/^([^a-zA-ZÀ-ÖØ-öø-ÿ]*)([a-zA-ZÀ-ÖØ-öø-ÿ])/, (match, p1, p2) => p1 + p2.toUpperCase());
-            let step2 = step1.replace(/([.!?][^a-zA-ZÀ-ÖØ-öø-ÿ]+)([a-zA-ZÀ-ÖØ-öø-ÿ])/g, (match, p1, p2) => p1 + p2.toUpperCase());
-
-            return step2;
-        });
-
-        refreshEditor(processed.join('\n'));
-        if (!silent) showStatus("Sentence Case Applied!");
-    } catch (err) {
-        if (!silent) showStatus("Error Applying Case.");
-        console.error(err);
-    }
-}
-
-function smartQuotes(silent = false) {
-    try {
-        let text = getNormalizedText();
-        
-        // Fixed: Year fix runs first, and em/en dashes included in character classes
-        let smart = text
-            .replace(/(^|[\s\[\(\-—–])'(?=\d{2})/gm, '$1’') // Catch '20 before general single quotes
-            .replace(/(^|[\s\[\(\-—–])"/gm, '$1“')           // Opening double quote (added dashes)
-            .replace(/"/g, '”')                              // Closing double quote
-            .replace(/(^|[\s\[\(\-—–])'/gm, '$1‘')           // Opening single quote (added dashes)
-            .replace(/'/g, '’');                             // Closing single quote
+        // NORMALIZED READ: Safely extract text from the editor, handling div/br/p tags from weird pastes
+        function getNormalizedText() {
+            const editor = document.getElementById('editor');
+            let html = editor.innerHTML;
             
-        refreshEditor(smart);
-        if (!silent) showStatus("Quotes Curled!");
-    } catch (err) {
-        if (!silent) showStatus("Error Applying Quotes.");
-    }
-}
+            let text = html
+                .replace(/<div[^>]*><br><\/div>/gi, '\n')
+                .replace(/<div[^>]*>/gi, '\n')
+                .replace(/<br[^>]*>/gi, '\n')
+                .replace(/<p[^>]*>/gi, '\n')
+                .replace(/<[^>]+>/g, '');
+            
+            // Decode basic HTML entities that innerHTML might create
+            const txt = document.createElement("textarea");
+            txt.innerHTML = text;
+            
+            // Strip that phantom leading newline caused by the first <div> wrapper
+            return txt.value.replace(/^\n+/, ''); 
+        }
 
-async function copyToClipboard() {
-    try {
-        let textToCopy = getNormalizedText();
-        await navigator.clipboard.writeText(textToCopy);
-        showStatus("Copied!");
-    } catch (err) { showStatus("Error."); }
-}
+        function refreshEditor(text) {
+            const editor = document.getElementById('editor');
+            let paragraphs = text.split(/\r?\n/);
+            editor.innerHTML = paragraphs.map(p => `<div>${p || '<br>'}</div>`).join('');
+        }
 
-function showStatus(msg) {
-    const status = document.getElementById('statusMessage');
-    status.innerText = msg;
-    setTimeout(() => { status.innerText = ""; }, 2500);
-}
+        // The Master Pipeline
+        function fixAll() {
+            let text = getNormalizedText();
+            
+            // 1. Core structural cleanup (spaces, tabs, dashes)
+            let cleaned = text
+                .replace(/\t/g, ' ')
+                .replace(/--/g, '—')
+                .replace(/[ ]{2,}/g, ' ')
+                .split('\n').map(line => line.trimEnd()).join('\n')
+                .replace(/\n\s*\n/g, '\n').trim();
+            
+            refreshEditor(cleaned); // Apply structural fixes to DOM
+
+            // 2. Pass DOM to Case Fixer (silent flag keeps status clean)
+            sentenceCase(true);
+
+            // 3. Pass DOM to Smart Quotes
+            smartQuotes(true);
+
+            // 4. Declare Victory
+            showStatus("All Fixed!");
+        }
+
+        function runTool(select) {
+            let text = getNormalizedText();
+            let action = select.value;
+            let result = text;
+            
+            if(action === "fixParagraphs") result = text.replace(/\n\s*\n/g, '\n');
+            if(action === "fixSpaces") result = text.replace(/[ ]{2,}/g, ' ');
+            if(action === "removeEdgeSpace") result = text.trim();
+            if(action === "removeTabs") result = text.replace(/\t/g, ' ');
+            if(action === "unbreakSentences") result = text.replace(/([^.!?\n])\n([^.!?\n])/g, '$1 $2');
+            if(action === "enDash") result = text.replace(/--|—/g, '–');
+            if(action === "emDash") result = text.replace(/--|–/g, '—');
+            
+            refreshEditor(result);
+            showStatus("Tool Applied!");
+            select.selectedIndex = 0;
+        }
+
+        function sentenceCase(silent = false) {
+            try {
+                let text = getNormalizedText();
+                let lines = text.split(/\r?\n/);
+
+                // Editor's Whitelist
+                const whitelist = [
+                    'US', 'UN', 'EU', 'MP', 'PM', 'USA', 'UK', 'RCMP', 'GST', 'HST', 
+                    'CEO', 'CFO', 'CTO', 'COVID', 'NDP', 'CBC', 'CTV', 'MLA', 'MPP', 
+                    'WHO', 'NATO', 'UNICEF', 'NAFTA'
+                ];
+
+                let processed = lines.map(line => {
+                    if (!line.trim()) return line;
+
+                    // 1. Un-yell words intelligently
+                    let words = line.split(/(\s+)/);
+                    let unyelled = words.map(word => {
+                        let justLetters = word.replace(/[^A-Za-z]/g, '');
+                        if (justLetters.length > 1 && justLetters === justLetters.toUpperCase()) {
+                            if (whitelist.includes(justLetters)) {
+                                return word; 
+                            }
+                            return word.toLowerCase(); 
+                        }
+                        return word;
+                    }).join('');
+
+                    // 2. Sentence Case Logic
+                    // À-ÖØ-öø-ÿ skips the × and ÷ math symbols
+                    let step1 = unyelled.replace(/^([^a-zA-ZÀ-ÖØ-öø-ÿ]*)([a-zA-ZÀ-ÖØ-öø-ÿ])/, (match, p1, p2) => p1 + p2.toUpperCase());
+                    let step2 = step1.replace(/([.!?][^a-zA-ZÀ-ÖØ-öø-ÿ]+)([a-zA-ZÀ-ÖØ-öø-ÿ])/g, (match, p1, p2) => p1 + p2.toUpperCase());
+
+                    return step2;
+                });
+
+                refreshEditor(processed.join('\n'));
+                if (!silent) showStatus("Sentence Case Applied!");
+            } catch (err) {
+                if (!silent) showStatus("Error Applying Case.");
+                console.error(err);
+            }
+        }
+
+        function smartQuotes(silent = false) {
+            try {
+                let text = getNormalizedText();
+                
+                // \u2014 = em-dash, \u2013 = en-dash. Year contraction runs first!
+                let smart = text
+                    .replace(/(^|[\s\[\(\-\u2014\u2013])'(?=\d{2})/gm, '$1’') 
+                    .replace(/(^|[\s\[\(\-\u2014\u2013])"/gm, '$1“')           
+                    .replace(/"/g, '”')                              
+                    .replace(/(^|[\s\[\(\-\u2014\u2013])'/gm, '$1‘')           
+                    .replace(/'/g, '’');                             
+                    
+                refreshEditor(smart);
+                if (!silent) showStatus("Quotes Curled!");
+            } catch (err) {
+                if (!silent) showStatus("Error Applying Quotes.");
+            }
+        }
+
+        async function copyToClipboard() {
+            try {
+                let textToCopy = getNormalizedText();
+                await navigator.clipboard.writeText(textToCopy);
+                showStatus("Copied!");
+            } catch (err) { showStatus("Error."); }
+        }
+
+        function showStatus(msg) {
+            const status = document.getElementById('statusMessage');
+            status.innerText = msg;
+            setTimeout(() => { status.innerText = ""; }, 2500);
+        }
     </script>
 </body>
 </html>
