@@ -117,7 +117,7 @@
         .bottom-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border-color); width: 100%; background: var(--editor-bg); flex-shrink: 0; }
         .status-container { width: 65px; display: inline-block; flex-shrink: 0; }
         #status { font-size: 0.8em; font-weight: 600; }
-        .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;}
 
         /* Sidebar Note Items */
         .note-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
@@ -143,10 +143,10 @@
         #task-only-footer { display: none; height: 50px; background: #fff; border-top: 1px solid var(--border-color); align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 4000; flex-shrink: 0; }
         #task-only-footer.visible { display: flex; }
 
-        /* Zen Mode (Collapse Toolbars) Button */
+        /* Floating Zen Mode Button (Hidden by default) */
         .zen-toggle-btn {
             position: absolute;
-            bottom: 65px;
+            bottom: 15px;
             right: 15px;
             width: 32px;
             height: 32px;
@@ -156,13 +156,13 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.15);
             cursor: pointer;
             z-index: 2000;
-            display: flex;
+            display: none; 
             align-items: center;
             justify-content: center;
             font-size: 16px;
             color: #555;
             opacity: 0.4;
-            transition: opacity 0.2s ease, bottom 0.2s ease;
+            transition: opacity 0.2s ease;
         }
         .zen-toggle-btn:hover {
             opacity: 1;
@@ -175,8 +175,7 @@
             display: none !important;
         }
         .editor-area.zen-mode .zen-toggle-btn {
-            bottom: 15px;
-            opacity: 0.7;
+            display: flex; /* Only show the floating icon when Zen Mode is active */
         }
 
         @media (max-width: 768px) {
@@ -185,8 +184,7 @@
             .btn-text { display: none; }
             .native-new-btn { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
             .radio-group { display: none; }
-            .zen-toggle-btn { right: 10px; bottom: 60px; }
-            .editor-area.zen-mode .zen-toggle-btn { bottom: 10px; }
+            .zen-toggle-btn { right: 10px; bottom: 10px; }
         }
     </style>
 </head>
@@ -226,21 +224,26 @@
                         <div class="status-container">
                             <span id="status">Saved</span>
                         </div>
-                        <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">Tasks</button>
-                        <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">Focus Tasks</button>
+                        <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">Split</button>
+                        <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">Tasks (full)</button>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center;">
-                        <button class="btn-tool" onclick="emailNote()">Email</button>
-                        <button class="btn-tool" onclick="exportSingleNote()">Export</button>
+                        <!-- Updated Email and Export to Icons, with titles for hover context -->
+                        <button class="btn-tool" onclick="emailNote()" title="Email Note" style="font-size: 1.1em; padding: 2px 6px;">✉️</button>
+                        <button class="btn-tool" onclick="exportSingleNote()" title="Export Note" style="font-size: 1.1em; padding: 2px 6px;">📥</button>
+                        
                         <div class="radio-group">
                             <label><input type="radio" name="view-width" value="full" onclick="setWidth('full')" checked> Full</label>
                             <label><input type="radio" name="view-width" value="narrow" onclick="setWidth('narrow')"> Narrow</label>
                         </div>
+                        
+                        <!-- Toolbar Zen Mode Toggle -->
+                        <button class="btn-tool" onclick="toggleZenMode()" title="Hide Toolbars" style="font-size: 1.2em; padding: 0px 6px;">⤢</button>
                     </div>
                 </div>
             </div>
-            <!-- The new Zen Mode Toggle Button -->
-            <button id="zen-toggle-btn" class="zen-toggle-btn" onclick="toggleZenMode()" title="Hide Toolbars">⤢</button>
+            <!-- Floating Zen Mode Toggle (Appears when Zen is ON) -->
+            <button id="zen-toggle-btn" class="zen-toggle-btn" onclick="toggleZenMode()" title="Show Toolbars">⤡</button>
         </div>
         <div id="task-only-footer"><button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 20px; font-weight:bold;">Notes</button></div>
     </div>
@@ -358,14 +361,10 @@
     function toggleTickTick() { const isVisible = todoContainer.classList.toggle('visible'); resizer.classList.toggle('visible', isVisible); localStorage.setItem('ticktick-pref', isVisible); }
     function createNewNote() { currentNoteId = Date.now(); quill.setText(`\n`, 'user'); quill.focus(); }
     
-    // Zen Mode Function
+    // Simplifed Zen Mode function
     function toggleZenMode() {
         const editorArea = document.querySelector('.editor-area');
-        const btn = document.getElementById('zen-toggle-btn');
-        const isZen = editorArea.classList.toggle('zen-mode');
-        
-        btn.innerHTML = isZen ? '⤡' : '⤢';
-        btn.title = isZen ? "Show Toolbars" : "Hide Toolbars";
+        editorArea.classList.toggle('zen-mode');
     }
 
     function exportFullDatabase() { 
@@ -375,7 +374,6 @@
         a.download = `notes_tasks_full_backup_${new Date().toISOString().split('T')[0]}.json`; 
         a.click(); 
         
-        // Record the backup timestamp
         localStorage.setItem('last-backup-date', Date.now());
     }
 
@@ -468,17 +466,15 @@
         reader.readAsText(file);
     }
 
-    // Daily Backup Check Logic
     function checkDailyBackup() {
         const lastBackup = localStorage.getItem('last-backup-date');
         const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        const oneDay = 24 * 60 * 60 * 1000; 
 
         if (!lastBackup || (now - parseInt(lastBackup)) > oneDay) {
             if (confirm("It's been over a day since your last backup. Would you like to download a backup database now?")) {
                 exportFullDatabase();
             } else {
-                // Reset the timer even if they click cancel so they aren't spammed on every refresh today
                 localStorage.setItem('last-backup-date', now);
             }
         }
@@ -498,7 +494,6 @@
         const lastId = localStorage.getItem('last-note-id');
         if (lastId) loadNote(parseInt(lastId)); else createNewNote();
         
-        // Trigger the backup check
         checkDailyBackup();
     });
 </script>
