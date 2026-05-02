@@ -224,12 +224,21 @@
         }
 
         @media (max-width: 768px) {
-            .editor-area { padding: 10px; } 
+            /* Completely remove outer padding and margins for narrow screens */
+            .editor-area { padding: 0; } 
+            .editor-content-wrapper { margin-top: 0; }
+            
+            /* Flush the toolbars and editor to the edges */
+            .custom-toolbar-wrapper { border-top: none; border-left: none; border-right: none; border-radius: 0; }
+            .ql-container.ql-snow { border-left: none; border-right: none; border-radius: 0; border-bottom: none; }
+            .bottom-bar { padding: 10px; } /* Keep items inside the bar from hitting the glass */
+
             .toggle-sidebar { width: 32px; padding: 0; }
             .btn-text { display: none; }
             .native-new-btn { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
             .radio-group { display: none; }
             .zen-toggle-btn { right: 10px; bottom: 10px; }
+            .zen-sidebar-toggle { top: 5px; left: 5px; }
         }
     </style>
 </head>
