@@ -162,10 +162,50 @@
             border: 1px solid #bbb;
             border-radius: 4px;
             font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         button.action-btn:hover {
             background: #e9ecef;
+        }
+
+        /* --- Zen Mode (Fullscreen) Styles --- */
+        body.zen-mode .ql-toolbar.ql-snow {
+            display: none !important;
+        }
+        body.zen-mode #status-bar {
+            display: none !important;
+        }
+
+        .floating-zen-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.15);
+            color: #333;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 18px;
+            cursor: pointer;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(2px);
+            transition: all 0.2s ease;
+        }
+
+        .floating-zen-btn:hover {
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+        }
+
+        body.zen-mode .floating-zen-btn {
+            display: flex;
         }
 
         @media (max-width: 600px) {
@@ -206,9 +246,12 @@
             <button class="action-btn" onclick="copyToClipboard()">Copy</button>
             <button class="action-btn" onclick="exportToEmail()">Email</button>
             <button class="action-btn" onclick="exportToFile()">Export</button>
+            <button class="action-btn" onclick="toggleZenMode()" title="Hide Toolbars" style="font-size: 14px;">⤢</button>
         </div>
     </div>
 </div>
+
+<button class="floating-zen-btn" onclick="toggleZenMode()" title="Show Toolbars">⤢</button>
 
 <template id="toolbar-extras">
     <button class="custom-highlighter" title="Highlight Yellow" onclick="applyHighlight()">
@@ -288,15 +331,17 @@
         }
     }
 
+    // --- Zen Mode Logic ---
+    function toggleZenMode() {
+        document.body.classList.toggle('zen-mode');
+    }
+
     /**
      * Fix Paragraphs
-     * Rebuilds structure by converting single line breaks into spaces (PDF fix) 
-     * and double line breaks into single paragraph breaks, while preserving formatting.
      */
     function fixParagraphs() {
         let text = quill.getText();
         
-        // 1. Fix Hyphenated line breaks first (e.g., "re-\nport" -> "report")
         let hyphenMatches = [...text.matchAll(/-\n/g)];
         for (let i = hyphenMatches.length - 1; i >= 0; i--) {
             let match = hyphenMatches[i];
@@ -305,37 +350,30 @@
             }
         }
 
-        // Refresh text after structural changes
         text = quill.getText();
         
-        // 2. Handle remaining newlines
         let matches = [...text.matchAll(/\n+/g)];
-        // Iterate backwards to safely mutate document without shifting indices
         for (let i = matches.length - 1; i >= 0; i--) {
             let match = matches[i];
             let index = match.index;
             let length = match[0].length;
             
-            // Quill always requires a trailing newline. If we are at the very end:
             if (index + length === text.length) {
                 if (length > 1) {
-                    quill.deleteText(index, length - 1); // remove all but one
+                    quill.deleteText(index, length - 1); 
                 }
                 continue;
             }
             
             if (length === 1) {
-                // Single newline: PDF accidental break. Replace with space.
                 quill.deleteText(index, 1);
                 quill.insertText(index, ' ');
             } else {
-                // Multiple newlines: Intentional paragraph break. Reduce to one.
                 quill.deleteText(index, length);
                 quill.insertText(index, '\n');
             }
         }
         
-        // 3. Clean up resulting double spaces
         text = quill.getText();
         let spaceMatches = [...text.matchAll(/  +/g)];
         for (let i = spaceMatches.length - 1; i >= 0; i--) {
