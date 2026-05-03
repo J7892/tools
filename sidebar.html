@@ -480,12 +480,36 @@
         localStorage.setItem('last-backup-date', Date.now());
     }
 
+    // --- FIXED: The mailto: limit fallback ---
     function emailNote() {
         const note = getNotesSafely().find(n => n.id === currentNoteId);
         if (!note) return;
+        
         const subject = encodeURIComponent(note.title);
-        const body = encodeURIComponent(quill.getText());
-        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        const rawBody = quill.getText();
+        const encodedBody = encodeURIComponent(rawBody);
+        
+        // Browsers usually cap URLs around 2000 chars. We check at 1800 to be safe.
+        if (encodedBody.length > 1800) {
+            if (confirm("This note is too long to open directly via an email link. Click OK to copy the text to your clipboard instead, then paste it into a new email.")) {
+                // We use the textarea execCommand fallback instead of navigator.clipboard
+                // because navigator.clipboard can fail if the user is running this via file:///
+                const tempTextArea = document.createElement("textarea");
+                tempTextArea.value = rawBody;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand("copy");
+                    alert("Note copied to clipboard! You can now paste it into your email app.");
+                } catch (err) {
+                    alert("Failed to copy. Please copy the text manually.");
+                }
+                document.body.removeChild(tempTextArea);
+            }
+            return;
+        }
+
+        window.location.href = `mailto:?subject=${subject}&body=${encodedBody}`;
     }
 
     function exportSingleNote() {
@@ -578,7 +602,6 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
 
-    // --- FIXED: Import Collision Safety Logic ---
     function importNotes(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -592,18 +615,16 @@
                     const existing = getNotesSafely();
                     const existingIds = new Set(existing.map(n => n.id));
                     
-                    let idCounter = Date.now(); // Ensures unique IDs during rapid loops
+                    let idCounter = Date.now(); 
                     const mergedData = [...existing];
                     
                     newData.forEach(note => {
                         if (existingIds.has(note.id)) {
-                            // Collision detected: safely assign a new ID
                             idCounter++;
                             mergedData.push({ ...note, id: idCounter });
                         } else {
-                            // No collision: safely add
                             mergedData.push(note);
-                            existingIds.add(note.id); // Track newly added IDs in case the import file has duplicates within itself
+                            existingIds.add(note.id); 
                         }
                     });
                     
@@ -611,7 +632,6 @@
                 }
             } catch (err) { alert("Invalid file."); }
             
-            // Reset input so the user can import the exact same file again if needed
             event.target.value = '';
         };
         FileReaderObj.readAsText(file);
