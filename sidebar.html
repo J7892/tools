@@ -6,18 +6,19 @@
     <title>Notes and Tasks</title>
     
     <meta name="theme-color" content="#333333">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <script>
-        if ('serviceWorker' in navigator) {
+        // Prevent Service Worker CORS errors when running directly from a local file:///
+        if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('sw.js')
                     .then(reg => console.log('Service Worker Registered'))
                     .catch(err => console.log('Service Worker Failed', err));
             });
         }
     </script>
     
-    <link href="/quill.snow.css" rel="stylesheet">
+    <link href="quill.snow.css" rel="stylesheet">
     
     <style>
         :root {
@@ -298,7 +299,7 @@
         <div id="task-only-footer"><button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 20px; font-weight:bold;">Notes</button></div>
     </div>
 
-<script src="/quill.js"></script>
+<script src="quill.js"></script>
 <script>
     const APP_VERSION = 1.1;
     let currentNoteId = null;
@@ -480,7 +481,6 @@
         localStorage.setItem('last-backup-date', Date.now());
     }
 
-    // --- FIXED: The mailto: limit fallback ---
     function emailNote() {
         const note = getNotesSafely().find(n => n.id === currentNoteId);
         if (!note) return;
@@ -489,11 +489,8 @@
         const rawBody = quill.getText();
         const encodedBody = encodeURIComponent(rawBody);
         
-        // Browsers usually cap URLs around 2000 chars. We check at 1800 to be safe.
         if (encodedBody.length > 1800) {
             if (confirm("This note is too long to open directly via an email link. Click OK to copy the text to your clipboard instead, then paste it into a new email.")) {
-                // We use the textarea execCommand fallback instead of navigator.clipboard
-                // because navigator.clipboard can fail if the user is running this via file:///
                 const tempTextArea = document.createElement("textarea");
                 tempTextArea.value = rawBody;
                 document.body.appendChild(tempTextArea);
@@ -512,14 +509,30 @@
         window.location.href = `mailto:?subject=${subject}&body=${encodedBody}`;
     }
 
+    // --- FIXED: HTML Exporter Title Sanitization ---
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    }
+
     function exportSingleNote() {
         const note = getNotesSafely().find(n => n.id === currentNoteId);
         if (!note) return;
-        const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${note.title}</title><style>body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; }h1 { color: #333; }.date { color: #888; font-size: 0.9em; margin-bottom: 20px; }p { margin-bottom: 0.8em; }</style></head><body><h1>${note.title}</h1><div class="date">Created: ${new Date(note.date).toLocaleString()}</div><hr><div class="content">${quill.root.innerHTML}</div></body></html>`;
+        
+        const safeTitle = escapeHTML(note.title || "Untitled Note");
+        
+        const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${safeTitle}</title><style>body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; }h1 { color: #333; }.date { color: #888; font-size: 0.9em; margin-bottom: 20px; }p { margin-bottom: 0.8em; }</style></head><body><h1>${safeTitle}</h1><div class="date">Created: ${new Date(note.date).toLocaleString()}</div><hr><div class="content">${quill.root.innerHTML}</div></body></html>`;
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+        a.download = `${safeTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
         a.click();
     }
 
@@ -592,7 +605,7 @@
             if (searchTerm && !(note.title || "").toLowerCase().includes(searchTerm) && !(note.plainText || "").toLowerCase().includes(searchTerm)) return;
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
-            div.innerHTML = `<div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;" onclick="loadNote(${note.id})"><div class="note-title">${note.title || "Untitled"}</div><div style="font-size:0.75em; color:var(--secondary-text);">${new Date(note.date).toLocaleDateString()}</div></div><span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>`;
+            div.innerHTML = `<div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;" onclick="loadNote(${note.id})"><div class="note-title">${escapeHTML(note.title || "Untitled")}</div><div style="font-size:0.75em; color:var(--secondary-text);">${new Date(note.date).toLocaleDateString()}</div></div><span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>`;
             list.appendChild(div);
         });
     }
