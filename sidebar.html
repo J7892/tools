@@ -181,7 +181,7 @@
             background: var(--item-hover);
         }
 
-        /* Tiny Zen Mode Sidebar Toggle (Absolutely Positioned) */
+        /* Tiny Zen Mode Sidebar Toggle */
         .zen-sidebar-toggle {
             position: absolute;
             top: 5px;
@@ -195,7 +195,7 @@
             opacity: 0.3;
             transition: opacity 0.2s ease, color 0.2s ease;
             z-index: 2000;
-            display: none; /* Hidden by default */
+            display: none; 
         }
         .zen-sidebar-toggle:hover {
             opacity: 1;
@@ -209,29 +209,26 @@
         }
         .editor-area.zen-mode .zen-toggle-btn,
         .editor-area.zen-mode .zen-sidebar-toggle {
-            display: flex; /* Reveal icons */
+            display: flex; 
         }
         
         /* Maximize Zen Mode Screen Real Estate */
         .editor-area.zen-mode {
-            padding-top: 0; /* Strip outer padding */
+            padding-top: 0; 
         }
         .editor-area.zen-mode .editor-content-wrapper {
-            margin-top: 0; /* Strip wrapper margin */
+            margin-top: 0; 
         }
         .editor-area.zen-mode .ql-editor {
-            padding-top: 15px !important; /* Pull text up, leaving just a sliver of breathing room */
+            padding-top: 15px !important; 
         }
 
         @media (max-width: 768px) {
-            /* Completely remove outer padding and margins for narrow screens */
             .editor-area { padding: 0; } 
             .editor-content-wrapper { margin-top: 0; }
-            
-            /* Flush the toolbars and editor to the edges */
             .custom-toolbar-wrapper { border-top: none; border-left: none; border-right: none; border-radius: 0; }
             .ql-container.ql-snow { border-left: none; border-right: none; border-radius: 0; border-bottom: none; }
-            .bottom-bar { padding: 10px; } /* Keep items inside the bar from hitting the glass */
+            .bottom-bar { padding: 10px; } 
 
             .toggle-sidebar { width: 32px; padding: 0; }
             .btn-text { display: none; }
@@ -308,6 +305,18 @@
     let saveTimeout = null;
     let currentGlobalSize = localStorage.getItem('global-display-size') || 'false';
 
+    // --- NEW: Custom Soft Break Blot for Shift+Enter ---
+    const Embed = Quill.import('blots/embed');
+    class SoftBreak extends Embed {
+        static create(value) {
+            return super.create(value);
+        }
+    }
+    SoftBreak.blotName = 'softbreak';
+    SoftBreak.tagName = 'BR';
+    Quill.register(SoftBreak);
+    // ----------------------------------------------------
+
     const highlightHandler = function() {
         const range = quill.getSelection();
         if (!range) return;
@@ -322,7 +331,6 @@
                 handlers: { 
                     'highlight': highlightHandler,
                     'size': function(value) {
-                        // HIJACK: Intercept the size handler to apply globally instead of formatting text
                         currentGlobalSize = value || 'false';
                         localStorage.setItem('global-display-size', currentGlobalSize);
                         applyGlobalSize(currentGlobalSize);
@@ -331,6 +339,19 @@
             },
             keyboard: {
                 bindings: {
+                    // --- NEW: Intercept Shift+Enter ---
+                    softBreak: {
+                        key: 13, // 13 is the Enter key
+                        shiftKey: true,
+                        handler: function(range, context) {
+                            // Insert the softbreak <br> blot
+                            this.quill.insertEmbed(range.index, 'softbreak', true, 'user');
+                            // Move cursor silently to the line below
+                            this.quill.setSelection(range.index + 1, Quill.sources.SILENT);
+                            return false; // Prevent default Quill paragraph break
+                        }
+                    },
+                    // -----------------------------------
                     insertDate: {
                         key: 'D', shiftKey: true, shortKey: true,
                         handler: function(range) {
@@ -349,9 +370,7 @@
 
     document.getElementById('toolbar-container').appendChild(document.querySelector('.ql-toolbar'));
 
-    // Custom function handling the new shifted CSS global sizes
     function applyGlobalSize(val) {
-        // SMALL=12px, NORMAL=14px, LARGE=16px, HUGE=20px
         const sizes = { 'small': '12px', 'false': '14px', 'large': '16px', 'huge': '20px' };
         document.documentElement.style.setProperty('--editor-font-size', sizes[val] || '14px');
         
@@ -582,10 +601,8 @@
         
         checkDailyBackup();
         
-        // Apply the saved global size immediately on load
         applyGlobalSize(currentGlobalSize);
         
-        // Watcher to keep Quill's UI locked to our global variable
         const sizeLabel = document.querySelector('.ql-size .ql-picker-label');
         if (sizeLabel) {
             const observer = new MutationObserver(() => {
