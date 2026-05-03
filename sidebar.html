@@ -305,7 +305,7 @@
     let saveTimeout = null;
     let currentGlobalSize = localStorage.getItem('global-display-size') || 'false';
 
-    // --- NEW: Custom Soft Break Blot for Shift+Enter ---
+    // --- Custom Soft Break Blot for Shift+Enter ---
     const Embed = Quill.import('blots/embed');
     class SoftBreak extends Embed {
         static create(value) {
@@ -315,7 +315,6 @@
     SoftBreak.blotName = 'softbreak';
     SoftBreak.tagName = 'BR';
     Quill.register(SoftBreak);
-    // ----------------------------------------------------
 
     const highlightHandler = function() {
         const range = quill.getSelection();
@@ -515,18 +514,25 @@
     function getNotesSafely() { try { const raw = localStorage.getItem('my-github-notes'); if (!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : (parsed.data || []); } catch (e) { return []; } }
     function saveNotesInternal(notes) { localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes })); renderNoteList(); }
     
+    // --- FIXED: The // Highlight Event Cascade & Race Condition ---
     quill.on('text-change', (delta, old, source) => {
         if (source === 'user') {
             const selection = quill.getSelection();
             if (selection && selection.index >= 2) {
                 const text = quill.getText(selection.index - 2, 2);
                 if (text === '//') {
-                    const format = quill.getFormat(selection.index - 2, 2);
+                    // Check the format state exactly where the // was typed
+                    const format = quill.getFormat(selection.index - 2, 0);
                     const toggleYellow = !format.background;
-                    quill.deleteText(selection.index - 2, 2, Quill.sources.USER);
-                    setTimeout(() => { quill.format('background', toggleYellow ? '#ffff00' : false, Quill.sources.USER); }, 10);
+                    
+                    // Delete the '//' silently using the API source to prevent an infinite event loop
+                    quill.deleteText(selection.index - 2, 2, Quill.sources.API);
+                    
+                    // Instantly apply the background format to the active cursor (no setTimeout)
+                    quill.format('background', toggleYellow ? '#ffff00' : false, Quill.sources.API);
                 }
             }
+            // Fire the auto-save as normal
             document.getElementById('status').innerText = "Saving...";
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(autoSave, 1000);
