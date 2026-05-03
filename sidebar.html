@@ -339,13 +339,24 @@
             },
             keyboard: {
                 bindings: {
-                    // --- NEW: Intercept Shift+Enter ---
+                    // --- FIXED: Intercept Shift+Enter ---
                     softBreak: {
                         key: 13, // 13 is the Enter key
                         shiftKey: true,
                         handler: function(range, context) {
                             // Insert the softbreak <br> blot
                             this.quill.insertEmbed(range.index, 'softbreak', true, 'user');
+                            
+                            // Get the line and our position to see if we are at the end of the paragraph
+                            const [line, offset] = this.quill.getLine(range.index + 1);
+                            
+                            // line.length() includes the hidden newline '\n' at the end of Quill blocks.
+                            // If offset equals line.length() - 1, the <br> is at the absolute end.
+                            if (offset === line.length() - 1) {
+                                // Insert a Zero-Width Space (\uFEFF) to prop open the line for the browser
+                                this.quill.insertText(range.index + 1, '\uFEFF', Quill.sources.SILENT);
+                            }
+                            
                             // Move cursor silently to the line below
                             this.quill.setSelection(range.index + 1, Quill.sources.SILENT);
                             return false; // Prevent default Quill paragraph break
