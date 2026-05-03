@@ -127,8 +127,8 @@
         }
 
         .bottom-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border-color); width: 100%; background: var(--editor-bg); flex-shrink: 0; }
-        .status-container { width: 65px; display: inline-block; flex-shrink: 0; }
-        #status { font-size: 0.8em; font-weight: 600; }
+        .status-container { width: 120px; display: inline-block; flex-shrink: 0; }
+        #status { font-size: 0.8em; font-weight: 600; transition: color 0.3s ease; }
         .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;}
 
         /* Sidebar Note Items */
@@ -305,7 +305,6 @@
     let saveTimeout = null;
     let currentGlobalSize = localStorage.getItem('global-display-size') || 'false';
 
-    // --- Custom Soft Break Blot for Shift+Enter ---
     const Embed = Quill.import('blots/embed');
     class SoftBreak extends Embed {
         static create(value) {
@@ -338,30 +337,19 @@
             },
             keyboard: {
                 bindings: {
-                    // --- FIXED: Intercept Shift+Enter ---
                     softBreak: {
                         key: 13, // 13 is the Enter key
                         shiftKey: true,
                         handler: function(range, context) {
-                            // Insert the softbreak <br> blot
                             this.quill.insertEmbed(range.index, 'softbreak', true, 'user');
-                            
-                            // Get the line and our position to see if we are at the end of the paragraph
                             const [line, offset] = this.quill.getLine(range.index + 1);
-                            
-                            // line.length() includes the hidden newline '\n' at the end of Quill blocks.
-                            // If offset equals line.length() - 1, the <br> is at the absolute end.
                             if (offset === line.length() - 1) {
-                                // Insert a Zero-Width Space (\uFEFF) to prop open the line for the browser
                                 this.quill.insertText(range.index + 1, '\uFEFF', Quill.sources.SILENT);
                             }
-                            
-                            // Move cursor silently to the line below
                             this.quill.setSelection(range.index + 1, Quill.sources.SILENT);
-                            return false; // Prevent default Quill paragraph break
+                            return false; 
                         }
                     },
-                    // -----------------------------------
                     insertDate: {
                         key: 'D', shiftKey: true, shortKey: true,
                         handler: function(range) {
@@ -512,43 +500,65 @@
     }
 
     function getNotesSafely() { try { const raw = localStorage.getItem('my-github-notes'); if (!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : (parsed.data || []); } catch (e) { return []; } }
-    function saveNotesInternal(notes) { localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes })); renderNoteList(); }
     
-    // --- FIXED: The // Highlight Event Cascade & Race Condition ---
+    // --- FIXED: LocalStorage Quota Time Bomb Safety Net ---
+    function saveNotesInternal(notes) { 
+        try {
+            localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes })); 
+            renderNoteList(); 
+            return true; // Indicate success
+        } catch (e) {
+            console.error("Storage Error:", e);
+            alert("CRITICAL WARNING: Your browser's local storage is full. This note could NOT be saved. Please click 'Backup Database', then delete old notes to free up space.");
+            return false; // Indicate failure
+        }
+    }
+    
     quill.on('text-change', (delta, old, source) => {
         if (source === 'user') {
             const selection = quill.getSelection();
             if (selection && selection.index >= 2) {
                 const text = quill.getText(selection.index - 2, 2);
                 if (text === '//') {
-                    // Check the format state exactly where the // was typed
                     const format = quill.getFormat(selection.index - 2, 0);
                     const toggleYellow = !format.background;
-                    
-                    // Delete the '//' silently using the API source to prevent an infinite event loop
                     quill.deleteText(selection.index - 2, 2, Quill.sources.API);
-                    
-                    // Instantly apply the background format to the active cursor (no setTimeout)
                     quill.format('background', toggleYellow ? '#ffff00' : false, Quill.sources.API);
                 }
             }
-            // Fire the auto-save as normal
             document.getElementById('status').innerText = "Saving...";
+            document.getElementById('status').style.color = "inherit"; // Reset color
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(autoSave, 1000);
         }
     });
 
+    // --- FIXED: AutoSave handles the boolean return from saveNotesInternal ---
     function autoSave() {
         let fullText = quill.getText().trim();
         let firstLine = fullText.split('\n')[0].trim() || 'Untitled Note';
         let notes = getNotesSafely();
         const noteData = { id: currentNoteId || Date.now(), title: firstLine, content: quill.getContents(), plainText: quill.getText(), date: new Date().toISOString() };
         const idx = notes.findIndex(n => n.id === currentNoteId);
-        if (idx > -1) notes[idx] = noteData; else { notes.push(noteData); currentNoteId = noteData.id; }
-        saveNotesInternal(notes);
-        localStorage.setItem('last-note-id', currentNoteId);
-        document.getElementById('status').innerText = "Saved";
+        
+        if (idx > -1) {
+            notes[idx] = noteData; 
+        } else { 
+            notes.push(noteData); 
+            currentNoteId = noteData.id; 
+        }
+        
+        const saveSuccess = saveNotesInternal(notes);
+        
+        const statusEl = document.getElementById('status');
+        if (saveSuccess) {
+            localStorage.setItem('last-note-id', currentNoteId);
+            statusEl.innerText = "Saved";
+            statusEl.style.color = "inherit";
+        } else {
+            statusEl.innerText = "Save Failed!";
+            statusEl.style.color = "var(--danger)"; // Turn the text red
+        }
     }
 
     function renderNoteList() {
