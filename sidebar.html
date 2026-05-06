@@ -117,8 +117,8 @@
         .ql-editor p { margin-bottom: 0.8em !important; }
         .ql-editor p:last-child { margin-bottom: 0 !important; }
         
-        /* Title permanently locked to 26px so it stays looking like a header */
-        .ql-editor > *:first-child { font-size: 26px !important; font-weight: bold !important; margin-bottom: 0.8em !important; }
+        /* Title permanently locked to be just a bit bigger than the body text */
+        .ql-editor > *:first-child { font-size: 1.3em !important; font-weight: bold !important; margin-bottom: 0.8em !important; }
         
         /* Nullify any existing inline Quill sizes so the global setting takes absolute priority */
         .ql-editor .ql-size-small,
@@ -509,7 +509,6 @@
         window.location.href = `mailto:?subject=${subject}&body=${encodedBody}`;
     }
 
-    // --- FIXED: HTML Exporter Title Sanitization ---
     function escapeHTML(str) {
         return str.replace(/[&<>'"]/g, 
             tag => ({
