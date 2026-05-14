@@ -157,27 +157,34 @@
 
         /* Save Slot Buttons */
         .slot-btn {
-            padding: 2px 0;
-            width: 22px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
             background: #f8f9fa;
             border: 1px solid #bbb;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             color: #555;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.1s ease;
+            box-sizing: border-box;
         }
 
         .slot-btn:hover:not(.active) {
             background: #e9ecef;
         }
 
+        /* Prominent styling for the active slot */
         .slot-btn.active {
-            background: #444;
-            color: #fff;
-            border-color: #444;
+            background: #e6f2ff;
+            color: #0056b3;
+            border: 2px solid #0056b3;
+            text-decoration: underline;
+            box-shadow: 0 0 4px rgba(0, 86, 179, 0.3);
         }
 
         button.action-btn {
@@ -287,7 +294,7 @@
     </button>
     
     <!-- Save Slots Buttons -->
-    <div class="toolbar-group-container">
+    <div class="toolbar-group-container" id="slot-container">
         <button class="slot-btn" data-slot="1" onclick="switchSlot('1')" title="Slot 1">1</button>
         <button class="slot-btn" data-slot="2" onclick="switchSlot('2')" title="Slot 2">2</button>
         <button class="slot-btn" data-slot="3" onclick="switchSlot('3')" title="Slot 3">3</button>
@@ -392,9 +399,9 @@
     }
 
     // --- Save Slot Logic ---
-    let currentSlot = localStorage.getItem('scratchpad_current_slot') || '1';
+    let currentSlot = String(localStorage.getItem('scratchpad_current_slot') || '1');
     
-    // Safety check: if user had slot 4 or 5 saved from a previous version, move them to 1
+    // Safety check for slots
     if (['1', '2', '3'].indexOf(currentSlot) === -1) {
         currentSlot = '1';
         localStorage.setItem('scratchpad_current_slot', currentSlot);
@@ -425,15 +432,17 @@
     }
 
     function switchSlot(slotNumber) {
-        currentSlot = slotNumber;
+        currentSlot = String(slotNumber);
         localStorage.setItem('scratchpad_current_slot', currentSlot);
         updateSlotUI();
         loadSlotContent();
     }
 
-    // Initialize UI and content
-    updateSlotUI();
-    loadSlotContent();
+    // Initial load: Add a tiny delay to ensure the DOM has fully processed the template injection
+    setTimeout(() => {
+        updateSlotUI();
+        loadSlotContent();
+    }, 10);
 
     quill.on('text-change', (delta, oldDelta, source) => {
         if (source === 'user') { handleMarkdownHighlight(); }
@@ -526,6 +535,7 @@
         a.click();
     }
 
+    // Run stats initially
     updateStats();
 </script>
 
