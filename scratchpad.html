@@ -14,7 +14,7 @@
             --toolbar-bg: #fff;
             --max-narrow: 700px;
             --highlight-color: #ffff00;
-            --editor-font-size: 13px; /* Default adjusted to 13px (new Normal) */
+            --editor-font-size: 13px;
             --link-color: #0000ee;
         }
 
@@ -171,7 +171,7 @@
             background: #e9ecef;
         }
 
-        /* --- Zen Mode (Fullscreen) Styles --- */
+        /* --- Zen Mode Styles --- */
         body.zen-mode .ql-toolbar.ql-snow {
             display: none !important;
         }
@@ -242,16 +242,15 @@
         </div>
 
         <div class="actions-group">
+            <button class="action-btn" onclick="fixParagraphs()">Fix Paragraphs</button>
             <button class="action-btn" onclick="copyToClipboard()">Copy</button>
             <button class="action-btn" onclick="exportToEmail()">Email</button>
             <button class="action-btn" onclick="exportToFile()">Export</button>
-            <!-- Zen Mode trigger button -->
             <button class="action-btn" onclick="toggleZenMode()" title="Hide Toolbars" style="font-size: 14px;">⤢</button>
         </div>
     </div>
 </div>
 
-<!-- Floating button that appears ONLY when in Zen Mode -->
 <button class="floating-zen-btn" onclick="toggleZenMode()" title="Show Toolbars">⤢</button>
 
 <template id="toolbar-extras">
@@ -262,7 +261,6 @@
         </svg>
     </button>
     
-    <!-- Save Slots -->
     <div class="toolbar-dropdown-container">
         <span>Slot:</span>
         <select id="slot-select" onchange="switchSlot(this.value)">
@@ -274,7 +272,6 @@
         </select>
     </div>
 
-    <!-- Text Size -->
     <div class="toolbar-dropdown-container">
         <span>Size:</span>
         <select id="size-select" onchange="updateTextSize(this.value)">
@@ -300,7 +297,6 @@
     SoftBreak.tagName = 'BR';
     Quill.register(SoftBreak);
 
-    // Initialize Quill
     const quill = new Quill('#editor', {
         theme: 'snow',
         modules: {
@@ -311,11 +307,10 @@
             keyboard: {
                 bindings: {
                     softBreak: {
-                        key: 13, // Enter key
-                        shiftKey: true, // Only trigger on Shift + Enter
+                        key: 13, 
+                        shiftKey: true, 
                         handler: function(range, context) {
                             this.quill.insertEmbed(range.index, 'softBreak', true, 'user');
-                            // Move cursor to after the break
                             this.quill.setSelection(range.index + 1, Quill.sources.SILENT);
                         }
                     }
@@ -431,6 +426,42 @@
             text = quill.getText();
             index = text.indexOf('//');
         }
+    }
+
+    /**
+     * Fix Paragraphs
+     * Collapses multiple consecutive paragraph breaks into a single break,
+     * preserving all existing rich-text formatting.
+     */
+    function fixParagraphs() {
+        const delta = quill.getContents();
+        const newDelta = { ops: [] };
+
+        delta.ops.forEach((op, i) => {
+            if (typeof op.insert === 'string') {
+                // Replace 2 or more newlines with exactly one
+                let newString = op.insert.replace(/\n\n+/g, '\n');
+                
+                // If it's the very first block, trim leading newlines entirely
+                if (i === 0) newString = newString.replace(/^\n+/, '');
+                
+                newDelta.ops.push({
+                    insert: newString,
+                    attributes: op.attributes
+                });
+            } else {
+                newDelta.ops.push(op);
+            }
+        });
+
+        // Apply the cleaned structure back to the editor
+        quill.setContents(newDelta);
+        
+        // Provide visual button feedback
+        const btn = document.querySelector('button[onclick="fixParagraphs()"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Fixed!";
+        setTimeout(() => btn.innerText = originalText, 1500);
     }
 
     function updateStats() {
