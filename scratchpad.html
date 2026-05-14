@@ -14,7 +14,7 @@
             --toolbar-bg: #fff;
             --max-narrow: 700px;
             --highlight-color: #ffff00;
-            --editor-font-size: 16px;
+            --editor-font-size: 13px; /* Default adjusted to 13px (new Normal) */
             --link-color: #0000ee;
         }
 
@@ -138,7 +138,7 @@
         .custom-highlighter:hover { background-color: #f0f0f0; }
         .custom-highlighter svg { width: 18px; height: 18px; }
 
-        .custom-size-container {
+        .toolbar-dropdown-container {
             margin-left: 15px;
             padding-left: 15px;
             border-left: 1px solid #ddd;
@@ -149,7 +149,7 @@
             color: #444;
         }
 
-        .custom-size-container select {
+        .toolbar-dropdown-container select {
             padding: 2px 4px;
             font-size: 12px;
             cursor: pointer;
@@ -191,7 +191,7 @@
             border: 1px solid rgba(0, 0, 0, 0.1);
             font-size: 18px;
             cursor: pointer;
-            display: none; /* Hidden by default */
+            display: none; 
             align-items: center;
             justify-content: center;
             z-index: 9999;
@@ -242,15 +242,16 @@
         </div>
 
         <div class="actions-group">
-            <button class="action-btn" onclick="fixParagraphs()">Fix Paragraphs</button>
             <button class="action-btn" onclick="copyToClipboard()">Copy</button>
             <button class="action-btn" onclick="exportToEmail()">Email</button>
             <button class="action-btn" onclick="exportToFile()">Export</button>
+            <!-- Zen Mode trigger button -->
             <button class="action-btn" onclick="toggleZenMode()" title="Hide Toolbars" style="font-size: 14px;">⤢</button>
         </div>
     </div>
 </div>
 
+<!-- Floating button that appears ONLY when in Zen Mode -->
 <button class="floating-zen-btn" onclick="toggleZenMode()" title="Show Toolbars">⤢</button>
 
 <template id="toolbar-extras">
@@ -260,13 +261,27 @@
             <rect class="ql-fill" height="2" rx="0.5" ry="0.5" width="12" x="3" y="15" style="fill: #ffff00;"></rect>
         </svg>
     </button>
-    <div class="custom-size-container">
+    
+    <!-- Save Slots -->
+    <div class="toolbar-dropdown-container">
+        <span>Slot:</span>
+        <select id="slot-select" onchange="switchSlot(this.value)">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </select>
+    </div>
+
+    <!-- Text Size -->
+    <div class="toolbar-dropdown-container">
         <span>Size:</span>
         <select id="size-select" onchange="updateTextSize(this.value)">
-            <option value="13px">Small</option>
-            <option value="16px" selected>Normal</option>
-            <option value="20px">Large</option>
-            <option value="28px">Huge</option>
+            <option value="11px">Small</option>
+            <option value="13px" selected>Normal</option>
+            <option value="16px">Large</option>
+            <option value="20px">Huge</option>
         </select>
     </div>
 </template>
@@ -274,13 +289,38 @@
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 <script>
+    // --- Register Custom Soft Break for Shift-Enter ---
+    const Embed = Quill.import('blots/embed');
+    class SoftBreak extends Embed {
+        static create(value) {
+            return super.create(value);
+        }
+    }
+    SoftBreak.blotName = 'softBreak';
+    SoftBreak.tagName = 'BR';
+    Quill.register(SoftBreak);
+
+    // Initialize Quill
     const quill = new Quill('#editor', {
         theme: 'snow',
         modules: {
             toolbar: [
                 ['bold', 'italic', 'underline', 'link'],
                 ['clean']
-            ]
+            ],
+            keyboard: {
+                bindings: {
+                    softBreak: {
+                        key: 13, // Enter key
+                        shiftKey: true, // Only trigger on Shift + Enter
+                        handler: function(range, context) {
+                            this.quill.insertEmbed(range.index, 'softBreak', true, 'user');
+                            // Move cursor to after the break
+                            this.quill.setSelection(range.index + 1, Quill.sources.SILENT);
+                        }
+                    }
+                }
+            }
         },
         placeholder: 'Write something...'
     });
@@ -331,71 +371,40 @@
         }
     }
 
-    // --- Zen Mode Logic ---
     function toggleZenMode() {
         document.body.classList.toggle('zen-mode');
     }
 
-    /**
-     * Fix Paragraphs
-     */
-    function fixParagraphs() {
-        let text = quill.getText();
-        
-        let hyphenMatches = [...text.matchAll(/-\n/g)];
-        for (let i = hyphenMatches.length - 1; i >= 0; i--) {
-            let match = hyphenMatches[i];
-            if (match.index + match[0].length < text.length) {
-                quill.deleteText(match.index, 2);
-            }
-        }
+    // --- Save Slot Logic ---
+    let currentSlot = localStorage.getItem('scratchpad_current_slot') || '1';
+    document.getElementById('slot-select').value = currentSlot;
 
-        text = quill.getText();
-        
-        let matches = [...text.matchAll(/\n+/g)];
-        for (let i = matches.length - 1; i >= 0; i--) {
-            let match = matches[i];
-            let index = match.index;
-            let length = match[0].length;
-            
-            if (index + length === text.length) {
-                if (length > 1) {
-                    quill.deleteText(index, length - 1); 
-                }
-                continue;
-            }
-            
-            if (length === 1) {
-                quill.deleteText(index, 1);
-                quill.insertText(index, ' ');
-            } else {
-                quill.deleteText(index, length);
-                quill.insertText(index, '\n');
-            }
-        }
-        
-        text = quill.getText();
-        let spaceMatches = [...text.matchAll(/  +/g)];
-        for (let i = spaceMatches.length - 1; i >= 0; i--) {
-            let match = spaceMatches[i];
-            quill.deleteText(match.index, match[0].length);
-            quill.insertText(match.index, ' ');
-        }
-
-        const btn = document.querySelector('button[onclick="fixParagraphs()"]');
-        const originalText = btn.innerText;
-        btn.innerText = "Fixed!";
-        setTimeout(() => btn.innerText = originalText, 1500);
+    function getStorageKey() {
+        return 'scratchpad_content_slot_' + currentSlot;
     }
 
-    const STORAGE_KEY = 'scratchpad_content';
-    const savedContent = localStorage.getItem(STORAGE_KEY);
-    if (savedContent) { quill.setContents(JSON.parse(savedContent)); }
+    function loadSlotContent() {
+        const savedContent = localStorage.getItem(getStorageKey());
+        if (savedContent) {
+            quill.setContents(JSON.parse(savedContent));
+        } else {
+            quill.setContents([]);
+        }
+        updateStats();
+    }
+
+    function switchSlot(slotNumber) {
+        currentSlot = slotNumber;
+        localStorage.setItem('scratchpad_current_slot', currentSlot);
+        loadSlotContent();
+    }
+
+    loadSlotContent();
 
     quill.on('text-change', (delta, oldDelta, source) => {
         if (source === 'user') { handleMarkdownHighlight(); }
         updateStats();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(quill.getContents()));
+        localStorage.setItem(getStorageKey(), JSON.stringify(quill.getContents()));
     });
 
     function handleMarkdownHighlight() {
@@ -453,7 +462,7 @@
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'scratchpad.html';
+        a.download = `scratchpad_slot_${currentSlot}.html`;
         a.click();
     }
 
