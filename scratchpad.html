@@ -125,6 +125,7 @@
         }
 
         .ql-background.ql-picker { display: none !important; }
+        
         .custom-highlighter {
             background: none;
             border: none;
@@ -138,21 +139,45 @@
         .custom-highlighter:hover { background-color: #f0f0f0; }
         .custom-highlighter svg { width: 18px; height: 18px; }
 
-        .toolbar-dropdown-container {
+        /* --- Custom Toolbar Groups --- */
+        .toolbar-group-container {
             margin-left: 15px;
             padding-left: 15px;
             border-left: 1px solid #ddd;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            color: #444;
+            gap: 6px;
         }
 
-        .toolbar-dropdown-container select {
+        .toolbar-group-container select {
             padding: 2px 4px;
             font-size: 12px;
             cursor: pointer;
+        }
+
+        /* Save Slot Buttons */
+        .slot-btn {
+            padding: 2px 0;
+            width: 22px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #555;
+            text-align: center;
+            transition: all 0.1s ease;
+        }
+
+        .slot-btn:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .slot-btn.active {
+            background: #444;
+            color: #fff;
+            border-color: #444;
         }
 
         button.action-btn {
@@ -261,20 +286,16 @@
         </svg>
     </button>
     
-    <div class="toolbar-dropdown-container">
-        <span>Slot:</span>
-        <select id="slot-select" onchange="switchSlot(this.value)">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-        </select>
+    <!-- Save Slots Buttons -->
+    <div class="toolbar-group-container">
+        <button class="slot-btn" data-slot="1" onclick="switchSlot('1')" title="Slot 1">1</button>
+        <button class="slot-btn" data-slot="2" onclick="switchSlot('2')" title="Slot 2">2</button>
+        <button class="slot-btn" data-slot="3" onclick="switchSlot('3')" title="Slot 3">3</button>
     </div>
 
-    <div class="toolbar-dropdown-container">
-        <span>Size:</span>
-        <select id="size-select" onchange="updateTextSize(this.value)">
+    <!-- Text Size Dropdown -->
+    <div class="toolbar-group-container">
+        <select id="size-select" onchange="updateTextSize(this.value)" title="Text Size">
             <option value="11px">Small</option>
             <option value="13px" selected>Normal</option>
             <option value="16px">Large</option>
@@ -372,7 +393,22 @@
 
     // --- Save Slot Logic ---
     let currentSlot = localStorage.getItem('scratchpad_current_slot') || '1';
-    document.getElementById('slot-select').value = currentSlot;
+    
+    // Safety check: if user had slot 4 or 5 saved from a previous version, move them to 1
+    if (['1', '2', '3'].indexOf(currentSlot) === -1) {
+        currentSlot = '1';
+        localStorage.setItem('scratchpad_current_slot', currentSlot);
+    }
+    
+    function updateSlotUI() {
+        document.querySelectorAll('.slot-btn').forEach(btn => {
+            if (btn.dataset.slot === currentSlot) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
 
     function getStorageKey() {
         return 'scratchpad_content_slot_' + currentSlot;
@@ -391,9 +427,12 @@
     function switchSlot(slotNumber) {
         currentSlot = slotNumber;
         localStorage.setItem('scratchpad_current_slot', currentSlot);
+        updateSlotUI();
         loadSlotContent();
     }
 
+    // Initialize UI and content
+    updateSlotUI();
     loadSlotContent();
 
     quill.on('text-change', (delta, oldDelta, source) => {
@@ -428,21 +467,13 @@
         }
     }
 
-    /**
-     * Fix Paragraphs
-     * Collapses multiple consecutive paragraph breaks into a single break,
-     * preserving all existing rich-text formatting.
-     */
     function fixParagraphs() {
         const delta = quill.getContents();
         const newDelta = { ops: [] };
 
         delta.ops.forEach((op, i) => {
             if (typeof op.insert === 'string') {
-                // Replace 2 or more newlines with exactly one
                 let newString = op.insert.replace(/\n\n+/g, '\n');
-                
-                // If it's the very first block, trim leading newlines entirely
                 if (i === 0) newString = newString.replace(/^\n+/, '');
                 
                 newDelta.ops.push({
@@ -454,10 +485,8 @@
             }
         });
 
-        // Apply the cleaned structure back to the editor
         quill.setContents(newDelta);
         
-        // Provide visual button feedback
         const btn = document.querySelector('button[onclick="fixParagraphs()"]');
         const originalText = btn.innerText;
         btn.innerText = "Fixed!";
