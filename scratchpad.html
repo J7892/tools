@@ -58,9 +58,15 @@
             border-bottom: 1px solid var(--border-color) !important;
             display: flex;
             align-items: center;
-            flex-wrap: wrap;
+            flex-wrap: nowrap; /* Forces a single line */
             padding: 8px !important;
             flex-shrink: 0; 
+            overflow-x: auto; /* Allows smooth scrolling if squished too far */
+            scrollbar-width: none; /* Hides scrollbar in Firefox */
+        }
+        
+        .ql-toolbar.ql-snow::-webkit-scrollbar {
+            display: none; /* Hides scrollbar in Chrome/Safari */
         }
 
         #editor {
@@ -147,6 +153,12 @@
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+        
+        /* Remove margin for the first element now that default buttons are gone */
+        .custom-highlighter + .toolbar-group-container {
+            margin-left: 10px;
+            padding-left: 10px;
         }
 
         .toolbar-group-container select {
@@ -293,14 +305,12 @@
         </svg>
     </button>
     
-    <!-- Save Slots Buttons -->
     <div class="toolbar-group-container" id="slot-container">
         <button class="slot-btn" data-slot="1" onclick="switchSlot('1')" title="Slot 1">1</button>
         <button class="slot-btn" data-slot="2" onclick="switchSlot('2')" title="Slot 2">2</button>
         <button class="slot-btn" data-slot="3" onclick="switchSlot('3')" title="Slot 3">3</button>
     </div>
 
-    <!-- Text Size Dropdown -->
     <div class="toolbar-group-container">
         <select id="size-select" onchange="updateTextSize(this.value)" title="Text Size">
             <option value="11px">Small</option>
@@ -328,9 +338,8 @@
     const quill = new Quill('#editor', {
         theme: 'snow',
         modules: {
-            toolbar: [
-                ['bold', 'italic', 'underline'] // Link and Clean buttons removed
-            ],
+            // Emptied the default toolbar entirely to save space
+            toolbar: [], 
             keyboard: {
                 bindings: {
                     softBreak: {
