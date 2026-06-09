@@ -234,7 +234,7 @@
         .modal-content { background: var(--bg-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 550px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
         .modal-content h3 { margin-top: 0; margin-bottom: 10px; color: var(--text-color); font-size: 1.2em; }
         .modal-content p { font-size: 0.9em; color: var(--secondary-text); margin-bottom: 15px; line-height: 1.4; }
-        #import-list { flex-grow: 1; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; background: var(--editor-bg); }
+        #import-list { flex-grow: 1; max-height: 50vh; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; background: var(--editor-bg); }
         .import-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-color); color: var(--text-color); }
         .import-item:last-child { border-bottom: none; }
         .import-item input[type="checkbox"] { transform: scale(1.2); cursor: pointer; }
@@ -707,6 +707,13 @@
             alert("No notes found in the backup file.");
             return;
         }
+
+        // Sort the imported array from newest to oldest immediately
+        importedNotes.sort((a, b) => {
+            const timeA = new Date(a.lastModified || a.date).getTime();
+            const timeB = new Date(b.lastModified || b.date).getTime();
+            return timeB - timeA;
+        });
 
         const existing = getNotesSafely();
         const existingMap = new Map(existing.map(n => [n.id, n]));
