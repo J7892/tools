@@ -229,6 +229,25 @@
             padding-top: 15px !important; 
         }
 
+        /* Import Modal UI */
+        #import-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100000; align-items: center; justify-content: center; }
+        .modal-content { background: var(--bg-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 550px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
+        .modal-content h3 { margin-top: 0; margin-bottom: 10px; color: var(--text-color); font-size: 1.2em; }
+        .modal-content p { font-size: 0.9em; color: var(--secondary-text); margin-bottom: 15px; line-height: 1.4; }
+        #import-list { flex-grow: 1; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; background: var(--editor-bg); }
+        .import-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-color); color: var(--text-color); }
+        .import-item:last-child { border-bottom: none; }
+        .import-item input[type="checkbox"] { transform: scale(1.2); cursor: pointer; }
+        .import-badge { font-size: 0.75em; padding: 4px 8px; border-radius: 12px; font-weight: bold; white-space: nowrap; }
+        .badge-new { background: #d4edda; color: #155724; }
+        .badge-update { background: #cce5ff; color: #004085; }
+        .badge-identical { background: #e2e3e5; color: #383d41; }
+        .badge-older { background: #fff3cd; color: #856404; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+        .modal-actions button { padding: 8px 16px; cursor: pointer; border: 1px solid var(--border-color); background: var(--toolbar-bg); border-radius: 4px; color: var(--text-color); font-weight: bold; }
+        .modal-actions button.primary-btn { background: #007bff; color: white; border: none; }
+        .modal-actions button:hover { opacity: 0.9; }
+
         @media (max-width: 768px) {
             .editor-area { padding: 0; } 
             .editor-content-wrapper { margin-top: 0; }
@@ -263,7 +282,7 @@
         <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border-color);">
             <button class="btn-tool" style="width:100%; margin-bottom:5px;" onclick="exportFullDatabase()">Backup Database</button>
             <button class="btn-tool" style="width:100%;" onclick="document.getElementById('import-input').click()">Import Backup</button>
-            <input type="file" id="import-input" style="display:none" onchange="importNotes(event)">
+            <input type="file" id="import-input" style="display:none" accept=".json" onchange="importNotes(event)">
         </div>
     </div>
 
@@ -313,6 +332,18 @@
         <div id="task-only-footer"><button class="btn-tool" onclick="setViewMode('notes')" style="background:#333; color:white; padding:10px 20px; font-weight:bold;">Notes</button></div>
     </div>
 
+    <div id="import-modal">
+        <div class="modal-content">
+            <h3>Import Database</h3>
+            <p>Select which notes to restore or update. We have automatically checked notes that are brand new or contain newer modifications.</p>
+            <div id="import-list"></div>
+            <div class="modal-actions">
+                <button onclick="closeImportModal()">Cancel</button>
+                <button onclick="executeImport()" class="primary-btn">Import Selected</button>
+            </div>
+        </div>
+    </div>
+
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
     const APP_VERSION = 1.1;
@@ -320,6 +351,7 @@
     let saveTimeout = null;
     let currentGlobalSize = localStorage.getItem('global-display-size') || 'false';
     let sortMode = localStorage.getItem('sort-pref') || 'date';
+    let pendingImportNotes = []; // Holds data for the import modal
 
     const Embed = Quill.import('blots/embed');
     class SoftBreak extends Embed {
@@ -651,40 +683,128 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
 
+    // --- NEW SMART IMPORT LOGIC ---
     function importNotes(event) {
         const file = event.target.files[0];
         if (!file) return;
+        
         const FileReaderObj = new FileReader();
         FileReaderObj.onload = (e) => {
             try {
                 const imported = JSON.parse(e.target.result);
                 const newData = Array.isArray(imported) ? imported : (imported.data || []);
-                
-                if (confirm("Merge imported notes with existing notes? If an imported note already exists, a duplicate will be created to prevent data loss.")) {
-                    const existing = getNotesSafely();
-                    const existingIds = new Set(existing.map(n => n.id));
-                    
-                    let idCounter = Date.now(); 
-                    const mergedData = [...existing];
-                    
-                    newData.forEach(note => {
-                        if (existingIds.has(note.id)) {
-                            idCounter++;
-                            mergedData.push({ ...note, id: idCounter });
-                        } else {
-                            mergedData.push(note);
-                            existingIds.add(note.id); 
-                        }
-                    });
-                    
-                    saveNotesInternal(mergedData);
-                }
-            } catch (err) { alert("Invalid file."); }
-            
-            event.target.value = '';
+                prepareImportModal(newData);
+            } catch (err) { 
+                alert("Invalid backup file."); 
+            }
+            event.target.value = ''; // Reset input
         };
         FileReaderObj.readAsText(file);
     }
+
+    function prepareImportModal(importedNotes) {
+        if(importedNotes.length === 0) {
+            alert("No notes found in the backup file.");
+            return;
+        }
+
+        const existing = getNotesSafely();
+        const existingMap = new Map(existing.map(n => [n.id, n]));
+        pendingImportNotes = [];
+
+        const listEl = document.getElementById('import-list');
+        listEl.innerHTML = '';
+
+        importedNotes.forEach(note => {
+            const ext = existingMap.get(note.id);
+            let status = 'new';
+            let label = 'New Note';
+            let shouldCheck = true;
+            let badgeClass = 'badge-new';
+
+            if (ext) {
+                // Check if completely identical content
+                const isIdentical = ext.plainText === note.plainText && ext.title === note.title;
+                if (isIdentical) {
+                    status = 'identical';
+                    label = 'Identical (Unchanged)';
+                    shouldCheck = false;
+                    badgeClass = 'badge-identical';
+                } else {
+                    // Content differs, figure out which is newer
+                    const extTime = new Date(ext.lastModified || ext.date).getTime();
+                    const impTime = new Date(note.lastModified || note.date).getTime();
+                    
+                    if (impTime > extTime) {
+                        status = 'update';
+                        label = 'Different (Import is Newer)';
+                        shouldCheck = true;
+                        badgeClass = 'badge-update';
+                    } else {
+                        status = 'older';
+                        label = 'Different (Import is Older)';
+                        shouldCheck = false;
+                        badgeClass = 'badge-older';
+                    }
+                }
+            }
+
+            pendingImportNotes.push({ note, status });
+
+            const div = document.createElement('div');
+            div.className = 'import-item';
+            
+            div.innerHTML = `
+                <input type="checkbox" id="imp-${note.id}" value="${note.id}" ${shouldCheck ? 'checked' : ''}>
+                <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;">
+                    <label for="imp-${note.id}" style="cursor:pointer; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        ${escapeHTML(note.title || "Untitled")}
+                    </label>
+                    <div style="font-size:0.8em; color:var(--secondary-text);">Modified: ${new Date(note.lastModified || note.date).toLocaleDateString()}</div>
+                </div>
+                <span class="import-badge ${badgeClass}">${label}</span>
+            `;
+            listEl.appendChild(div);
+        });
+
+        document.getElementById('import-modal').style.display = 'flex';
+    }
+
+    function closeImportModal() {
+        document.getElementById('import-modal').style.display = 'none';
+        pendingImportNotes = [];
+    }
+
+    function executeImport() {
+        const existing = getNotesSafely();
+        const existingMap = new Map(existing.map(n => [n.id, n])); // Using a map automatically handles preventing duplicates
+        
+        const checkboxes = document.querySelectorAll('#import-list input[type="checkbox"]:checked');
+        const selectedIds = new Set(Array.from(checkboxes).map(cb => parseInt(cb.value)));
+
+        if (selectedIds.size === 0) {
+            closeImportModal();
+            return;
+        }
+
+        const notesToProcess = pendingImportNotes.filter(p => selectedIds.has(p.note.id));
+        
+        notesToProcess.forEach(p => {
+            // Because we use the note's original ID, Map.set will OVERWRITE the existing note, 
+            // updating it instead of duplicating it.
+            existingMap.set(p.note.id, p.note); 
+        });
+
+        const mergedData = Array.from(existingMap.values());
+        saveNotesInternal(mergedData);
+        closeImportModal();
+        
+        // If the note currently visible was just updated, reload it into the editor
+        if (currentNoteId && selectedIds.has(currentNoteId)) {
+            loadNote(currentNoteId);
+        }
+    }
+    // --- END SMART IMPORT LOGIC ---
 
     function checkDailyBackup() {
         const lastBackup = localStorage.getItem('last-backup-date');
