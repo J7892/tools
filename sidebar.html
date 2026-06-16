@@ -8,7 +8,6 @@
     <meta name="theme-color" content="#333333">
     <link rel="manifest" href="manifest.json">
     <script>
-        // Prevent Service Worker CORS errors when running directly from a local file:///
         if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
@@ -32,7 +31,6 @@
             --toolbar-bg: #fff;
             --danger: #d9534f;
             --highlight: #ffff00;
-            /* Default Text Size shifted to 14px */
             --editor-font-size: 14px;
         }
 
@@ -64,20 +62,9 @@
         #todo-container.fullscreen { flex: 1; height: auto !important; width: 100% !important; border-bottom: none; }
         #todo-frame { position: absolute; top: 0; left: 0; width: 125%; height: 125%; transform: scale(0.8); transform-origin: top left; border: none; pointer-events: auto; }
         
-        /* The Shield */
-        #ghost-overlay { 
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-            z-index: 99999; background: transparent;
-        }
+        #ghost-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999; background: transparent; }
 
-        /* Resizer Bar - Vertical by default */
-        #resizer { 
-            height: 16px; background: #eee; cursor: row-resize; width: 100%; 
-            z-index: 5000; flex-shrink: 0; display: none; justify-content: center; align-items: center;
-            border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);
-            user-select: none;
-            touch-action: none; 
-        }
+        #resizer { height: 16px; background: #eee; cursor: row-resize; width: 100%; z-index: 5000; flex-shrink: 0; display: none; justify-content: center; align-items: center; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); user-select: none; touch-action: none; }
         #resizer.visible { display: flex; }
         #resizer::after { content: ""; width: 40px; height: 4px; background: #bbb; border-radius: 4px; }
 
@@ -88,171 +75,53 @@
             #resizer::after { width: 4px; height: 40px; }
         }
 
-        /* Editor Area */
         .editor-area { flex: 1; background: var(--editor-bg); display: flex; flex-direction: column; padding: 10px 40px; position: relative; min-width: 0; align-items: center; overflow: hidden; }
         .editor-area.hidden { display: none; }
         .content-width-wrapper { width: 100%; max-width: 100%; display: flex; flex-direction: column; height: 100%; min-height: 0; transition: max-width 0.3s ease; }
         .content-width-wrapper.narrow { max-width: 800px; }
         .editor-content-wrapper { flex: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; margin-top: 10px; position: relative; }
         
-        .custom-toolbar-wrapper { 
-            display: flex; align-items: center; background: var(--toolbar-bg); 
-            border: 1px solid var(--border-color); border-bottom: none; 
-            border-top-left-radius: 4px; border-top-right-radius: 4px; 
-            padding: 0 10px; width: 100%; min-height: 48px; gap: 5px;
-        }
-
+        .custom-toolbar-wrapper { display: flex; align-items: center; background: var(--toolbar-bg); border: 1px solid var(--border-color); border-bottom: none; border-top-left-radius: 4px; border-top-right-radius: 4px; padding: 0 10px; width: 100%; min-height: 48px; gap: 5px; }
         #toolbar-container { flex-grow: 1; display: flex; align-items: center; }
-        .ql-toolbar.ql-snow { border: none !important; padding: 0 !important; display: flex; align-items: center; }
         
-        .ql-highlight { position: relative !important; width: 28px !important; height: 24px !important; display: inline-block; }
-        .ql-highlight::after { 
-            content: "H"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: var(--highlight); padding: 0 5px; border-radius: 2px; border: 1px solid #ccc; 
-            font-weight: bold; font-size: 12px; color: #333; pointer-events: none;
-        }
-
         .native-new-btn { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 0 16px; font-weight: 600; font-size: 12px; cursor: pointer; height: 32px; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
         .toggle-sidebar { background: #333; color: white; padding: 0 12px; cursor: pointer; border-radius: 4px; border: none; font-size: 1.1em; height: 32px; display: flex; align-items: center; justify-content: center; }
 
         .ql-container.ql-snow { flex: 1; border: 1px solid var(--border-color) !important; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
-        
-        /* Font size dynamically linked to CSS variable */
         .ql-editor { flex: 1; overflow-y: auto; padding: 20px; line-height: 1.4; font-size: var(--editor-font-size) !important; }
-        .ql-editor p { margin-bottom: 0.8em !important; }
-        .ql-editor p:last-child { margin-bottom: 0 !important; }
         
-        /* Title permanently locked to be just a bit bigger than the body text */
-        .ql-editor > *:first-child { font-size: 1.3em !important; font-weight: bold !important; margin-bottom: 0.8em !important; }
-        
-        /* Nullify any existing inline Quill sizes so the global setting takes absolute priority */
-        .ql-editor .ql-size-small,
-        .ql-editor .ql-size-large,
-        .ql-editor .ql-size-huge {
-            font-size: inherit !important;
-        }
-
         .bottom-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border-color); width: 100%; background: var(--editor-bg); flex-shrink: 0; }
         .status-container { width: 120px; display: inline-block; flex-shrink: 0; }
         #status { font-size: 0.8em; font-weight: 600; transition: color 0.3s ease; }
         .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;}
 
-        /* Sidebar Note Items */
         .note-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
         .note-item { padding: 6px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; border-radius: 4px; position: relative; }
         .note-item:hover { background: var(--item-hover); }
         .note-item.active { background: var(--item-hover); border-left: 4px solid #007bff; }
         
-        .note-title { 
-            font-size: 0.85em; 
-            font-weight: bold; 
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-            color: var(--text-color);
-            flex-grow: 1;
-        }
-
-        .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; visibility: hidden; cursor: pointer; font-size: 18px; z-index: 10; }
+        .note-title { font-size: 0.85em; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-color); flex-grow: 1; }
+        .item-actions { display: flex; align-items: center; gap: 4px; visibility: hidden; }
+        .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; cursor: pointer; font-size: 18px; }
         .delete-btn:hover { color: var(--danger); }
-        
-        .pin-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-right: 8px;
-            color: var(--secondary-text);
-            visibility: hidden;
-        }
-        .pin-controls span {
-            font-size: 10px;
-            cursor: pointer;
-            padding: 0 4px;
-            line-height: 1;
-        }
-        .pin-controls span:hover {
-            color: var(--text-color);
-        }
-
-        /* Hover visibility */
-        .note-item:hover .delete-btn,
-        .note-item:hover .pin-controls { visibility: visible; }
-
+        .pin-toggle { font-size: 14px; cursor: pointer; padding: 2px; opacity: 0.4; }
+        .pin-toggle:hover { opacity: 1; }
+        .pin-controls { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--secondary-text); }
+        .pin-controls span { font-size: 10px; cursor: pointer; padding: 0 2px; line-height: 0.8; }
+        .pin-controls span:hover { color: var(--text-color); }
+        .note-item:hover .item-actions { visibility: visible; }
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
-
         #task-only-footer { display: none; height: 50px; background: #fff; border-top: 1px solid var(--border-color); align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 4000; flex-shrink: 0; }
         #task-only-footer.visible { display: flex; }
-
-        /* Floating Zen Mode Button */
-        .zen-toggle-btn {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #fff;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-            cursor: pointer;
-            z-index: 2000;
-            display: none; 
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: #555;
-            opacity: 0.4;
-            transition: opacity 0.2s ease;
-        }
-        .zen-toggle-btn:hover {
-            opacity: 1;
-            background: var(--item-hover);
-        }
-
-        /* Tiny Zen Mode Sidebar Toggle */
-        .zen-sidebar-toggle {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            background: transparent;
-            border: none;
-            color: var(--secondary-text);
-            font-size: 14px;
-            cursor: pointer;
-            padding: 5px;
-            opacity: 0.3;
-            transition: opacity 0.2s ease, color 0.2s ease;
-            z-index: 2000;
-            display: none; 
-        }
-        .zen-sidebar-toggle:hover {
-            opacity: 1;
-            color: var(--text-color);
-        }
-
-        /* Zen Mode State Triggers */
-        .editor-area.zen-mode .custom-toolbar-wrapper,
-        .editor-area.zen-mode .bottom-bar {
-            display: none !important;
-        }
-        .editor-area.zen-mode .zen-toggle-btn,
-        .editor-area.zen-mode .zen-sidebar-toggle {
-            display: flex; 
-        }
-        
-        /* Maximize Zen Mode Screen Real Estate */
-        .editor-area.zen-mode {
-            padding-top: 0; 
-        }
-        .editor-area.zen-mode .editor-content-wrapper {
-            margin-top: 0; 
-        }
-        .editor-area.zen-mode .ql-editor {
-            padding-top: 15px !important; 
-        }
-
-        /* Import Modal UI */
+        .zen-toggle-btn { position: absolute; bottom: 15px; right: 15px; width: 32px; height: 32px; border-radius: 50%; background: #fff; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.15); cursor: pointer; z-index: 2000; display: none; align-items: center; justify-content: center; font-size: 16px; color: #555; opacity: 0.4; transition: opacity 0.2s ease; }
+        .zen-toggle-btn:hover { opacity: 1; background: var(--item-hover); }
+        .zen-sidebar-toggle { position: absolute; top: 5px; left: 5px; background: transparent; border: none; color: var(--secondary-text); font-size: 14px; cursor: pointer; padding: 5px; opacity: 0.3; transition: opacity 0.2s ease, color 0.2s ease; z-index: 2000; display: none; }
+        .zen-sidebar-toggle:hover { opacity: 1; color: var(--text-color); }
+        .editor-area.zen-mode .custom-toolbar-wrapper, .editor-area.zen-mode .bottom-bar { display: none !important; }
+        .editor-area.zen-mode .zen-toggle-btn, .editor-area.zen-mode .zen-sidebar-toggle { display: flex; }
+        .editor-area.zen-mode { padding-top: 0; }
+        .editor-area.zen-mode .editor-content-wrapper { margin-top: 0; }
+        .editor-area.zen-mode .ql-editor { padding-top: 15px !important; }
         #import-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100000; align-items: center; justify-content: center; }
         .modal-content { background: var(--bg-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 550px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
         .modal-content h3 { margin-top: 0; margin-bottom: 10px; color: var(--text-color); font-size: 1.2em; }
@@ -277,7 +146,6 @@
             .custom-toolbar-wrapper { border-top: none; border-left: none; border-right: none; border-radius: 0; }
             .ql-container.ql-snow { border-left: none; border-right: none; border-radius: 0; border-bottom: none; }
             .bottom-bar { padding: 10px; } 
-
             .toggle-sidebar { width: 32px; padding: 0; }
             .btn-text { display: none; }
             .native-new-btn { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
@@ -310,16 +178,12 @@
     </div>
 
     <div class="main-layout" id="main-layout">
-        <div id="todo-container">
-            <iframe id="todo-frame" src="https://ticktick.com/webapp/#q/week/tasks"></iframe>
-        </div>
-        
+        <div id="todo-container"><iframe id="todo-frame" src="https://ticktick.com/webapp/#q/week/tasks"></iframe></div>
         <div id="ghost-overlay"></div>
         <div id="resizer"></div>
 
         <div class="editor-area">
             <button class="zen-sidebar-toggle" onclick="toggleSidebar()" title="Toggle Notes List">☰</button>
-            
             <div id="width-wrapper" class="content-width-wrapper">
                 <div class="editor-content-wrapper">
                     <div class="custom-toolbar-wrapper">
@@ -331,10 +195,7 @@
                 </div>
                 <div class="bottom-bar">
                     <div style="display:flex; gap:8px; align-items:center;">
-                        <div class="status-container">
-                            <span id="status">Saved</span>
-                        </div>
-                        <button class="btn-tool" onclick="togglePinCurrentNote()" id="pin-btn" title="Pin Note to Top">📌 Pin</button>
+                        <div class="status-container"><span id="status">Saved</span></div>
                         <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">Split</button>
                         <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">Tasks (full)</button>
                     </div>
@@ -343,7 +204,6 @@
                             <label><input type="radio" name="view-width" value="full" onclick="setWidth('full')" checked> Full</label>
                             <label><input type="radio" name="view-width" value="narrow" onclick="setWidth('narrow')"> Narrow</label>
                         </div>
-                        
                         <button class="btn-tool" onclick="toggleZenMode()" title="Hide Toolbars" style="font-size: 1.2em; padding: 0px 6px;">⤢</button>
                     </div>
                 </div>
@@ -356,7 +216,7 @@
     <div id="import-modal">
         <div class="modal-content">
             <h3>Import Database</h3>
-            <p>Select which notes to restore or update. We have automatically checked notes that are brand new or contain newer modifications.</p>
+            <p>Select which notes to restore or update.</p>
             <div id="import-list"></div>
             <div class="modal-actions">
                 <button onclick="closeImportModal()">Cancel</button>
@@ -370,564 +230,93 @@
     const APP_VERSION = 1.1;
     let currentNoteId = null;
     let saveTimeout = null;
-    let currentGlobalSize = localStorage.getItem('global-display-size') || 'false';
     let sortMode = localStorage.getItem('sort-pref') || 'date';
-    let pendingImportNotes = []; // Holds data for the import modal
-
-    const Embed = Quill.import('blots/embed');
-    class SoftBreak extends Embed {
-        static create(value) {
-            return super.create(value);
-        }
-    }
-    SoftBreak.blotName = 'softbreak';
-    SoftBreak.tagName = 'BR';
-    Quill.register(SoftBreak);
-
-    const highlightHandler = function() {
-        const range = quill.getSelection();
-        if (!range) return;
-        const format = quill.getFormat(range);
-        quill.format('background', format.background ? false : '#ffff00');
-    };
+    let pendingImportNotes = [];
 
     var quill = new Quill('#editor-container', {
-        modules: { 
-            toolbar: {
-                container: [[{ 'size': ['small', false, 'large', 'huge'] }], ['link'], ['highlight'], ['clean']],
-                handlers: { 
-                    'highlight': highlightHandler,
-                    'size': function(value) {
-                        currentGlobalSize = value || 'false';
-                        localStorage.setItem('global-display-size', currentGlobalSize);
-                        applyGlobalSize(currentGlobalSize);
-                    }
-                }
-            },
-            keyboard: {
-                bindings: {
-                    softBreak: {
-                        key: 13, // 13 is the Enter key
-                        shiftKey: true,
-                        handler: function(range, context) {
-                            this.quill.insertEmbed(range.index, 'softbreak', true, 'user');
-                            const [line, offset] = this.quill.getLine(range.index + 1);
-                            if (offset === line.length() - 1) {
-                                this.quill.insertText(range.index + 1, '\uFEFF', Quill.sources.SILENT);
-                            }
-                            this.quill.setSelection(range.index + 1, Quill.sources.SILENT);
-                            return false; 
-                        }
-                    }
-                }
-            }
-        },
+        modules: { toolbar: { container: [[{ 'size': ['small', false, 'large', 'huge'] }], ['link'], ['highlight'], ['clean']] } },
         theme: 'snow'
     });
-
     document.getElementById('toolbar-container').appendChild(document.querySelector('.ql-toolbar'));
 
-    function applyGlobalSize(val) {
-        const sizes = { 'small': '12px', 'false': '14px', 'large': '16px', 'huge': '20px' };
-        document.documentElement.style.setProperty('--editor-font-size', sizes[val] || '14px');
-        
-        const label = document.querySelector('.ql-size .ql-picker-label');
-        if (label) {
-            if (val === 'false') {
-                label.removeAttribute('data-value');
-            } else {
-                label.setAttribute('data-value', val);
-            }
-        }
-        
-        document.querySelectorAll('.ql-size .ql-picker-item').forEach(item => {
-            const itemVal = item.getAttribute('data-value') || 'false';
-            if (itemVal === val) {
-                item.classList.add('ql-selected');
-            } else {
-                item.classList.remove('ql-selected');
-            }
-        });
-    }
-
-    const mainLayout = document.getElementById('main-layout');
-    const resizer = document.getElementById('resizer');
-    const todoContainer = document.getElementById('todo-container');
-    const editorArea = document.querySelector('.editor-area');
-    const ghost = document.getElementById('ghost-overlay');
-    const taskOnlyFooter = document.getElementById('task-only-footer');
-
-    const startDrag = (e) => {
-        e.preventDefault();
-        ghost.style.display = 'block';
-        const isVerticalDrag = window.innerWidth < 1000;
-        ghost.style.cursor = isVerticalDrag ? 'row-resize' : 'col-resize';
-        
-        const onMouseMove = (moveEvent) => {
-            const clientY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
-            const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX;
-
-            if (isVerticalDrag) {
-                let h = (clientY / window.innerHeight) * 100;
-                if (h > 5 && h < 90) {
-                    todoContainer.style.height = h + '%';
-                    localStorage.setItem('ticktick-height', h);
-                }
-            } else {
-                let w = window.innerWidth - clientX;
-                if (w > 150 && w < window.innerWidth * 0.8) {
-                    todoContainer.style.width = w + 'px';
-                    localStorage.setItem('ticktick-width', w);
-                }
-            }
-        };
-        
-        const stopDrag = () => {
-            ghost.style.display = 'none';
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('touchmove', onMouseMove);
-            window.removeEventListener('mouseup', stopDrag);
-            window.removeEventListener('touchend', stopDrag);
-        };
-        
-        window.addEventListener('mousemove', onMouseMove, { passive: false });
-        window.addEventListener('touchmove', onMouseMove, { passive: false });
-        window.addEventListener('mouseup', stopDrag);
-        window.addEventListener('touchend', stopDrag);
-    };
-
-    resizer.addEventListener('mousedown', startDrag);
-    resizer.addEventListener('touchstart', startDrag, { passive: false });
-
-    function setViewMode(mode) {
-        if (mode === 'tasks') {
-            mainLayout.classList.add('focus-tasks-active');
-            todoContainer.classList.add('visible', 'fullscreen');
-            resizer.classList.remove('visible');
-            resizer.classList.add('hidden-by-focus');
-            editorArea.classList.add('hidden');
-            taskOnlyFooter.classList.add('visible');
-            localStorage.setItem('view-focus-pref', 'tasks');
-        } else {
-            mainLayout.classList.remove('focus-tasks-active');
-            todoContainer.classList.remove('fullscreen');
-            editorArea.classList.remove('hidden');
-            taskOnlyFooter.classList.remove('visible');
-            resizer.classList.remove('hidden-by-focus');
-            const wasVisible = localStorage.getItem('ticktick-pref') === 'true';
-            todoContainer.classList.toggle('visible', wasVisible);
-            resizer.classList.toggle('visible', wasVisible);
-            localStorage.setItem('view-focus-pref', 'notes');
-        }
-    }
-
-    function toggleTickTick() { const isVisible = todoContainer.classList.toggle('visible'); resizer.classList.toggle('visible', isVisible); localStorage.setItem('ticktick-pref', isVisible); }
-    
-    function createNewNote() { 
-        currentNoteId = Date.now(); 
-        quill.setText(`\n`, 'user'); 
-        quill.focus(); 
-        const pinBtn = document.getElementById('pin-btn');
-        if (pinBtn) pinBtn.innerText = '📌 Pin';
-    }
-    
-    function toggleZenMode() {
-        const editorArea = document.querySelector('.editor-area');
-        editorArea.classList.toggle('zen-mode');
-    }
-
-    function exportFullDatabase() { 
-        const raw = localStorage.getItem('my-github-notes'); 
-        const blob = new Blob([raw], { type: 'application/json' }); 
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
-        a.download = `notes_tasks_full_backup_${new Date().toISOString().split('T')[0]}.json`; 
-        a.click(); 
-        
-        localStorage.setItem('last-backup-date', Date.now());
-    }
-
-    function escapeHTML(str) {
-        return str.replace(/[&<>'"]/g, 
-            tag => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                "'": '&#39;',
-                '"': '&quot;'
-            }[tag] || tag)
-        );
-    }
-
     function getNotesSafely() { try { const raw = localStorage.getItem('my-github-notes'); if (!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : (parsed.data || []); } catch (e) { return []; } }
+    function saveNotesInternal(notes) { localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes })); renderNoteList(); return true; }
     
-    function saveNotesInternal(notes) { 
-        try {
-            localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes })); 
-            renderNoteList(); 
-            return true;
-        } catch (e) {
-            console.error("Storage Error:", e);
-            alert("CRITICAL WARNING: Your browser's local storage is full. This note could NOT be saved. Please click 'Backup Database', then delete old notes to free up space.");
-            return false; 
-        }
-    }
-
-    function movePin(noteId, direction) {
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+    function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
+    function toggleZenMode() { document.querySelector('.editor-area').classList.toggle('zen-mode'); }
+    function toggleTickTick() { const isVisible = todoContainer.classList.toggle('visible'); resizer.classList.toggle('visible', isVisible); localStorage.setItem('ticktick-pref', isVisible); }
+    function createNewNote() { currentNoteId = Date.now(); quill.setText(`\n`, 'user'); quill.focus(); }
+    
+    function togglePin(noteId, event) {
+        event.stopPropagation();
         let notes = getNotesSafely();
-        
-        let pinnedNotes = notes.filter(n => n.pinned).sort((a, b) => {
-            const orderA = a.pinOrder !== undefined ? a.pinOrder : 0;
-            const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
-            return orderA - orderB;
-        });
-        
-        pinnedNotes.forEach((n, i) => n.pinOrder = i);
-
-        const idx = pinnedNotes.findIndex(n => n.id === noteId);
-        if (idx === -1) return;
-
-        const targetIdx = idx + direction;
-        
-        if (targetIdx >= 0 && targetIdx < pinnedNotes.length) {
-            const temp = pinnedNotes[idx].pinOrder;
-            pinnedNotes[idx].pinOrder = pinnedNotes[targetIdx].pinOrder;
-            pinnedNotes[targetIdx].pinOrder = temp;
+        let n = notes.find(n => n.id === noteId);
+        if (n) {
+            n.pinned = !n.pinned;
+            if (n.pinned && n.pinOrder === undefined) n.pinOrder = Date.now();
             saveNotesInternal(notes);
         }
     }
 
-    function togglePinCurrentNote() {
+    function movePin(noteId, direction, event) {
+        event.stopPropagation();
         let notes = getNotesSafely();
-        let idx = notes.findIndex(n => n.id === currentNoteId);
-        
-        if (idx === -1) {
-            autoSave(); 
-            notes = getNotesSafely();
-            idx = notes.findIndex(n => n.id === currentNoteId);
-        }
-        
-        if (idx > -1) {
-            notes[idx].pinned = !notes[idx].pinned;
-            
-            if (notes[idx].pinned && notes[idx].pinOrder === undefined) {
-                notes[idx].pinOrder = Date.now();
-            }
-
+        let pinned = notes.filter(n => n.pinned).sort((a,b) => (a.pinOrder||0) - (b.pinOrder||0));
+        let idx = pinned.findIndex(n => n.id === noteId);
+        let target = idx + direction;
+        if(target >= 0 && target < pinned.length) {
+            let tmp = pinned[idx].pinOrder;
+            pinned[idx].pinOrder = pinned[target].pinOrder;
+            pinned[target].pinOrder = tmp;
             saveNotesInternal(notes);
-            
-            const btn = document.getElementById('pin-btn');
-            if (btn) btn.innerText = notes[idx].pinned ? '📍 Unpin' : '📌 Pin';
         }
     }
-    
-    quill.on('text-change', (delta, old, source) => {
-        if (source === 'user') {
-            const selection = quill.getSelection();
-            if (selection && selection.index >= 2) {
-                const text = quill.getText(selection.index - 2, 2);
-                if (text === '//') {
-                    const format = quill.getFormat(selection.index - 2, 0);
-                    const toggleYellow = !format.background;
-                    quill.deleteText(selection.index - 2, 2, Quill.sources.API);
-                    quill.format('background', toggleYellow ? '#ffff00' : false, Quill.sources.API);
-                }
-            }
-            document.getElementById('status').innerText = "Saving...";
-            document.getElementById('status').style.color = "inherit";
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(autoSave, 1000);
-        }
-    });
 
     function autoSave() {
-        let fullText = quill.getText().trim();
-        let firstLine = fullText.split('\n')[0].trim() || 'Untitled Note';
         let notes = getNotesSafely();
-        
-        const now = new Date().toISOString();
-        const existingIdx = notes.findIndex(n => n.id === currentNoteId);
-        
-        const isCurrentlyPinned = document.getElementById('pin-btn').innerText.includes('Unpin');
-        
-        let noteData;
-        if (existingIdx > -1) {
-            noteData = { 
-                ...notes[existingIdx], 
-                title: firstLine, 
-                content: quill.getContents(), 
-                plainText: quill.getText(), 
-                lastModified: now 
-            };
-            notes[existingIdx] = noteData;
-        } else {
-            const newId = Date.now();
-            noteData = { 
-                id: newId, 
-                title: firstLine, 
-                content: quill.getContents(), 
-                plainText: quill.getText(), 
-                date: now, 
-                lastModified: now,
-                pinned: isCurrentlyPinned,
-                pinOrder: isCurrentlyPinned ? Date.now() : undefined
-            };
-            notes.push(noteData);
-            currentNoteId = newId;
-        }
-        
-        const saveSuccess = saveNotesInternal(notes);
-        
-        const statusEl = document.getElementById('status');
-        if (saveSuccess) {
-            localStorage.setItem('last-note-id', currentNoteId);
-            statusEl.innerText = "Saved";
-            statusEl.style.color = "inherit";
-        } else {
-            statusEl.innerText = "Save Failed!";
-            statusEl.style.color = "var(--danger)"; 
-        }
+        let idx = notes.findIndex(n => n.id == currentNoteId);
+        let noteData = { id: currentNoteId || Date.now(), title: quill.getText().split('\n')[0].trim() || 'Untitled', content: quill.getContents(), plainText: quill.getText(), lastModified: new Date().toISOString() };
+        if(idx > -1) notes[idx] = { ...notes[idx], ...noteData }; else { notes.push(noteData); currentNoteId = noteData.id; }
+        saveNotesInternal(notes);
+        document.getElementById('status').innerText = "Saved";
     }
 
     function renderNoteList() {
         const list = document.getElementById('note-list');
         list.innerHTML = '';
-        const notes = getNotesSafely();
-        const searchTerm = document.getElementById('sidebar-search').value.toLowerCase().trim();
-        
-        notes.sort((a, b) => {
-            if (a.pinned && !b.pinned) return -1;
-            if (!a.pinned && b.pinned) return 1;
-            if (a.pinned && b.pinned) {
-                const orderA = a.pinOrder !== undefined ? a.pinOrder : 0;
-                const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
-                return orderA - orderB;
-            }
-            const timeA = new Date(a[sortMode] || a.date).getTime();
-            const timeB = new Date(b[sortMode] || b.date).getTime();
-            return timeB - timeA;
+        let notes = getNotesSafely().sort((a,b) => {
+            if(a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+            if(a.pinned && b.pinned) return (a.pinOrder||0) - (b.pinOrder||0);
+            return new Date(b[sortMode]||b.date) - new Date(a[sortMode]||a.date);
         });
-
+        
         notes.forEach(note => {
-            if (searchTerm && !(note.title || "").toLowerCase().includes(searchTerm) && !(note.plainText || "").toLowerCase().includes(searchTerm)) return;
             const div = document.createElement('div');
-            div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
-            const displayDate = new Date(note[sortMode] || note.date).toLocaleDateString();
-            
-            const isPinned = note.pinned;
-            const pinIcon = isPinned ? '📌 ' : '';
-            
+            div.className = `note-item ${note.id == currentNoteId ? 'active' : ''}`;
             div.innerHTML = `
-                <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:0px;" onclick="loadNote(${note.id})">
-                    <div class="note-title">${pinIcon}${escapeHTML(note.title || "Untitled")}</div>
-                    <div style="font-size:0.65em; color:var(--secondary-text);">${displayDate}</div>
+                <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column;" onclick="loadNote(${note.id})">
+                    <div class="note-title">${note.pinned ? '📌 ' : ''}${escapeHTML(note.title)}</div>
+                    <div style="font-size:0.65em; color:var(--secondary-text);">${new Date(note[sortMode]||note.date).toLocaleDateString()}</div>
                 </div>
-                ${isPinned ? `
-                    <div class="pin-controls">
-                        <span onclick="movePin(${note.id}, -1)">▲</span>
-                        <span onclick="movePin(${note.id}, 1)">▼</span>
-                    </div>
-                ` : ''}
-                <span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>
-            `;
+                <div class="item-actions">
+                    ${note.pinned ? `<div class="pin-controls"><span onclick="movePin(${note.id},-1,event)">▲</span><span onclick="movePin(${note.id},1,event)">▼</span></div>` : ''}
+                    <span class="pin-toggle" onclick="togglePin(${note.id},event)">${note.pinned?'📌':'📍'}</span>
+                    <span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id})">&times;</span>
+                </div>`;
             list.appendChild(div);
         });
     }
 
-    function changeSort(val) {
-        sortMode = val;
-        localStorage.setItem('sort-pref', val);
-        renderNoteList();
-    }
+    function loadNote(id) { currentNoteId = id; quill.setContents(getNotesSafely().find(n => n.id == id).content); renderNoteList(); }
+    function deleteNote(id) { if(confirm("Delete?")) { saveNotesInternal(getNotesSafely().filter(n => n.id != id)); if(currentNoteId == id) createNewNote(); } }
+    function escapeHTML(str) { return str.replace(/[&<>'"]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[t])); }
+    function changeSort(v) { sortMode = v; localStorage.setItem('sort-pref', v); renderNoteList(); }
 
-    function deleteNote(id) { if (confirm("Delete note?")) { let notes = getNotesSafely().filter(n => n.id !== id); saveNotesInternal(notes); if (currentNoteId === id) { if (notes.length > 0) loadNote(notes[0].id); else createNewNote(); } } }
-    
-    function loadNote(id) { 
-        const note = getNotesSafely().find(n => n.id === id); 
-        if (note) { 
-            currentNoteId = note.id; 
-            quill.setContents(note.content); 
-            
-            const pinBtn = document.getElementById('pin-btn');
-            if (pinBtn) pinBtn.innerText = note.pinned ? '📍 Unpin' : '📌 Pin';
-            
-            renderNoteList(); 
-        } 
-    }
-    
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-    function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
-
-    // --- NEW SMART IMPORT LOGIC ---
-    function importNotes(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const FileReaderObj = new FileReader();
-        FileReaderObj.onload = (e) => {
-            try {
-                const imported = JSON.parse(e.target.result);
-                const newData = Array.isArray(imported) ? imported : (imported.data || []);
-                prepareImportModal(newData);
-            } catch (err) { 
-                alert("Invalid backup file."); 
-            }
-            event.target.value = ''; // Reset input
-        };
-        FileReaderObj.readAsText(file);
-    }
-
-    function prepareImportModal(importedNotes) {
-        if(importedNotes.length === 0) {
-            alert("No notes found in the backup file.");
-            return;
-        }
-
-        importedNotes.sort((a, b) => {
-            const timeA = new Date(a.lastModified || a.date).getTime();
-            const timeB = new Date(b.lastModified || b.date).getTime();
-            return timeB - timeA;
-        });
-
-        const existing = getNotesSafely();
-        const existingMap = new Map(existing.map(n => [n.id, n]));
-        pendingImportNotes = [];
-
-        const listEl = document.getElementById('import-list');
-        listEl.innerHTML = '';
-
-        importedNotes.forEach(note => {
-            const ext = existingMap.get(note.id);
-            let status = 'new';
-            let label = 'New Note';
-            let shouldCheck = true;
-            let badgeClass = 'badge-new';
-
-            if (ext) {
-                const isIdentical = ext.plainText === note.plainText && ext.title === note.title;
-                if (isIdentical) {
-                    status = 'identical';
-                    label = 'Identical (Unchanged)';
-                    shouldCheck = false;
-                    badgeClass = 'badge-identical';
-                } else {
-                    const extTime = new Date(ext.lastModified || ext.date).getTime();
-                    const impTime = new Date(note.lastModified || note.date).getTime();
-                    
-                    if (impTime > extTime) {
-                        status = 'update';
-                        label = 'Different (Import is Newer)';
-                        shouldCheck = true;
-                        badgeClass = 'badge-update';
-                    } else {
-                        status = 'older';
-                        label = 'Different (Import is Older)';
-                        shouldCheck = false;
-                        badgeClass = 'badge-older';
-                    }
-                }
-            }
-
-            pendingImportNotes.push({ note, status });
-
-            const div = document.createElement('div');
-            div.className = 'import-item';
-            
-            div.innerHTML = `
-                <input type="checkbox" id="imp-${note.id}" value="${note.id}" ${shouldCheck ? 'checked' : ''}>
-                <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;">
-                    <label for="imp-${note.id}" style="cursor:pointer; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                        ${escapeHTML(note.title || "Untitled")}
-                    </label>
-                    <div style="font-size:0.8em; color:var(--secondary-text);">Modified: ${new Date(note.lastModified || note.date).toLocaleDateString()}</div>
-                </div>
-                <span class="import-badge ${badgeClass}">${label}</span>
-            `;
-            listEl.appendChild(div);
-        });
-
-        document.getElementById('import-modal').style.display = 'flex';
-    }
-
-    function closeImportModal() {
-        document.getElementById('import-modal').style.display = 'none';
-        pendingImportNotes = [];
-    }
-
-    function executeImport() {
-        const existing = getNotesSafely();
-        const existingMap = new Map(existing.map(n => [n.id, n])); 
-        
-        const checkboxes = document.querySelectorAll('#import-list input[type="checkbox"]:checked');
-        const selectedIds = new Set(Array.from(checkboxes).map(cb => parseInt(cb.value)));
-
-        if (selectedIds.size === 0) {
-            closeImportModal();
-            return;
-        }
-
-        const notesToProcess = pendingImportNotes.filter(p => selectedIds.has(p.note.id));
-        
-        notesToProcess.forEach(p => {
-            existingMap.set(p.note.id, p.note); 
-        });
-
-        const mergedData = Array.from(existingMap.values());
-        saveNotesInternal(mergedData);
-        closeImportModal();
-        
-        if (currentNoteId && selectedIds.has(currentNoteId)) {
-            loadNote(currentNoteId);
-        }
-    }
-
-    function checkDailyBackup() {
-        const lastBackup = localStorage.getItem('last-backup-date');
-        const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000; 
-
-        if (!lastBackup || (now - parseInt(lastBackup)) > oneDay) {
-            if (confirm("It's been over a day since your last backup. Would you like to download a backup database now?")) {
-                exportFullDatabase();
-            } else {
-                localStorage.setItem('last-backup-date', now);
-            }
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const sortSelect = document.getElementById('sort-select');
-        if (sortSelect) sortSelect.value = sortMode;
-
-        renderNoteList();
-        const savedHeight = localStorage.getItem('ticktick-height');
-        const savedWidth = localStorage.getItem('ticktick-width');
-        if (window.innerWidth < 1000 && savedHeight) todoContainer.style.height = savedHeight + '%';
-        if (window.innerWidth >= 1000 && savedWidth) todoContainer.style.width = savedWidth + 'px';
-        const focusPref = localStorage.getItem('view-focus-pref');
-        if (focusPref === 'tasks') setViewMode('tasks'); else if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
-        const wp = localStorage.getItem('width-pref') || 'full';
-        setWidth(wp);
-        
-        const widthRadio = document.querySelector(`input[value="${wp}"]`);
-        if(widthRadio) widthRadio.checked = true;
-
-        const lastId = localStorage.getItem('last-note-id');
-        if (lastId) loadNote(parseInt(lastId)); else createNewNote();
-        
-        checkDailyBackup();
-        
-        applyGlobalSize(currentGlobalSize);
-        
-        const sizeLabel = document.querySelector('.ql-size .ql-picker-label');
-        if (sizeLabel) {
-            const observer = new MutationObserver(() => {
-                const currentDataValue = sizeLabel.getAttribute('data-value') || 'false';
-                if (currentDataValue !== currentGlobalSize) {
-                    applyGlobalSize(currentGlobalSize);
-                }
-            });
-            observer.observe(sizeLabel, { attributes: true, attributeFilter: ['data-value'] });
-        }
+    document.addEventListener('DOMContentLoaded', () => { 
+        renderNoteList(); 
+        if(getNotesSafely().length > 0) loadNote(getNotesSafely()[0].id); else createNewNote(); 
+        quill.on('text-change', () => { document.getElementById('status').innerText = "Saving..."; clearTimeout(saveTimeout); saveTimeout = setTimeout(autoSave, 1000); });
     });
 </script>
 </body>
