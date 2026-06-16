@@ -153,30 +153,21 @@
             flex-grow: 1;
         }
 
-        .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; visibility: hidden; cursor: pointer; font-size: 18px; z-index: 10; }
+        .item-actions { display: flex; align-items: center; gap: 4px; visibility: hidden; }
+        
+        .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 6px; cursor: pointer; font-size: 16px; }
         .delete-btn:hover { color: var(--danger); }
         
-        .pin-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-right: 8px;
-            color: var(--secondary-text);
-            visibility: hidden;
-        }
-        .pin-controls span {
-            font-size: 10px;
-            cursor: pointer;
-            padding: 0 4px;
-            line-height: 1;
-        }
-        .pin-controls span:hover {
-            color: var(--text-color);
-        }
+        .pin-toggle { font-size: 14px; cursor: pointer; padding: 2px; opacity: 0.4; }
+        .pin-toggle:hover { opacity: 1; }
+
+        .pin-controls { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--secondary-text); }
+        .pin-controls span { font-size: 10px; cursor: pointer; padding: 0 2px; line-height: 0.8; }
+        .pin-controls span:hover { color: var(--text-color); }
 
         /* Hover visibility */
-        .note-item:hover .delete-btn,
+        .note-item:hover .item-actions { visibility: visible; }
+        .note-item .pin-controls { visibility: hidden; }
         .note-item:hover .pin-controls { visibility: visible; }
 
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
@@ -334,7 +325,6 @@
                         <div class="status-container">
                             <span id="status">Saved</span>
                         </div>
-                        <button class="btn-tool" onclick="togglePinCurrentNote()" id="pin-btn" title="Pin Note to Top">📌 Pin</button>
                         <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">Split</button>
                         <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">Tasks (full)</button>
                     </div>
@@ -372,7 +362,7 @@
     let saveTimeout = null;
     let currentGlobalSize = localStorage.getItem('global-display-size') || 'false';
     let sortMode = localStorage.getItem('sort-pref') || 'date';
-    let pendingImportNotes = []; // Holds data for the import modal
+    let pendingImportNotes = []; 
 
     const Embed = Quill.import('blots/embed');
     class SoftBreak extends Embed {
@@ -407,7 +397,7 @@
             keyboard: {
                 bindings: {
                     softBreak: {
-                        key: 13, // 13 is the Enter key
+                        key: 13, 
                         shiftKey: true,
                         handler: function(range, context) {
                             this.quill.insertEmbed(range.index, 'softbreak', true, 'user');
@@ -527,8 +517,6 @@
         currentNoteId = Date.now(); 
         quill.setText(`\n`, 'user'); 
         quill.focus(); 
-        const pinBtn = document.getElementById('pin-btn');
-        if (pinBtn) pinBtn.innerText = '📌 Pin';
     }
     
     function toggleZenMode() {
@@ -572,68 +560,34 @@
         }
     }
 
-    function movePin(noteId, direction) {
+    function togglePin(noteId, event) {
+        event.stopPropagation();
         let notes = getNotesSafely();
-        
-        let pinnedNotes = notes.filter(n => n.pinned).sort((a, b) => {
-            const orderA = a.pinOrder !== undefined ? a.pinOrder : 0;
-            const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
-            return orderA - orderB;
-        });
-        
-        pinnedNotes.forEach((n, i) => n.pinOrder = i);
-
-        const idx = pinnedNotes.findIndex(n => n.id === noteId);
-        if (idx === -1) return;
-
-        const targetIdx = idx + direction;
-        
-        if (targetIdx >= 0 && targetIdx < pinnedNotes.length) {
-            const temp = pinnedNotes[idx].pinOrder;
-            pinnedNotes[idx].pinOrder = pinnedNotes[targetIdx].pinOrder;
-            pinnedNotes[targetIdx].pinOrder = temp;
+        let n = notes.find(n => n.id === noteId);
+        if (n) {
+            n.pinned = !n.pinned;
+            if (n.pinned && n.pinOrder === undefined) n.pinOrder = Date.now();
             saveNotesInternal(notes);
         }
     }
 
-    function togglePinCurrentNote() {
+    function movePin(noteId, direction, event) {
+        event.stopPropagation();
         let notes = getNotesSafely();
-        let idx = notes.findIndex(n => n.id === currentNoteId);
-        
-        if (idx === -1) {
-            autoSave(); 
-            notes = getNotesSafely();
-            idx = notes.findIndex(n => n.id === currentNoteId);
-        }
-        
-        if (idx > -1) {
-            notes[idx].pinned = !notes[idx].pinned;
-            
-            if (notes[idx].pinned && notes[idx].pinOrder === undefined) {
-                notes[idx].pinOrder = Date.now();
-            }
-
+        let pinned = notes.filter(n => n.pinned).sort((a,b) => (a.pinOrder||0) - (b.pinOrder||0));
+        let idx = pinned.findIndex(n => n.id === noteId);
+        let target = idx + direction;
+        if(target >= 0 && target < pinned.length) {
+            let tmp = pinned[idx].pinOrder;
+            pinned[idx].pinOrder = pinned[target].pinOrder;
+            pinned[target].pinOrder = tmp;
             saveNotesInternal(notes);
-            
-            const btn = document.getElementById('pin-btn');
-            if (btn) btn.innerText = notes[idx].pinned ? '📍 Unpin' : '📌 Pin';
         }
     }
-    
+
     quill.on('text-change', (delta, old, source) => {
         if (source === 'user') {
-            const selection = quill.getSelection();
-            if (selection && selection.index >= 2) {
-                const text = quill.getText(selection.index - 2, 2);
-                if (text === '//') {
-                    const format = quill.getFormat(selection.index - 2, 0);
-                    const toggleYellow = !format.background;
-                    quill.deleteText(selection.index - 2, 2, Quill.sources.API);
-                    quill.format('background', toggleYellow ? '#ffff00' : false, Quill.sources.API);
-                }
-            }
             document.getElementById('status').innerText = "Saving...";
-            document.getElementById('status').style.color = "inherit";
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(autoSave, 1000);
         }
@@ -643,291 +597,122 @@
         let fullText = quill.getText().trim();
         let firstLine = fullText.split('\n')[0].trim() || 'Untitled Note';
         let notes = getNotesSafely();
+        let now = new Date().toISOString();
+        let idx = notes.findIndex(n => n.id === currentNoteId);
         
-        const now = new Date().toISOString();
-        const existingIdx = notes.findIndex(n => n.id === currentNoteId);
-        
-        const isCurrentlyPinned = document.getElementById('pin-btn').innerText.includes('Unpin');
-        
-        let noteData;
-        if (existingIdx > -1) {
-            noteData = { 
-                ...notes[existingIdx], 
-                title: firstLine, 
-                content: quill.getContents(), 
-                plainText: quill.getText(), 
-                lastModified: now 
-            };
-            notes[existingIdx] = noteData;
+        if (idx > -1) {
+            notes[idx] = { ...notes[idx], title: firstLine, content: quill.getContents(), plainText: quill.getText(), lastModified: now };
         } else {
-            const newId = Date.now();
-            noteData = { 
-                id: newId, 
-                title: firstLine, 
-                content: quill.getContents(), 
-                plainText: quill.getText(), 
-                date: now, 
-                lastModified: now,
-                pinned: isCurrentlyPinned,
-                pinOrder: isCurrentlyPinned ? Date.now() : undefined
-            };
-            notes.push(noteData);
-            currentNoteId = newId;
+            notes.push({ id: Date.now(), title: firstLine, content: quill.getContents(), plainText: quill.getText(), date: now, lastModified: now });
+            currentNoteId = notes[notes.length-1].id;
         }
-        
-        const saveSuccess = saveNotesInternal(notes);
-        
-        const statusEl = document.getElementById('status');
-        if (saveSuccess) {
-            localStorage.setItem('last-note-id', currentNoteId);
-            statusEl.innerText = "Saved";
-            statusEl.style.color = "inherit";
-        } else {
-            statusEl.innerText = "Save Failed!";
-            statusEl.style.color = "var(--danger)"; 
-        }
+        if (saveNotesInternal(notes)) document.getElementById('status').innerText = "Saved";
     }
 
     function renderNoteList() {
         const list = document.getElementById('note-list');
         list.innerHTML = '';
         const notes = getNotesSafely();
-        const searchTerm = document.getElementById('sidebar-search').value.toLowerCase().trim();
+        const search = document.getElementById('sidebar-search').value.toLowerCase().trim();
         
-        notes.sort((a, b) => {
-            if (a.pinned && !b.pinned) return -1;
-            if (!a.pinned && b.pinned) return 1;
-            if (a.pinned && b.pinned) {
-                const orderA = a.pinOrder !== undefined ? a.pinOrder : 0;
-                const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
-                return orderA - orderB;
-            }
-            const timeA = new Date(a[sortMode] || a.date).getTime();
-            const timeB = new Date(b[sortMode] || b.date).getTime();
-            return timeB - timeA;
+        notes.sort((a,b) => {
+            if(a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+            if(a.pinned && b.pinned) return (a.pinOrder||0) - (b.pinOrder||0);
+            return new Date(b[sortMode]||b.date) - new Date(a[sortMode]||a.date);
         });
 
         notes.forEach(note => {
-            if (searchTerm && !(note.title || "").toLowerCase().includes(searchTerm) && !(note.plainText || "").toLowerCase().includes(searchTerm)) return;
+            if (search && !(note.title.toLowerCase().includes(search) || note.plainText.toLowerCase().includes(search))) return;
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
-            const displayDate = new Date(note[sortMode] || note.date).toLocaleDateString();
-            
-            const isPinned = note.pinned;
-            const pinIcon = isPinned ? '📌 ' : '';
-            
             div.innerHTML = `
-                <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:0px;" onclick="loadNote(${note.id})">
-                    <div class="note-title">${pinIcon}${escapeHTML(note.title || "Untitled")}</div>
-                    <div style="font-size:0.65em; color:var(--secondary-text);">${displayDate}</div>
+                <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column;" onclick="loadNote(${note.id})">
+                    <div class="note-title">${note.pinned?'📌 ':''}${escapeHTML(note.title||"Untitled")}</div>
+                    <div style="font-size:0.65em; color:var(--secondary-text);">${new Date(note[sortMode]||note.date).toLocaleDateString()}</div>
                 </div>
-                ${isPinned ? `
-                    <div class="pin-controls">
-                        <span onclick="movePin(${note.id}, -1)">▲</span>
-                        <span onclick="movePin(${note.id}, 1)">▼</span>
-                    </div>
-                ` : ''}
-                <span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>
+                <div class="item-actions">
+                    ${note.pinned ? `
+                        <div class="pin-controls">
+                            <span onclick="movePin(${note.id},-1,event)">▲</span>
+                            <span onclick="movePin(${note.id},1,event)">▼</span>
+                        </div>` : ''}
+                    <span class="pin-toggle" onclick="togglePin(${note.id},event)">${note.pinned?'📌':'📍'}</span>
+                    <span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id})">&times;</span>
+                </div>
             `;
             list.appendChild(div);
         });
     }
 
-    function changeSort(val) {
-        sortMode = val;
-        localStorage.setItem('sort-pref', val);
-        renderNoteList();
-    }
-
-    function deleteNote(id) { if (confirm("Delete note?")) { let notes = getNotesSafely().filter(n => n.id !== id); saveNotesInternal(notes); if (currentNoteId === id) { if (notes.length > 0) loadNote(notes[0].id); else createNewNote(); } } }
-    
+    function changeSort(val) { sortMode = val; localStorage.setItem('sort-pref', val); renderNoteList(); }
+    function deleteNote(id) { if(confirm("Delete?")) { let notes = getNotesSafely().filter(n => n.id !== id); saveNotesInternal(notes); if(currentNoteId === id) createNewNote(); } }
     function loadNote(id) { 
         const note = getNotesSafely().find(n => n.id === id); 
-        if (note) { 
-            currentNoteId = note.id; 
-            quill.setContents(note.content); 
-            
-            const pinBtn = document.getElementById('pin-btn');
-            if (pinBtn) pinBtn.innerText = note.pinned ? '📍 Unpin' : '📌 Pin';
-            
-            renderNoteList(); 
-        } 
+        if (note) { currentNoteId = note.id; quill.setContents(note.content); renderNoteList(); } 
     }
-    
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
 
-    // --- NEW SMART IMPORT LOGIC ---
+    // --- IMPORT LOGIC ---
     function importNotes(event) {
         const file = event.target.files[0];
         if (!file) return;
-        
-        const FileReaderObj = new FileReader();
-        FileReaderObj.onload = (e) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
             try {
                 const imported = JSON.parse(e.target.result);
                 const newData = Array.isArray(imported) ? imported : (imported.data || []);
                 prepareImportModal(newData);
-            } catch (err) { 
-                alert("Invalid backup file."); 
-            }
-            event.target.value = ''; // Reset input
+            } catch (err) { alert("Invalid file."); }
+            event.target.value = '';
         };
-        FileReaderObj.readAsText(file);
+        reader.readAsText(file);
     }
 
     function prepareImportModal(importedNotes) {
-        if(importedNotes.length === 0) {
-            alert("No notes found in the backup file.");
-            return;
-        }
-
-        importedNotes.sort((a, b) => {
-            const timeA = new Date(a.lastModified || a.date).getTime();
-            const timeB = new Date(b.lastModified || b.date).getTime();
-            return timeB - timeA;
-        });
-
-        const existing = getNotesSafely();
-        const existingMap = new Map(existing.map(n => [n.id, n]));
+        importedNotes.sort((a,b) => new Date(b.lastModified||b.date) - new Date(a.lastModified||a.date));
+        const existingMap = new Map(getNotesSafely().map(n => [n.id, n]));
         pendingImportNotes = [];
-
         const listEl = document.getElementById('import-list');
         listEl.innerHTML = '';
 
         importedNotes.forEach(note => {
             const ext = existingMap.get(note.id);
-            let status = 'new';
-            let label = 'New Note';
-            let shouldCheck = true;
-            let badgeClass = 'badge-new';
-
-            if (ext) {
-                const isIdentical = ext.plainText === note.plainText && ext.title === note.title;
-                if (isIdentical) {
-                    status = 'identical';
-                    label = 'Identical (Unchanged)';
-                    shouldCheck = false;
-                    badgeClass = 'badge-identical';
-                } else {
-                    const extTime = new Date(ext.lastModified || ext.date).getTime();
-                    const impTime = new Date(note.lastModified || note.date).getTime();
-                    
-                    if (impTime > extTime) {
-                        status = 'update';
-                        label = 'Different (Import is Newer)';
-                        shouldCheck = true;
-                        badgeClass = 'badge-update';
-                    } else {
-                        status = 'older';
-                        label = 'Different (Import is Older)';
-                        shouldCheck = false;
-                        badgeClass = 'badge-older';
-                    }
-                }
-            }
-
-            pendingImportNotes.push({ note, status });
-
+            const isIdentical = ext && ext.plainText === note.plainText && ext.title === note.title;
+            const impTime = new Date(note.lastModified||note.date).getTime();
+            const extTime = ext ? new Date(ext.lastModified||ext.date).getTime() : 0;
+            
+            pendingImportNotes.push({ note, status: isIdentical ? 'identical' : (impTime > extTime ? 'update' : 'older') });
+            
             const div = document.createElement('div');
             div.className = 'import-item';
-            
             div.innerHTML = `
-                <input type="checkbox" id="imp-${note.id}" value="${note.id}" ${shouldCheck ? 'checked' : ''}>
-                <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;">
-                    <label for="imp-${note.id}" style="cursor:pointer; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                        ${escapeHTML(note.title || "Untitled")}
-                    </label>
-                    <div style="font-size:0.8em; color:var(--secondary-text);">Modified: ${new Date(note.lastModified || note.date).toLocaleDateString()}</div>
+                <input type="checkbox" id="imp-${note.id}" value="${note.id}" ${!isIdentical && impTime > extTime ? 'checked' : ''}>
+                <div style="flex-grow:1; display:flex; flex-direction:column; gap:2px;">
+                    <label for="imp-${note.id}" style="cursor:pointer; font-weight:bold;">${escapeHTML(note.title)}</label>
                 </div>
-                <span class="import-badge ${badgeClass}">${label}</span>
+                <span class="import-badge ${isIdentical?'badge-identical':(impTime>extTime?'badge-update':'badge-older')}">${isIdentical?'Identical':(impTime>extTime?'Newer':'Older')}</span>
             `;
             listEl.appendChild(div);
         });
-
         document.getElementById('import-modal').style.display = 'flex';
     }
 
-    function closeImportModal() {
-        document.getElementById('import-modal').style.display = 'none';
-        pendingImportNotes = [];
-    }
-
+    function closeImportModal() { document.getElementById('import-modal').style.display = 'none'; }
     function executeImport() {
-        const existing = getNotesSafely();
-        const existingMap = new Map(existing.map(n => [n.id, n])); 
-        
-        const checkboxes = document.querySelectorAll('#import-list input[type="checkbox"]:checked');
-        const selectedIds = new Set(Array.from(checkboxes).map(cb => parseInt(cb.value)));
-
-        if (selectedIds.size === 0) {
-            closeImportModal();
-            return;
-        }
-
-        const notesToProcess = pendingImportNotes.filter(p => selectedIds.has(p.note.id));
-        
-        notesToProcess.forEach(p => {
-            existingMap.set(p.note.id, p.note); 
+        const existingMap = new Map(getNotesSafely().map(n => [n.id, n]));
+        document.querySelectorAll('#import-list input:checked').forEach(cb => {
+            const note = pendingImportNotes.find(p => p.note.id == cb.value).note;
+            existingMap.set(note.id, note);
         });
-
-        const mergedData = Array.from(existingMap.values());
-        saveNotesInternal(mergedData);
+        saveNotesInternal(Array.from(existingMap.values()));
         closeImportModal();
-        
-        if (currentNoteId && selectedIds.has(currentNoteId)) {
-            loadNote(currentNoteId);
-        }
-    }
-
-    function checkDailyBackup() {
-        const lastBackup = localStorage.getItem('last-backup-date');
-        const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000; 
-
-        if (!lastBackup || (now - parseInt(lastBackup)) > oneDay) {
-            if (confirm("It's been over a day since your last backup. Would you like to download a backup database now?")) {
-                exportFullDatabase();
-            } else {
-                localStorage.setItem('last-backup-date', now);
-            }
-        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        const sortSelect = document.getElementById('sort-select');
-        if (sortSelect) sortSelect.value = sortMode;
-
+        if(localStorage.getItem('sort-pref')) document.getElementById('sort-select').value = sortMode;
         renderNoteList();
-        const savedHeight = localStorage.getItem('ticktick-height');
-        const savedWidth = localStorage.getItem('ticktick-width');
-        if (window.innerWidth < 1000 && savedHeight) todoContainer.style.height = savedHeight + '%';
-        if (window.innerWidth >= 1000 && savedWidth) todoContainer.style.width = savedWidth + 'px';
-        const focusPref = localStorage.getItem('view-focus-pref');
-        if (focusPref === 'tasks') setViewMode('tasks'); else if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
-        const wp = localStorage.getItem('width-pref') || 'full';
-        setWidth(wp);
-        
-        const widthRadio = document.querySelector(`input[value="${wp}"]`);
-        if(widthRadio) widthRadio.checked = true;
-
-        const lastId = localStorage.getItem('last-note-id');
-        if (lastId) loadNote(parseInt(lastId)); else createNewNote();
-        
-        checkDailyBackup();
-        
-        applyGlobalSize(currentGlobalSize);
-        
-        const sizeLabel = document.querySelector('.ql-size .ql-picker-label');
-        if (sizeLabel) {
-            const observer = new MutationObserver(() => {
-                const currentDataValue = sizeLabel.getAttribute('data-value') || 'false';
-                if (currentDataValue !== currentGlobalSize) {
-                    applyGlobalSize(currentGlobalSize);
-                }
-            });
-            observer.observe(sizeLabel, { attributes: true, attributeFilter: ['data-value'] });
-        }
+        if(localStorage.getItem('last-note-id')) loadNote(parseInt(localStorage.getItem('last-note-id')));
+        else createNewNote();
     });
 </script>
 </body>
