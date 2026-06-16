@@ -311,6 +311,7 @@
                         <div class="status-container">
                             <span id="status">Saved</span>
                         </div>
+                        <button class="btn-tool" onclick="togglePinCurrentNote()" id="pin-btn" title="Pin Note to Top">📌 Pin</button>
                         <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">Split</button>
                         <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">Tasks (full)</button>
                     </div>
@@ -501,7 +502,14 @@
     }
 
     function toggleTickTick() { const isVisible = todoContainer.classList.toggle('visible'); resizer.classList.toggle('visible', isVisible); localStorage.setItem('ticktick-pref', isVisible); }
-    function createNewNote() { currentNoteId = Date.now(); quill.setText(`\n`, 'user'); quill.focus(); }
+    
+    function createNewNote() { 
+        currentNoteId = Date.now(); 
+        quill.setText(`\n`, 'user'); 
+        quill.focus(); 
+        const pinBtn = document.getElementById('pin-btn');
+        if (pinBtn) pinBtn.innerText = '📌 Pin';
+    }
     
     function toggleZenMode() {
         const editorArea = document.querySelector('.editor-area');
@@ -585,6 +593,26 @@
             return false; 
         }
     }
+
+    function togglePinCurrentNote() {
+        let notes = getNotesSafely();
+        let idx = notes.findIndex(n => n.id === currentNoteId);
+        
+        // If the note doesn't exist yet (user clicked pin on a brand new, un-typed note)
+        if (idx === -1) {
+            autoSave(); // Force creation
+            notes = getNotesSafely();
+            idx = notes.findIndex(n => n.id === currentNoteId);
+        }
+        
+        if (idx > -1) {
+            notes[idx].pinned = !notes[idx].pinned;
+            saveNotesInternal(notes);
+            
+            const btn = document.getElementById('pin-btn');
+            if (btn) btn.innerText = notes[idx].pinned ? '📍 Unpin' : '📌 Pin';
+        }
+    }
     
     quill.on('text-change', (delta, old, source) => {
         if (source === 'user') {
@@ -613,6 +641,8 @@
         const now = new Date().toISOString();
         const existingIdx = notes.findIndex(n => n.id === currentNoteId);
         
+        const isCurrentlyPinned = document.getElementById('pin-btn').innerText.includes('Unpin');
+        
         let noteData;
         if (existingIdx > -1) {
             noteData = { 
@@ -631,7 +661,8 @@
                 content: quill.getContents(), 
                 plainText: quill.getText(), 
                 date: now, 
-                lastModified: now 
+                lastModified: now,
+                pinned: isCurrentlyPinned
             };
             notes.push(noteData);
             currentNoteId = newId;
@@ -657,6 +688,11 @@
         const searchTerm = document.getElementById('sidebar-search').value.toLowerCase().trim();
         
         notes.sort((a, b) => {
+            // Pinned notes always surface to the top
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+            
+            // Secondary sort based on user preference
             const timeA = new Date(a[sortMode] || a.date).getTime();
             const timeB = new Date(b[sortMode] || b.date).getTime();
             return timeB - timeA;
@@ -667,7 +703,10 @@
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
             const displayDate = new Date(note[sortMode] || note.date).toLocaleDateString();
-            div.innerHTML = `<div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;" onclick="loadNote(${note.id})"><div class="note-title">${escapeHTML(note.title || "Untitled")}</div><div style="font-size:0.75em; color:var(--secondary-text);">${displayDate}</div></div><span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>`;
+            
+            const pinIcon = note.pinned ? '📌 ' : '';
+            
+            div.innerHTML = `<div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;" onclick="loadNote(${note.id})"><div class="note-title">${pinIcon}${escapeHTML(note.title || "Untitled")}</div><div style="font-size:0.75em; color:var(--secondary-text);">${displayDate}</div></div><span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>`;
             list.appendChild(div);
         });
     }
@@ -679,7 +718,20 @@
     }
 
     function deleteNote(id) { if (confirm("Delete note?")) { let notes = getNotesSafely().filter(n => n.id !== id); saveNotesInternal(notes); if (currentNoteId === id) { if (notes.length > 0) loadNote(notes[0].id); else createNewNote(); } } }
-    function loadNote(id) { const note = getNotesSafely().find(n => n.id === id); if (note) { currentNoteId = note.id; quill.setContents(note.content); renderNoteList(); } }
+    
+    function loadNote(id) { 
+        const note = getNotesSafely().find(n => n.id === id); 
+        if (note) { 
+            currentNoteId = note.id; 
+            quill.setContents(note.content); 
+            
+            const pinBtn = document.getElementById('pin-btn');
+            if (pinBtn) pinBtn.innerText = note.pinned ? '📍 Unpin' : '📌 Pin';
+            
+            renderNoteList(); 
+        } 
+    }
+    
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
 
