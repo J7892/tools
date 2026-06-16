@@ -372,7 +372,7 @@
     let saveTimeout = null;
     let currentGlobalSize = localStorage.getItem('global-display-size') || 'false';
     let sortMode = localStorage.getItem('sort-pref') || 'date';
-    let pendingImportNotes = []; 
+    let pendingImportNotes = []; // Holds data for the import modal
 
     const Embed = Quill.import('blots/embed');
     class SoftBreak extends Embed {
@@ -407,7 +407,7 @@
             keyboard: {
                 bindings: {
                     softBreak: {
-                        key: 13,
+                        key: 13, // 13 is the Enter key
                         shiftKey: true,
                         handler: function(range, context) {
                             this.quill.insertEmbed(range.index, 'softbreak', true, 'user');
@@ -574,10 +574,20 @@
 
     function movePin(noteId, direction) {
         let notes = getNotesSafely();
-        let pinnedNotes = notes.filter(n => n.pinned).sort((a, b) => (a.pinOrder || 0) - (b.pinOrder || 0));
+        
+        let pinnedNotes = notes.filter(n => n.pinned).sort((a, b) => {
+            const orderA = a.pinOrder !== undefined ? a.pinOrder : 0;
+            const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
+            return orderA - orderB;
+        });
+        
         pinnedNotes.forEach((n, i) => n.pinOrder = i);
+
         const idx = pinnedNotes.findIndex(n => n.id === noteId);
+        if (idx === -1) return;
+
         const targetIdx = idx + direction;
+        
         if (targetIdx >= 0 && targetIdx < pinnedNotes.length) {
             const temp = pinnedNotes[idx].pinOrder;
             pinnedNotes[idx].pinOrder = pinnedNotes[targetIdx].pinOrder;
@@ -589,11 +599,22 @@
     function togglePinCurrentNote() {
         let notes = getNotesSafely();
         let idx = notes.findIndex(n => n.id === currentNoteId);
-        if (idx === -1) { autoSave(); notes = getNotesSafely(); idx = notes.findIndex(n => n.id === currentNoteId); }
+        
+        if (idx === -1) {
+            autoSave(); 
+            notes = getNotesSafely();
+            idx = notes.findIndex(n => n.id === currentNoteId);
+        }
+        
         if (idx > -1) {
             notes[idx].pinned = !notes[idx].pinned;
-            if (notes[idx].pinned && notes[idx].pinOrder === undefined) notes[idx].pinOrder = Date.now();
+            
+            if (notes[idx].pinned && notes[idx].pinOrder === undefined) {
+                notes[idx].pinOrder = Date.now();
+            }
+
             saveNotesInternal(notes);
+            
             const btn = document.getElementById('pin-btn');
             if (btn) btn.innerText = notes[idx].pinned ? '📍 Unpin' : '📌 Pin';
         }
@@ -601,6 +622,16 @@
     
     quill.on('text-change', (delta, old, source) => {
         if (source === 'user') {
+            const selection = quill.getSelection();
+            if (selection && selection.index >= 2) {
+                const text = quill.getText(selection.index - 2, 2);
+                if (text === '//') {
+                    const format = quill.getFormat(selection.index - 2, 0);
+                    const toggleYellow = !format.background;
+                    quill.deleteText(selection.index - 2, 2, Quill.sources.API);
+                    quill.format('background', toggleYellow ? '#ffff00' : false, Quill.sources.API);
+                }
+            }
             document.getElementById('status').innerText = "Saving...";
             document.getElementById('status').style.color = "inherit";
             clearTimeout(saveTimeout);
@@ -612,24 +643,48 @@
         let fullText = quill.getText().trim();
         let firstLine = fullText.split('\n')[0].trim() || 'Untitled Note';
         let notes = getNotesSafely();
+        
         const now = new Date().toISOString();
         const existingIdx = notes.findIndex(n => n.id === currentNoteId);
+        
         const isCurrentlyPinned = document.getElementById('pin-btn').innerText.includes('Unpin');
         
         let noteData;
         if (existingIdx > -1) {
-            noteData = { ...notes[existingIdx], title: firstLine, content: quill.getContents(), plainText: quill.getText(), lastModified: now };
+            noteData = { 
+                ...notes[existingIdx], 
+                title: firstLine, 
+                content: quill.getContents(), 
+                plainText: quill.getText(), 
+                lastModified: now 
+            };
             notes[existingIdx] = noteData;
         } else {
             const newId = Date.now();
-            noteData = { id: newId, title: firstLine, content: quill.getContents(), plainText: quill.getText(), date: now, lastModified: now, pinned: isCurrentlyPinned, pinOrder: isCurrentlyPinned ? Date.now() : undefined };
+            noteData = { 
+                id: newId, 
+                title: firstLine, 
+                content: quill.getContents(), 
+                plainText: quill.getText(), 
+                date: now, 
+                lastModified: now,
+                pinned: isCurrentlyPinned,
+                pinOrder: isCurrentlyPinned ? Date.now() : undefined
+            };
             notes.push(noteData);
             currentNoteId = newId;
         }
         
-        if (saveNotesInternal(notes)) {
+        const saveSuccess = saveNotesInternal(notes);
+        
+        const statusEl = document.getElementById('status');
+        if (saveSuccess) {
             localStorage.setItem('last-note-id', currentNoteId);
-            document.getElementById('status').innerText = "Saved";
+            statusEl.innerText = "Saved";
+            statusEl.style.color = "inherit";
+        } else {
+            statusEl.innerText = "Save Failed!";
+            statusEl.style.color = "var(--danger)"; 
         }
     }
 
@@ -642,8 +697,14 @@
         notes.sort((a, b) => {
             if (a.pinned && !b.pinned) return -1;
             if (!a.pinned && b.pinned) return 1;
-            if (a.pinned && b.pinned) return (a.pinOrder || 0) - (b.pinOrder || 0);
-            return new Date(b[sortMode] || b.date) - new Date(a[sortMode] || a.date);
+            if (a.pinned && b.pinned) {
+                const orderA = a.pinOrder !== undefined ? a.pinOrder : 0;
+                const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
+                return orderA - orderB;
+            }
+            const timeA = new Date(a[sortMode] || a.date).getTime();
+            const timeB = new Date(b[sortMode] || b.date).getTime();
+            return timeB - timeA;
         });
 
         notes.forEach(note => {
@@ -651,12 +712,16 @@
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
             const displayDate = new Date(note[sortMode] || note.date).toLocaleDateString();
+            
+            const isPinned = note.pinned;
+            const pinIcon = isPinned ? '📌 ' : '';
+            
             div.innerHTML = `
                 <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:0px;" onclick="loadNote(${note.id})">
-                    <div class="note-title">${note.pinned ? '📌 ' : ''}${escapeHTML(note.title || "Untitled")}</div>
+                    <div class="note-title">${pinIcon}${escapeHTML(note.title || "Untitled")}</div>
                     <div style="font-size:0.65em; color:var(--secondary-text);">${displayDate}</div>
                 </div>
-                ${note.pinned ? `
+                ${isPinned ? `
                     <div class="pin-controls">
                         <span onclick="movePin(${note.id}, -1)">▲</span>
                         <span onclick="movePin(${note.id}, 1)">▼</span>
@@ -668,73 +733,201 @@
         });
     }
 
-    function changeSort(val) { sortMode = val; localStorage.setItem('sort-pref', val); renderNoteList(); }
-    function deleteNote(id) { if (confirm("Delete note?")) { let notes = getNotesSafely().filter(n => n.id !== id); saveNotesInternal(notes); if (currentNoteId === id) createNewNote(); } }
+    function changeSort(val) {
+        sortMode = val;
+        localStorage.setItem('sort-pref', val);
+        renderNoteList();
+    }
+
+    function deleteNote(id) { if (confirm("Delete note?")) { let notes = getNotesSafely().filter(n => n.id !== id); saveNotesInternal(notes); if (currentNoteId === id) { if (notes.length > 0) loadNote(notes[0].id); else createNewNote(); } } }
+    
     function loadNote(id) { 
         const note = getNotesSafely().find(n => n.id === id); 
-        if (note) { currentNoteId = note.id; quill.setContents(note.content); const btn = document.getElementById('pin-btn'); if (btn) btn.innerText = note.pinned ? '📍 Unpin' : '📌 Pin'; renderNoteList(); } 
+        if (note) { 
+            currentNoteId = note.id; 
+            quill.setContents(note.content); 
+            
+            const pinBtn = document.getElementById('pin-btn');
+            if (pinBtn) pinBtn.innerText = note.pinned ? '📍 Unpin' : '📌 Pin';
+            
+            renderNoteList(); 
+        } 
     }
     
-    // --- IMPORT LOGIC ---
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+    function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
+
+    // --- NEW SMART IMPORT LOGIC ---
     function importNotes(event) {
         const file = event.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        
+        const FileReaderObj = new FileReader();
+        FileReaderObj.onload = (e) => {
             try {
                 const imported = JSON.parse(e.target.result);
                 const newData = Array.isArray(imported) ? imported : (imported.data || []);
                 prepareImportModal(newData);
-            } catch (err) { alert("Invalid backup file."); }
-            event.target.value = '';
+            } catch (err) { 
+                alert("Invalid backup file."); 
+            }
+            event.target.value = ''; // Reset input
         };
-        reader.readAsText(file);
+        FileReaderObj.readAsText(file);
     }
 
     function prepareImportModal(importedNotes) {
-        importedNotes.sort((a,b) => new Date(b.lastModified||b.date) - new Date(a.lastModified||a.date));
-        const existingMap = new Map(getNotesSafely().map(n => [n.id, n]));
+        if(importedNotes.length === 0) {
+            alert("No notes found in the backup file.");
+            return;
+        }
+
+        importedNotes.sort((a, b) => {
+            const timeA = new Date(a.lastModified || a.date).getTime();
+            const timeB = new Date(b.lastModified || b.date).getTime();
+            return timeB - timeA;
+        });
+
+        const existing = getNotesSafely();
+        const existingMap = new Map(existing.map(n => [n.id, n]));
         pendingImportNotes = [];
+
         const listEl = document.getElementById('import-list');
         listEl.innerHTML = '';
 
         importedNotes.forEach(note => {
             const ext = existingMap.get(note.id);
-            const isIdentical = ext && ext.plainText === note.plainText && ext.title === note.title;
-            const impTime = new Date(note.lastModified||note.date).getTime();
-            const extTime = ext ? new Date(ext.lastModified||ext.date).getTime() : 0;
-            
-            pendingImportNotes.push({ note, status: isIdentical ? 'identical' : (impTime > extTime ? 'update' : 'older') });
-            
+            let status = 'new';
+            let label = 'New Note';
+            let shouldCheck = true;
+            let badgeClass = 'badge-new';
+
+            if (ext) {
+                const isIdentical = ext.plainText === note.plainText && ext.title === note.title;
+                if (isIdentical) {
+                    status = 'identical';
+                    label = 'Identical (Unchanged)';
+                    shouldCheck = false;
+                    badgeClass = 'badge-identical';
+                } else {
+                    const extTime = new Date(ext.lastModified || ext.date).getTime();
+                    const impTime = new Date(note.lastModified || note.date).getTime();
+                    
+                    if (impTime > extTime) {
+                        status = 'update';
+                        label = 'Different (Import is Newer)';
+                        shouldCheck = true;
+                        badgeClass = 'badge-update';
+                    } else {
+                        status = 'older';
+                        label = 'Different (Import is Older)';
+                        shouldCheck = false;
+                        badgeClass = 'badge-older';
+                    }
+                }
+            }
+
+            pendingImportNotes.push({ note, status });
+
             const div = document.createElement('div');
             div.className = 'import-item';
+            
             div.innerHTML = `
-                <input type="checkbox" id="imp-${note.id}" value="${note.id}" ${!isIdentical && impTime > extTime ? 'checked' : ''}>
-                <div style="flex-grow:1; display:flex; flex-direction:column; gap:2px;">
-                    <label for="imp-${note.id}" style="cursor:pointer; font-weight:bold;">${escapeHTML(note.title||"Untitled")}</label>
+                <input type="checkbox" id="imp-${note.id}" value="${note.id}" ${shouldCheck ? 'checked' : ''}>
+                <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:2px;">
+                    <label for="imp-${note.id}" style="cursor:pointer; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        ${escapeHTML(note.title || "Untitled")}
+                    </label>
+                    <div style="font-size:0.8em; color:var(--secondary-text);">Modified: ${new Date(note.lastModified || note.date).toLocaleDateString()}</div>
                 </div>
-                <span class="import-badge ${isIdentical?'badge-identical':(impTime>extTime?'badge-update':'badge-older')}">${isIdentical?'Identical':(impTime>extTime?'Newer':'Older')}</span>
+                <span class="import-badge ${badgeClass}">${label}</span>
             `;
             listEl.appendChild(div);
         });
+
         document.getElementById('import-modal').style.display = 'flex';
     }
 
-    function closeImportModal() { document.getElementById('import-modal').style.display = 'none'; }
+    function closeImportModal() {
+        document.getElementById('import-modal').style.display = 'none';
+        pendingImportNotes = [];
+    }
+
     function executeImport() {
-        const existingMap = new Map(getNotesSafely().map(n => [n.id, n]));
-        document.querySelectorAll('#import-list input:checked').forEach(cb => {
-            const note = pendingImportNotes.find(p => p.note.id == cb.value).note;
-            existingMap.set(note.id, note);
+        const existing = getNotesSafely();
+        const existingMap = new Map(existing.map(n => [n.id, n])); 
+        
+        const checkboxes = document.querySelectorAll('#import-list input[type="checkbox"]:checked');
+        const selectedIds = new Set(Array.from(checkboxes).map(cb => parseInt(cb.value)));
+
+        if (selectedIds.size === 0) {
+            closeImportModal();
+            return;
+        }
+
+        const notesToProcess = pendingImportNotes.filter(p => selectedIds.has(p.note.id));
+        
+        notesToProcess.forEach(p => {
+            existingMap.set(p.note.id, p.note); 
         });
-        saveNotesInternal(Array.from(existingMap.values()));
+
+        const mergedData = Array.from(existingMap.values());
+        saveNotesInternal(mergedData);
         closeImportModal();
-        if(currentNoteId) loadNote(currentNoteId);
+        
+        if (currentNoteId && selectedIds.has(currentNoteId)) {
+            loadNote(currentNoteId);
+        }
+    }
+
+    function checkDailyBackup() {
+        const lastBackup = localStorage.getItem('last-backup-date');
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000; 
+
+        if (!lastBackup || (now - parseInt(lastBackup)) > oneDay) {
+            if (confirm("It's been over a day since your last backup. Would you like to download a backup database now?")) {
+                exportFullDatabase();
+            } else {
+                localStorage.setItem('last-backup-date', now);
+            }
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        const sortSelect = document.getElementById('sort-select');
+        if (sortSelect) sortSelect.value = sortMode;
+
         renderNoteList();
-        if(getNotesSafely().length > 0) loadNote(getNotesSafely()[0].id); else createNewNote();
+        const savedHeight = localStorage.getItem('ticktick-height');
+        const savedWidth = localStorage.getItem('ticktick-width');
+        if (window.innerWidth < 1000 && savedHeight) todoContainer.style.height = savedHeight + '%';
+        if (window.innerWidth >= 1000 && savedWidth) todoContainer.style.width = savedWidth + 'px';
+        const focusPref = localStorage.getItem('view-focus-pref');
+        if (focusPref === 'tasks') setViewMode('tasks'); else if (localStorage.getItem('ticktick-pref') === 'true') toggleTickTick();
+        const wp = localStorage.getItem('width-pref') || 'full';
+        setWidth(wp);
+        
+        const widthRadio = document.querySelector(`input[value="${wp}"]`);
+        if(widthRadio) widthRadio.checked = true;
+
+        const lastId = localStorage.getItem('last-note-id');
+        if (lastId) loadNote(parseInt(lastId)); else createNewNote();
+        
+        checkDailyBackup();
+        
+        applyGlobalSize(currentGlobalSize);
+        
+        const sizeLabel = document.querySelector('.ql-size .ql-picker-label');
+        if (sizeLabel) {
+            const observer = new MutationObserver(() => {
+                const currentDataValue = sizeLabel.getAttribute('data-value') || 'false';
+                if (currentDataValue !== currentGlobalSize) {
+                    applyGlobalSize(currentGlobalSize);
+                }
+            });
+            observer.observe(sizeLabel, { attributes: true, attributeFilter: ['data-value'] });
+        }
     });
 </script>
 </body>
