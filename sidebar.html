@@ -155,6 +155,9 @@
 
         .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; visibility: hidden; cursor: pointer; font-size: 18px; z-index: 10; }
         .delete-btn:hover { color: var(--danger); }
+
+        .pin-toggle { font-size: 14px; cursor: pointer; padding: 2px 4px; visibility: hidden; opacity: 0.6; }
+        .pin-toggle:hover { opacity: 1; }
         
         .pin-controls {
             display: flex;
@@ -177,6 +180,7 @@
 
         /* Hover visibility */
         .note-item:hover .delete-btn,
+        .note-item:hover .pin-toggle,
         .note-item:hover .pin-controls { visibility: visible; }
 
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
@@ -334,7 +338,6 @@
                         <div class="status-container">
                             <span id="status">Saved</span>
                         </div>
-                        <button class="btn-tool" onclick="togglePinCurrentNote()" id="pin-btn" title="Pin Note to Top">📌 Pin</button>
                         <button class="btn-tool" onclick="toggleTickTick()" id="ticktick-toggle">Split</button>
                         <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">Tasks (full)</button>
                     </div>
@@ -527,8 +530,6 @@
         currentNoteId = Date.now(); 
         quill.setText(`\n`, 'user'); 
         quill.focus(); 
-        const pinBtn = document.getElementById('pin-btn');
-        if (pinBtn) pinBtn.innerText = '📌 Pin';
     }
     
     function toggleZenMode() {
@@ -596,15 +597,9 @@
         }
     }
 
-    function togglePinCurrentNote() {
+    function togglePinList(noteId) {
         let notes = getNotesSafely();
-        let idx = notes.findIndex(n => n.id === currentNoteId);
-        
-        if (idx === -1) {
-            autoSave(); 
-            notes = getNotesSafely();
-            idx = notes.findIndex(n => n.id === currentNoteId);
-        }
+        let idx = notes.findIndex(n => n.id === noteId);
         
         if (idx > -1) {
             notes[idx].pinned = !notes[idx].pinned;
@@ -614,9 +609,6 @@
             }
 
             saveNotesInternal(notes);
-            
-            const btn = document.getElementById('pin-btn');
-            if (btn) btn.innerText = notes[idx].pinned ? '📍 Unpin' : '📌 Pin';
         }
     }
     
@@ -647,8 +639,6 @@
         const now = new Date().toISOString();
         const existingIdx = notes.findIndex(n => n.id === currentNoteId);
         
-        const isCurrentlyPinned = document.getElementById('pin-btn').innerText.includes('Unpin');
-        
         let noteData;
         if (existingIdx > -1) {
             noteData = { 
@@ -668,8 +658,7 @@
                 plainText: quill.getText(), 
                 date: now, 
                 lastModified: now,
-                pinned: isCurrentlyPinned,
-                pinOrder: isCurrentlyPinned ? Date.now() : undefined
+                pinned: false
             };
             notes.push(noteData);
             currentNoteId = newId;
@@ -722,11 +711,12 @@
                     <div style="font-size:0.65em; color:var(--secondary-text);">${displayDate}</div>
                 </div>
                 ${isPinned ? `
-                    <div class="pin-controls">
+                    <div class="pin-controls" onclick="event.stopPropagation()">
                         <span onclick="movePin(${note.id}, -1)">▲</span>
                         <span onclick="movePin(${note.id}, 1)">▼</span>
                     </div>
                 ` : ''}
+                <span class="pin-toggle" onclick="event.stopPropagation(); togglePinList(${note.id});" title="${isPinned ? 'Unpin Note' : 'Pin Note'}">${isPinned ? '📍' : '📌'}</span>
                 <span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>
             `;
             list.appendChild(div);
@@ -746,9 +736,6 @@
         if (note) { 
             currentNoteId = note.id; 
             quill.setContents(note.content); 
-            
-            const pinBtn = document.getElementById('pin-btn');
-            if (pinBtn) pinBtn.innerText = note.pinned ? '📍 Unpin' : '📌 Pin';
             
             renderNoteList(); 
         } 
