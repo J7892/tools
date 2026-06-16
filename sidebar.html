@@ -139,7 +139,7 @@
 
         /* Sidebar Note Items */
         .note-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
-        .note-item { padding: 6px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; border-radius: 4px; position: relative; }
+        .note-item { padding: 6px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; border-radius: 4px; position: relative; }
         .note-item:hover { background: var(--item-hover); }
         .note-item.active { background: var(--item-hover); border-left: 4px solid #007bff; }
         
@@ -150,12 +150,12 @@
             overflow: hidden; 
             text-overflow: ellipsis; 
             color: var(--text-color);
+            flex-grow: 1;
         }
 
         .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; visibility: hidden; cursor: pointer; font-size: 18px; z-index: 10; }
         .delete-btn:hover { color: var(--danger); }
-        .note-item:hover .delete-btn { visibility: visible; }
-
+        
         .pin-controls {
             display: flex;
             flex-direction: column;
@@ -163,18 +163,21 @@
             justify-content: center;
             margin-right: 8px;
             color: var(--secondary-text);
+            visibility: hidden;
         }
         .pin-controls span {
             font-size: 10px;
             cursor: pointer;
-            padding: 2px;
-            opacity: 0.4;
+            padding: 0 4px;
             line-height: 1;
         }
         .pin-controls span:hover {
-            opacity: 1;
             color: var(--text-color);
         }
+
+        /* Hover visibility */
+        .note-item:hover .delete-btn,
+        .note-item:hover .pin-controls { visibility: visible; }
 
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
 
@@ -336,9 +339,6 @@
                         <button class="btn-tool" onclick="setViewMode('tasks')" id="focus-tasks-btn">Tasks (full)</button>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center;">
-                        <button class="btn-tool" onclick="emailNote()" title="Email Note" style="font-size: 1.1em; padding: 2px 6px;">✉️</button>
-                        <button class="btn-tool" onclick="exportSingleNote()" title="Export Note" style="font-size: 1.1em; padding: 2px 6px;">📥</button>
-                        
                         <div class="radio-group">
                             <label><input type="radio" name="view-width" value="full" onclick="setWidth('full')" checked> Full</label>
                             <label><input type="radio" name="view-width" value="narrow" onclick="setWidth('narrow')"> Narrow</label>
@@ -546,34 +546,6 @@
         localStorage.setItem('last-backup-date', Date.now());
     }
 
-    function emailNote() {
-        const note = getNotesSafely().find(n => n.id === currentNoteId);
-        if (!note) return;
-        
-        const subject = encodeURIComponent(note.title);
-        const rawBody = quill.getText();
-        const encodedBody = encodeURIComponent(rawBody);
-        
-        if (encodedBody.length > 1800) {
-            if (confirm("This note is too long to open directly via an email link. Click OK to copy the text to your clipboard instead, then paste it into a new email.")) {
-                const tempTextArea = document.createElement("textarea");
-                tempTextArea.value = rawBody;
-                document.body.appendChild(tempTextArea);
-                tempTextArea.select();
-                try {
-                    document.execCommand("copy");
-                    alert("Note copied to clipboard! You can now paste it into your email app.");
-                } catch (err) {
-                    alert("Failed to copy. Please copy the text manually.");
-                }
-                document.body.removeChild(tempTextArea);
-            }
-            return;
-        }
-
-        window.location.href = `mailto:?subject=${subject}&body=${encodedBody}`;
-    }
-
     function escapeHTML(str) {
         return str.replace(/[&<>'"]/g, 
             tag => ({
@@ -584,20 +556,6 @@
                 '"': '&quot;'
             }[tag] || tag)
         );
-    }
-
-    function exportSingleNote() {
-        const note = getNotesSafely().find(n => n.id === currentNoteId);
-        if (!note) return;
-        
-        const safeTitle = escapeHTML(note.title || "Untitled Note");
-        
-        const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${safeTitle}</title><style>body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; }h1 { color: #333; }.date { color: #888; font-size: 0.9em; margin-bottom: 20px; }p { margin-bottom: 0.8em; }</style></head><body><h1>${safeTitle}</h1><div class="date">Created: ${new Date(note.date).toLocaleString()}</div><hr><div class="content">${quill.root.innerHTML}</div></body></html>`;
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${safeTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
-        a.click();
     }
 
     function getNotesSafely() { try { const raw = localStorage.getItem('my-github-notes'); if (!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : (parsed.data || []); } catch (e) { return []; } }
@@ -617,14 +575,12 @@
     function movePin(noteId, direction) {
         let notes = getNotesSafely();
         
-        // Isolate pinned notes and sort them by current order
         let pinnedNotes = notes.filter(n => n.pinned).sort((a, b) => {
             const orderA = a.pinOrder !== undefined ? a.pinOrder : 0;
             const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
             return orderA - orderB;
         });
         
-        // Normalize orders to simple integers (0, 1, 2...) for strict predictability
         pinnedNotes.forEach((n, i) => n.pinOrder = i);
 
         const idx = pinnedNotes.findIndex(n => n.id === noteId);
@@ -633,11 +589,9 @@
         const targetIdx = idx + direction;
         
         if (targetIdx >= 0 && targetIdx < pinnedNotes.length) {
-            // Swap orders
             const temp = pinnedNotes[idx].pinOrder;
             pinnedNotes[idx].pinOrder = pinnedNotes[targetIdx].pinOrder;
             pinnedNotes[targetIdx].pinOrder = temp;
-            
             saveNotesInternal(notes);
         }
     }
@@ -646,9 +600,8 @@
         let notes = getNotesSafely();
         let idx = notes.findIndex(n => n.id === currentNoteId);
         
-        // If the note doesn't exist yet (user clicked pin on a brand new, un-typed note)
         if (idx === -1) {
-            autoSave(); // Force creation
+            autoSave(); 
             notes = getNotesSafely();
             idx = notes.findIndex(n => n.id === currentNoteId);
         }
@@ -742,7 +695,6 @@
         const searchTerm = document.getElementById('sidebar-search').value.toLowerCase().trim();
         
         notes.sort((a, b) => {
-            // Pinned notes always surface to the top
             if (a.pinned && !b.pinned) return -1;
             if (!a.pinned && b.pinned) return 1;
             if (a.pinned && b.pinned) {
@@ -750,8 +702,6 @@
                 const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
                 return orderA - orderB;
             }
-            
-            // Secondary sort based on user preference
             const timeA = new Date(a[sortMode] || a.date).getTime();
             const timeB = new Date(b[sortMode] || b.date).getTime();
             return timeB - timeA;
@@ -766,19 +716,17 @@
             const isPinned = note.pinned;
             const pinIcon = isPinned ? '📌 ' : '';
             
-            const pinArrows = isPinned ? `
-                <div class="pin-controls" onclick="event.stopPropagation()">
-                    <span onclick="movePin(${note.id}, -1)">▲</span>
-                    <span onclick="movePin(${note.id}, 1)">▼</span>
-                </div>
-            ` : '';
-            
             div.innerHTML = `
-                ${pinArrows}
                 <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:0px;" onclick="loadNote(${note.id})">
                     <div class="note-title">${pinIcon}${escapeHTML(note.title || "Untitled")}</div>
                     <div style="font-size:0.65em; color:var(--secondary-text);">${displayDate}</div>
                 </div>
+                ${isPinned ? `
+                    <div class="pin-controls">
+                        <span onclick="movePin(${note.id}, -1)">▲</span>
+                        <span onclick="movePin(${note.id}, 1)">▼</span>
+                    </div>
+                ` : ''}
                 <span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>
             `;
             list.appendChild(div);
@@ -834,7 +782,6 @@
             return;
         }
 
-        // Sort the imported array from newest to oldest immediately
         importedNotes.sort((a, b) => {
             const timeA = new Date(a.lastModified || a.date).getTime();
             const timeB = new Date(b.lastModified || b.date).getTime();
@@ -856,7 +803,6 @@
             let badgeClass = 'badge-new';
 
             if (ext) {
-                // Check if completely identical content
                 const isIdentical = ext.plainText === note.plainText && ext.title === note.title;
                 if (isIdentical) {
                     status = 'identical';
@@ -864,7 +810,6 @@
                     shouldCheck = false;
                     badgeClass = 'badge-identical';
                 } else {
-                    // Content differs, figure out which is newer
                     const extTime = new Date(ext.lastModified || ext.date).getTime();
                     const impTime = new Date(note.lastModified || note.date).getTime();
                     
@@ -910,7 +855,7 @@
 
     function executeImport() {
         const existing = getNotesSafely();
-        const existingMap = new Map(existing.map(n => [n.id, n])); // Using a map automatically handles preventing duplicates
+        const existingMap = new Map(existing.map(n => [n.id, n])); 
         
         const checkboxes = document.querySelectorAll('#import-list input[type="checkbox"]:checked');
         const selectedIds = new Set(Array.from(checkboxes).map(cb => parseInt(cb.value)));
@@ -923,8 +868,6 @@
         const notesToProcess = pendingImportNotes.filter(p => selectedIds.has(p.note.id));
         
         notesToProcess.forEach(p => {
-            // Because we use the note's original ID, Map.set will OVERWRITE the existing note, 
-            // updating it instead of duplicating it.
             existingMap.set(p.note.id, p.note); 
         });
 
@@ -932,12 +875,10 @@
         saveNotesInternal(mergedData);
         closeImportModal();
         
-        // If the note currently visible was just updated, reload it into the editor
         if (currentNoteId && selectedIds.has(currentNoteId)) {
             loadNote(currentNoteId);
         }
     }
-    // --- END SMART IMPORT LOGIC ---
 
     function checkDailyBackup() {
         const lastBackup = localStorage.getItem('last-backup-date');
