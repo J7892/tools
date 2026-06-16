@@ -153,20 +153,19 @@
             flex-grow: 1;
         }
 
-        .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; visibility: hidden; cursor: pointer; font-size: 18px; z-index: 10; }
+        .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; display: none; cursor: pointer; font-size: 18px; z-index: 10; }
         .delete-btn:hover { color: var(--danger); }
 
-        .pin-toggle { font-size: 14px; cursor: pointer; padding: 2px 4px; visibility: hidden; opacity: 0.6; }
+        .pin-toggle { font-size: 14px; cursor: pointer; padding: 2px 4px; display: none; opacity: 0.6; }
         .pin-toggle:hover { opacity: 1; }
         
         .pin-controls {
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             margin-right: 8px;
             color: var(--secondary-text);
-            visibility: hidden;
         }
         .pin-controls span {
             font-size: 10px;
@@ -180,8 +179,8 @@
 
         /* Hover visibility */
         .note-item:hover .delete-btn,
-        .note-item:hover .pin-toggle,
-        .note-item:hover .pin-controls { visibility: visible; }
+        .note-item:hover .pin-toggle { display: block; }
+        .note-item:hover .pin-controls { display: flex; }
 
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
 
