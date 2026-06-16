@@ -156,6 +156,26 @@
         .delete-btn:hover { color: var(--danger); }
         .note-item:hover .delete-btn { visibility: visible; }
 
+        .pin-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            color: var(--secondary-text);
+        }
+        .pin-controls span {
+            font-size: 10px;
+            cursor: pointer;
+            padding: 2px;
+            opacity: 0.4;
+            line-height: 1;
+        }
+        .pin-controls span:hover {
+            opacity: 1;
+            color: var(--text-color);
+        }
+
         .radio-group { display: flex; gap: 10px; align-items: center; font-size: 0.75em; color: var(--secondary-text); }
 
         #task-only-footer { display: none; height: 50px; background: #fff; border-top: 1px solid var(--border-color); align-items: center; padding: 0 20px; justify-content: flex-end; z-index: 4000; flex-shrink: 0; }
@@ -594,6 +614,34 @@
         }
     }
 
+    function movePin(noteId, direction) {
+        let notes = getNotesSafely();
+        
+        // Isolate pinned notes and sort them by current order
+        let pinnedNotes = notes.filter(n => n.pinned).sort((a, b) => {
+            const orderA = a.pinOrder !== undefined ? a.pinOrder : 0;
+            const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
+            return orderA - orderB;
+        });
+        
+        // Normalize orders to simple integers (0, 1, 2...) for strict predictability
+        pinnedNotes.forEach((n, i) => n.pinOrder = i);
+
+        const idx = pinnedNotes.findIndex(n => n.id === noteId);
+        if (idx === -1) return;
+
+        const targetIdx = idx + direction;
+        
+        if (targetIdx >= 0 && targetIdx < pinnedNotes.length) {
+            // Swap orders
+            const temp = pinnedNotes[idx].pinOrder;
+            pinnedNotes[idx].pinOrder = pinnedNotes[targetIdx].pinOrder;
+            pinnedNotes[targetIdx].pinOrder = temp;
+            
+            saveNotesInternal(notes);
+        }
+    }
+
     function togglePinCurrentNote() {
         let notes = getNotesSafely();
         let idx = notes.findIndex(n => n.id === currentNoteId);
@@ -607,6 +655,11 @@
         
         if (idx > -1) {
             notes[idx].pinned = !notes[idx].pinned;
+            
+            if (notes[idx].pinned && notes[idx].pinOrder === undefined) {
+                notes[idx].pinOrder = Date.now();
+            }
+
             saveNotesInternal(notes);
             
             const btn = document.getElementById('pin-btn');
@@ -662,7 +715,8 @@
                 plainText: quill.getText(), 
                 date: now, 
                 lastModified: now,
-                pinned: isCurrentlyPinned
+                pinned: isCurrentlyPinned,
+                pinOrder: isCurrentlyPinned ? Date.now() : undefined
             };
             notes.push(noteData);
             currentNoteId = newId;
@@ -691,6 +745,11 @@
             // Pinned notes always surface to the top
             if (a.pinned && !b.pinned) return -1;
             if (!a.pinned && b.pinned) return 1;
+            if (a.pinned && b.pinned) {
+                const orderA = a.pinOrder !== undefined ? a.pinOrder : 0;
+                const orderB = b.pinOrder !== undefined ? b.pinOrder : 0;
+                return orderA - orderB;
+            }
             
             // Secondary sort based on user preference
             const timeA = new Date(a[sortMode] || a.date).getTime();
@@ -704,9 +763,24 @@
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
             const displayDate = new Date(note[sortMode] || note.date).toLocaleDateString();
             
-            const pinIcon = note.pinned ? '📌 ' : '';
+            const isPinned = note.pinned;
+            const pinIcon = isPinned ? '📌 ' : '';
             
-            div.innerHTML = `<div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:0px;" onclick="loadNote(${note.id})"><div class="note-title">${pinIcon}${escapeHTML(note.title || "Untitled")}</div><div style="font-size:0.65em; color:var(--secondary-text);">${displayDate}</div></div><span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>`;
+            const pinArrows = isPinned ? `
+                <div class="pin-controls" onclick="event.stopPropagation()">
+                    <span onclick="movePin(${note.id}, -1)">▲</span>
+                    <span onclick="movePin(${note.id}, 1)">▼</span>
+                </div>
+            ` : '';
+            
+            div.innerHTML = `
+                ${pinArrows}
+                <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:0px;" onclick="loadNote(${note.id})">
+                    <div class="note-title">${pinIcon}${escapeHTML(note.title || "Untitled")}</div>
+                    <div style="font-size:0.65em; color:var(--secondary-text);">${displayDate}</div>
+                </div>
+                <span class="delete-btn" onclick="event.stopPropagation(); deleteNote(${note.id});">&times;</span>
+            `;
             list.appendChild(div);
         });
     }
