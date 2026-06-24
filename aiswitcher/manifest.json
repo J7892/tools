@@ -1,7 +1,7 @@
 {
   "name": "Dual AI Chat",
   "short_name": "Dual AI",
-  "start_url": "./index.html",
+  "start_url": "/aiswitcher/index.html",
   "scope": "/aiswitcher/",
   "display": "standalone",
   "background_color": "#ffffff",
