@@ -1,1 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual AI Chat</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f0f0f0">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+        .column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #ccc;
+        }
+        .column:last-child {
+            border-right: none;
+        }
+        .header {
+            padding: 12px;
+            background: #ffffff;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        select {
+            padding: 8px;
+            font-size: 14px;
+            width: 80%;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .iframe-container {
+            flex: 1;
+            position: relative;
+            background: #ffffff;
+        }
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            z-index: 5;
+        }
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #888;
+            padding: 20px;
+            font-size: 14px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="column">
+            <div class="header">
+                <select onchange="document.getElementById('frame1').src = this.value">
+                    <option value="https://gemini.google.com/app">Gemini</option>
+                    <option value="https://m365.cloud.microsoft/chat">Copilot 365</option>
+                    <option value="https://copilot.microsoft.com/">Copilot</option>
+                    <option value="https://chatgpt.com/">ChatGPT</option>
+                    <option value="https://claude.ai/new">Claude</option>
+                    <option value="https://www.perplexity.ai/">Perplexity</option>
+                    <option value="https://duck.ai/">DuckDuckGo AI</option>
+                </select>
+            </div>
+            <div class="iframe-container">
+                <div class="error-message">If this stays blank, the service is blocking external iframes.</div>
+                <iframe id="frame1" src="https://gemini.google.com/app" title="AI Chat 1"></iframe>
+            </div>
+        </div>
 
+        <div class="column">
+            <div class="header">
+                <select onchange="document.getElementById('frame2').src = this.value">
+                    <option value="https://gemini.google.com/app">Gemini</option>
+                    <option value="https://m365.cloud.microsoft/chat">Copilot 365</option>
+                    <option value="https://copilot.microsoft.com/">Copilot</option>
+                    <option value="https://chatgpt.com/">ChatGPT</option>
+                    <option value="https://claude.ai/new" selected>Claude</option>
+                    <option value="https://www.perplexity.ai/">Perplexity</option>
+                    <option value="https://duck.ai/">DuckDuckGo AI</option>
+                </select>
+            </div>
+            <div class="iframe-container">
+                <div class="error-message">If this stays blank, the service is blocking external iframes.</div>
+                <iframe id="frame2" src="https://claude.ai/new" title="AI Chat 2"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => {
+                    console.log('Service Worker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
