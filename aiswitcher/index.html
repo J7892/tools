@@ -173,6 +173,7 @@
 
     <div id="topBar">
         <div id="headerContent">
+            <!-- Left Header -->
             <div class="header-half" id="header1">
                 <select id="select1" onchange="updateFrame(1, this.value)">
                     <option value="https://gemini.google.com/app">Gemini</option>
@@ -186,6 +187,7 @@
                 <button class="max-btn" id="maxBtn1" onclick="toggleMaximize(1)" title="Maximize Left Frame (Alt+1)">🗖</button>
             </div>
             
+            <!-- Right Header -->
             <div class="header-half" id="header2">
                 <select id="select2" onchange="updateFrame(2, this.value)">
                     <option value="https://gemini.google.com/app">Gemini</option>
@@ -200,12 +202,14 @@
             </div>
         </div>
         
+        <!-- Drawer Handle -->
         <div class="drawer-handle" id="toggleToolbar" title="Show/Hide Menus (Esc)">
             <div class="pill"></div>
         </div>
     </div>
 
     <div class="container" id="mainContainer">
+        <!-- Left Column -->
         <div class="column" id="col1">
             <div class="iframe-container">
                 <div class="error-message">If this stays blank, the service is blocking external iframes.</div>
@@ -214,8 +218,10 @@
             </div>
         </div>
 
-        <div class="divider" id="dragDivider"></div>
+        <!-- Vertical Divider -->
+        <div class="divider" id="dragDivider" title="Double-click to reset to 50/50"></div>
 
+        <!-- Right Column -->
         <div class="column" id="col2">
             <div class="iframe-container">
                 <div class="error-message">If this stays blank, the service is blocking external iframes.</div>
@@ -295,6 +301,20 @@
             divider.classList.add('active');
             overlays.forEach(overlay => overlay.style.display = 'block');
             document.body.style.cursor = 'col-resize';
+        });
+
+        // Double-click to reset to 50/50
+        divider.addEventListener('dblclick', () => {
+            if (maximizedColumn) return;
+            
+            savedWidth1 = '50%';
+            savedWidth2 = '50%';
+            
+            col1.style.width = savedWidth1;
+            col2.style.width = savedWidth2;
+            
+            localStorage.setItem('ai_width1', savedWidth1);
+            localStorage.setItem('ai_width2', savedWidth2);
         });
 
         document.addEventListener('mousemove', (e) => {
