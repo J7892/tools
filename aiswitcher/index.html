@@ -5,8 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Switcher</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#f0f0f0">
+    <meta name="theme-color" content="#f0f0f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1e1e1e" media="(prefers-color-scheme: dark)">
     <style>
+        /* CSS Variables for Light/Dark Mode Sync */
+        :root {
+            --bg-color: #f0f0f0;
+            --topbar-bg: #ffffff;
+            --border-color: #eee;
+            --border-darker: #ccc;
+            --btn-bg: #f0f0f0;
+            --btn-hover: #e0e0e0;
+            --divider-color: #ddd;
+            --divider-hover: #999;
+            --handle-bg: #f9f9f9;
+            --handle-hover: #f0f0f0;
+            --pill-color: #ccc;
+            --pill-hover: #aaa;
+            --text-color: #000000;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1e1e1e;
+                --topbar-bg: #2d2d2d;
+                --border-color: #444;
+                --border-darker: #555;
+                --btn-bg: #3d3d3d;
+                --btn-hover: #4d4d4d;
+                --divider-color: #333;
+                --divider-hover: #666;
+                --handle-bg: #252525;
+                --handle-hover: #2a2a2a;
+                --pill-color: #555;
+                --pill-hover: #888;
+                --text-color: #ffffff;
+            }
+        }
+
         body, html {
             margin: 0;
             padding: 0;
@@ -15,14 +51,15 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            background: #f0f0f0;
+            background: var(--bg-color);
+            color: var(--text-color);
         }
 
         /* Top Bar containing headers and drawer handle */
         #topBar {
             width: 100%;
-            background: #ffffff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background: var(--topbar-bg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             z-index: 10;
             display: flex;
             flex-direction: column;
@@ -31,7 +68,7 @@
         #headerContent {
             display: flex;
             width: 100%;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-color);
         }
 
         #headerContent.hidden {
@@ -47,33 +84,33 @@
             gap: 8px;
         }
 
-        /* Drawer Handle (The pill at the bottom of the toolbar) */
+        /* Drawer Handle */
         .drawer-handle {
             width: 100%;
             height: 16px;
-            background: #f9f9f9;
+            background: var(--handle-bg);
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--border-color);
             transition: background 0.2s;
         }
         
         .drawer-handle:hover {
-            background: #f0f0f0;
+            background: var(--handle-hover);
         }
 
         .drawer-handle .pill {
             width: 40px;
             height: 4px;
-            background: #ccc;
+            background: var(--pill-color);
             border-radius: 2px;
             transition: background 0.2s;
         }
 
         .drawer-handle:hover .pill {
-            background: #aaa;
+            background: var(--pill-hover);
         }
 
         select {
@@ -81,14 +118,17 @@
             font-size: 14px;
             width: 75%;
             border-radius: 4px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-darker);
+            background: var(--topbar-bg);
+            color: var(--text-color);
         }
 
         .max-btn {
             padding: 8px 12px;
             font-size: 14px;
-            background: #f0f0f0;
-            border: 1px solid #ccc;
+            background: var(--btn-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-darker);
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
@@ -96,7 +136,7 @@
         }
 
         .max-btn:hover {
-            background: #e0e0e0;
+            background: var(--btn-hover);
         }
 
         /* Container for iframes */
@@ -117,7 +157,7 @@
         .iframe-container {
             flex: 1;
             position: relative;
-            background: #ffffff;
+            background: var(--bg-color);
         }
 
         iframe {
@@ -134,14 +174,14 @@
         /* Draggable vertical divider */
         .divider {
             width: 8px;
-            background-color: #ddd;
+            background-color: var(--divider-color);
             cursor: col-resize;
             z-index: 20;
             transition: background-color 0.2s;
         }
         
         .divider:hover, .divider.active {
-            background-color: #999;
+            background-color: var(--divider-hover);
         }
 
         /* Transparent overlay to protect drag events */
@@ -162,7 +202,8 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            color: #888;
+            color: var(--text-color);
+            opacity: 0.6;
             padding: 20px;
             font-size: 14px;
             z-index: 1;
