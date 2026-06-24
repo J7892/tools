@@ -1,8 +1,8 @@
 {
   "name": "Notes and Tasks",
   "short_name": "Notes/Tasks",
-  "start_url": "/sidebar.html",
-  "scope": "/",
+  "start_url": "/sidebar/index.html",
+  "scope": "/sidebar/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#333333",
