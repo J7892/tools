@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dual AI Chat</title>
+    <title>AI Switcher</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#f0f0f0">
     <style>
@@ -110,7 +110,6 @@
         .column {
             display: flex;
             flex-direction: column;
-            width: 50%; /* Default 50/50 split */
             height: 100%;
             position: relative;
         }
@@ -175,8 +174,8 @@
     <div id="topBar">
         <div id="headerContent">
             <div class="header-half" id="header1">
-                <select onchange="document.getElementById('frame1').src = this.value">
-                    <option value="https://gemini.google.com/app" selected>Gemini</option>
+                <select id="select1" onchange="updateFrame(1, this.value)">
+                    <option value="https://gemini.google.com/app">Gemini</option>
                     <option value="https://m365.cloud.microsoft/chat">Copilot 365</option>
                     <option value="https://copilot.microsoft.com/">Copilot</option>
                     <option value="https://chatgpt.com/">ChatGPT</option>
@@ -184,24 +183,24 @@
                     <option value="https://www.perplexity.ai/">Perplexity</option>
                     <option value="https://duck.ai/">DuckDuckGo AI</option>
                 </select>
-                <button class="max-btn" id="maxBtn1" onclick="toggleMaximize(1)" title="Maximize Left Frame">🗖</button>
+                <button class="max-btn" id="maxBtn1" onclick="toggleMaximize(1)" title="Maximize Left Frame (Alt+1)">🗖</button>
             </div>
             
             <div class="header-half" id="header2">
-                <select onchange="document.getElementById('frame2').src = this.value">
+                <select id="select2" onchange="updateFrame(2, this.value)">
                     <option value="https://gemini.google.com/app">Gemini</option>
-                    <option value="https://m365.cloud.microsoft/chat" selected>Copilot 365</option>
+                    <option value="https://m365.cloud.microsoft/chat">Copilot 365</option>
                     <option value="https://copilot.microsoft.com/">Copilot</option>
                     <option value="https://chatgpt.com/">ChatGPT</option>
                     <option value="https://claude.ai/new">Claude</option>
                     <option value="https://www.perplexity.ai/">Perplexity</option>
                     <option value="https://duck.ai/">DuckDuckGo AI</option>
                 </select>
-                <button class="max-btn" id="maxBtn2" onclick="toggleMaximize(2)" title="Maximize Right Frame">🗖</button>
+                <button class="max-btn" id="maxBtn2" onclick="toggleMaximize(2)" title="Maximize Right Frame (Alt+2)">🗖</button>
             </div>
         </div>
         
-        <div class="drawer-handle" id="toggleToolbar" title="Show/Hide Menus">
+        <div class="drawer-handle" id="toggleToolbar" title="Show/Hide Menus (Esc)">
             <div class="pill"></div>
         </div>
     </div>
@@ -227,38 +226,73 @@
     </div>
 
     <script>
-        // Drawer Handle Hide/Show Toggle
+        // DOM Elements
         const toggleBtn = document.getElementById('toggleToolbar');
         const headerContent = document.getElementById('headerContent');
-        let toolbarsVisible = true;
+        const divider = document.getElementById('dragDivider');
+        const col1 = document.getElementById('col1');
+        const col2 = document.getElementById('col2');
+        const overlays = document.querySelectorAll('.iframe-overlay');
+        const container = document.getElementById('mainContainer');
+        const select1 = document.getElementById('select1');
+        const select2 = document.getElementById('select2');
+        const frame1 = document.getElementById('frame1');
+        const frame2 = document.getElementById('frame2');
+        const header1 = document.getElementById('header1');
+        const header2 = document.getElementById('header2');
+        const maxBtn1 = document.getElementById('maxBtn1');
+        const maxBtn2 = document.getElementById('maxBtn2');
 
-        toggleBtn.addEventListener('click', () => {
+        // State Variables
+        let toolbarsVisible = true;
+        let isDragging = false;
+        let savedWidth1 = localStorage.getItem('ai_width1') || '50%';
+        let savedWidth2 = localStorage.getItem('ai_width2') || '50%';
+        let maximizedColumn = null;
+
+        // Initialize State from Local Storage
+        function initializeApp() {
+            // Restore widths
+            col1.style.width = savedWidth1;
+            col2.style.width = savedWidth2;
+
+            // Restore selected models (or use defaults)
+            const savedModel1 = localStorage.getItem('ai_model1') || 'https://gemini.google.com/app';
+            const savedModel2 = localStorage.getItem('ai_model2') || 'https://m365.cloud.microsoft/chat';
+
+            select1.value = savedModel1;
+            select2.value = savedModel2;
+            frame1.src = savedModel1;
+            frame2.src = savedModel2;
+        }
+
+        // Update frame and save to Local Storage
+        function updateFrame(colNum, value) {
+            if (colNum === 1) {
+                frame1.src = value;
+                localStorage.setItem('ai_model1', value);
+            } else {
+                frame2.src = value;
+                localStorage.setItem('ai_model2', value);
+            }
+        }
+
+        // Toolbar Toggle
+        function toggleMenu() {
             toolbarsVisible = !toolbarsVisible;
             if (toolbarsVisible) {
                 headerContent.classList.remove('hidden');
             } else {
                 headerContent.classList.add('hidden');
             }
-        });
+        }
+        toggleBtn.addEventListener('click', toggleMenu);
 
         // Vertical Drag Resizer
-        const divider = document.getElementById('dragDivider');
-        const col1 = document.getElementById('col1');
-        const col2 = document.getElementById('col2');
-        const overlays = document.querySelectorAll('.iframe-overlay');
-        const container = document.getElementById('mainContainer');
-
-        let isDragging = false;
-        let savedWidth1 = '50%';
-        let savedWidth2 = '50%';
-        let maximizedColumn = null;
-
         divider.addEventListener('mousedown', (e) => {
-            if (maximizedColumn) return; // Disable dragging if a frame is maximized
+            if (maximizedColumn) return; 
             isDragging = true;
             divider.classList.add('active');
-            
-            // Activate overlays to shield mouse events from iframes
             overlays.forEach(overlay => overlay.style.display = 'block');
             document.body.style.cursor = 'col-resize';
         });
@@ -269,7 +303,6 @@
             const containerWidth = container.offsetWidth;
             const mouseX = e.clientX;
             
-            // Constrain drag boundaries to keep columns visible (min 10% width)
             let newLeftWidth = (mouseX / containerWidth) * 100;
             if (newLeftWidth < 10) newLeftWidth = 10;
             if (newLeftWidth > 90) newLeftWidth = 90;
@@ -285,23 +318,18 @@
             if (isDragging) {
                 isDragging = false;
                 divider.classList.remove('active');
-                
-                // Deactivate overlays
                 overlays.forEach(overlay => overlay.style.display = 'none');
                 document.body.style.cursor = 'default';
+                
+                // Save widths to Local Storage
+                localStorage.setItem('ai_width1', savedWidth1);
+                localStorage.setItem('ai_width2', savedWidth2);
             }
         });
 
-        // Maximize / Restore Toggle Functionality
-        const header1 = document.getElementById('header1');
-        const header2 = document.getElementById('header2');
-
+        // Maximize / Restore Toggle
         function toggleMaximize(colNum) {
-            const maxBtn1 = document.getElementById('maxBtn1');
-            const maxBtn2 = document.getElementById('maxBtn2');
-
             if (maximizedColumn === colNum) {
-                // Restore to previous split view width
                 col1.style.display = 'flex';
                 col2.style.display = 'flex';
                 header1.style.display = 'flex';
@@ -315,7 +343,6 @@
                 maxBtn2.textContent = "🗖";
                 maximizedColumn = null;
             } else {
-                // If the other column was maximized, restore layout states first
                 col1.style.display = 'flex';
                 col2.style.display = 'flex';
                 header1.style.display = 'flex';
@@ -338,6 +365,27 @@
                 maximizedColumn = colNum;
             }
         }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Escape to toggle menu
+            if (e.key === 'Escape') {
+                toggleMenu();
+            }
+            // Alt + 1 to toggle left max
+            if (e.altKey && e.key === '1') {
+                e.preventDefault();
+                toggleMaximize(1);
+            }
+            // Alt + 2 to toggle right max
+            if (e.altKey && e.key === '2') {
+                e.preventDefault();
+                toggleMaximize(2);
+            }
+        });
+
+        // Initialize App
+        initializeApp();
 
         // PWA Configuration
         if ('serviceWorker' in navigator) {
