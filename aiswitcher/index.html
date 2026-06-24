@@ -15,20 +15,43 @@
             overflow: hidden;
             background: #f0f0f0;
         }
+
+        /* Floating toggle button */
+        #toggleToolbar {
+            position: fixed;
+            top: 6px;
+            right: 15px;
+            z-index: 100;
+            background: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        #toggleToolbar:hover {
+            opacity: 1;
+        }
+
         .container {
             display: flex;
             width: 100%;
             height: 100%;
+            flex-direction: row;
         }
+
         .column {
-            flex: 1;
             display: flex;
             flex-direction: column;
-            border-right: 2px solid #ccc;
+            width: 50%; /* Default 50/50 split */
+            height: 100%;
+            position: relative;
         }
-        .column:last-child {
-            border-right: none;
-        }
+
         .header {
             padding: 12px;
             background: #ffffff;
@@ -36,19 +59,45 @@
             text-align: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
         }
+
+        .header.hidden {
+            display: none !important;
+        }
+
         select {
             padding: 8px;
             font-size: 14px;
-            width: 80%;
+            width: 75%;
             border-radius: 4px;
             border: 1px solid #ccc;
         }
+
+        .max-btn {
+            padding: 8px 12px;
+            font-size: 14px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .max-btn:hover {
+            background: #e0e0e0;
+        }
+
         .iframe-container {
             flex: 1;
             position: relative;
             background: #ffffff;
         }
+
         iframe {
             position: absolute;
             top: 0;
@@ -59,6 +108,32 @@
             background: transparent;
             z-index: 5;
         }
+
+        /* Draggable vertical divider */
+        .divider {
+            width: 8px;
+            background-color: #ddd;
+            cursor: col-resize;
+            z-index: 20;
+            transition: background-color 0.2s;
+        }
+        
+        .divider:hover, .divider.active {
+            background-color: #999;
+        }
+
+        /* Transparent overlay to protect drag events */
+        .iframe-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: none; 
+            cursor: col-resize;
+        }
+
         .error-message {
             position: absolute;
             top: 50%;
@@ -73,11 +148,15 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="column">
+
+    <button id="toggleToolbar">Hide Menus</button>
+
+    <div class="container" id="mainContainer">
+        <!-- Left Column -->
+        <div class="column" id="col1">
             <div class="header">
                 <select onchange="document.getElementById('frame1').src = this.value">
-                    <option value="https://gemini.google.com/app">Gemini</option>
+                    <option value="https://gemini.google.com/app" selected>Gemini</option>
                     <option value="https://m365.cloud.microsoft/chat">Copilot 365</option>
                     <option value="https://copilot.microsoft.com/">Copilot</option>
                     <option value="https://chatgpt.com/">ChatGPT</option>
@@ -85,33 +164,148 @@
                     <option value="https://www.perplexity.ai/">Perplexity</option>
                     <option value="https://duck.ai/">DuckDuckGo AI</option>
                 </select>
+                <button class="max-btn" id="maxBtn1" onclick="toggleMaximize(1)" title="Maximize Left Frame">🗖</button>
             </div>
             <div class="iframe-container">
                 <div class="error-message">If this stays blank, the service is blocking external iframes.</div>
+                <div class="iframe-overlay"></div>
                 <iframe id="frame1" src="https://gemini.google.com/app" title="AI Chat 1"></iframe>
             </div>
         </div>
 
-        <div class="column">
+        <!-- Vertical Divider -->
+        <div class="divider" id="dragDivider"></div>
+
+        <!-- Right Column -->
+        <div class="column" id="col2">
             <div class="header">
                 <select onchange="document.getElementById('frame2').src = this.value">
                     <option value="https://gemini.google.com/app">Gemini</option>
-                    <option value="https://m365.cloud.microsoft/chat">Copilot 365</option>
+                    <option value="https://m365.cloud.microsoft/chat" selected>Copilot 365</option>
                     <option value="https://copilot.microsoft.com/">Copilot</option>
                     <option value="https://chatgpt.com/">ChatGPT</option>
-                    <option value="https://claude.ai/new" selected>Claude</option>
+                    <option value="https://claude.ai/new">Claude</option>
                     <option value="https://www.perplexity.ai/">Perplexity</option>
                     <option value="https://duck.ai/">DuckDuckGo AI</option>
                 </select>
+                <button class="max-btn" id="maxBtn2" onclick="toggleMaximize(2)" title="Maximize Right Frame">🗖</button>
             </div>
             <div class="iframe-container">
                 <div class="error-message">If this stays blank, the service is blocking external iframes.</div>
-                <iframe id="frame2" src="https://claude.ai/new" title="AI Chat 2"></iframe>
+                <div class="iframe-overlay"></div>
+                <iframe id="frame2" src="https://m365.cloud.microsoft/chat" title="AI Chat 2"></iframe>
             </div>
         </div>
     </div>
 
     <script>
+        // Toolbar Hide/Show Toggle
+        const toggleBtn = document.getElementById('toggleToolbar');
+        const headers = document.querySelectorAll('.header');
+        let toolbarsVisible = true;
+
+        toggleBtn.addEventListener('click', () => {
+            toolbarsVisible = !toolbarsVisible;
+            headers.forEach(header => {
+                if (toolbarsVisible) {
+                    header.classList.remove('hidden');
+                } else {
+                    header.classList.add('hidden');
+                }
+            });
+            toggleBtn.textContent = toolbarsVisible ? "Hide Menus" : "Show Menus";
+        });
+
+        // Vertical Drag Resizer
+        const divider = document.getElementById('dragDivider');
+        const col1 = document.getElementById('col1');
+        const col2 = document.getElementById('col2');
+        const overlays = document.querySelectorAll('.iframe-overlay');
+        const container = document.getElementById('mainContainer');
+
+        let isDragging = false;
+        let savedWidth1 = '50%';
+        let savedWidth2 = '50%';
+        let maximizedColumn = null;
+
+        divider.addEventListener('mousedown', (e) => {
+            if (maximizedColumn) return; // Disable dragging if a frame is maximized
+            isDragging = true;
+            divider.classList.add('active');
+            
+            // Activate overlays to shield mouse events from iframes
+            overlays.forEach(overlay => overlay.style.display = 'block');
+            document.body.style.cursor = 'col-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const containerWidth = container.offsetWidth;
+            const mouseX = e.clientX;
+            
+            // Constrain drag boundaries to keep columns visible (min 10% width)
+            let newLeftWidth = (mouseX / containerWidth) * 100;
+            if (newLeftWidth < 10) newLeftWidth = 10;
+            if (newLeftWidth > 90) newLeftWidth = 90;
+
+            savedWidth1 = newLeftWidth + '%';
+            savedWidth2 = (100 - newLeftWidth) + '%';
+
+            col1.style.width = savedWidth1;
+            col2.style.width = savedWidth2;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                divider.classList.remove('active');
+                
+                // Deactivate overlays
+                overlays.forEach(overlay => overlay.style.display = 'none');
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        // Maximize / Restore Toggle Functionality
+        function toggleMaximize(colNum) {
+            const maxBtn1 = document.getElementById('maxBtn1');
+            const maxBtn2 = document.getElementById('maxBtn2');
+
+            if (maximizedColumn === colNum) {
+                // Restore to previous split view width
+                col1.style.display = 'flex';
+                col2.style.display = 'flex';
+                divider.style.display = 'block';
+                
+                col1.style.width = savedWidth1;
+                col2.style.width = savedWidth2;
+                
+                maxBtn1.textContent = "🗖";
+                maxBtn2.textContent = "🗖";
+                maximizedColumn = null;
+            } else {
+                // If the other column was maximized, restore layout states first
+                col1.style.display = 'flex';
+                col2.style.display = 'flex';
+                
+                if (colNum === 1) {
+                    col1.style.width = '100%';
+                    col2.style.display = 'none';
+                    maxBtn1.textContent = "🗗";
+                    maxBtn2.textContent = "🗖";
+                } else {
+                    col2.style.width = '100%';
+                    col1.style.display = 'none';
+                    maxBtn2.textContent = "🗗";
+                    maxBtn1.textContent = "🗖";
+                }
+                divider.style.display = 'none';
+                maximizedColumn = colNum;
+            }
+        }
+
+        // PWA Configuration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch(err => {
