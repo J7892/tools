@@ -1,6 +1,6 @@
 {
-  "name": "Dual AI Chat",
-  "short_name": "Dual AI",
+  "name": "AI Switcher",
+  "short_name": "AI Switch",
   "start_url": "/aiswitcher/index.html",
   "scope": "/aiswitcher/",
   "display": "standalone",
