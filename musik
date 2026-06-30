@@ -36,6 +36,8 @@
         }
         .vinyl-spin {
             animation: spin var(--spin-duration, 4s) linear infinite;
+            will-change: transform;
+            transform: translateZ(0);
         }
 
         /* Ambient subtle pulse */
@@ -65,10 +67,13 @@
         .visualizer-container .bar {
             flex: 1;
             margin: 0 2px;
-            height: 4px; /* Default height */
+            height: 32px; /* Strict height of content area (48 - 16 padding) */
             background-color: rgba(63, 63, 70, 0.5);
             border-radius: 4px;
-            transition: height 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.15), background-color 0.1s ease;
+            transform-origin: bottom;
+            transform: scaleY(0.125); /* Default 4px / 32px = 0.125 */
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.15), background-color 0.1s ease;
+            will-change: transform;
         }
     </style>
 </head>
@@ -823,8 +828,28 @@
             }, sweepTime * 1000);
         }
 
+        function randomizeSettings() {
+            // Option sets available for procedural generation
+            const vibes = ["minor", "major", "dorian", "phrygian"];
+            const beats = ["boombap", "chillhop", "garage", "beatless"];
+            const synths = ["rhodes", "sines", "bells", "plucks"];
+
+            // Pick random choices
+            currentModeKey = vibes[Math.floor(Math.random() * vibes.length)];
+            currentBeatStyle = beats[Math.floor(Math.random() * beats.length)];
+            currentSynthVoice = synths[Math.floor(Math.random() * synths.length)];
+
+            // Push choices back into HTML dropdown indicators
+            selectVibe.value = currentModeKey;
+            selectBeat.value = currentBeatStyle;
+            selectSynth.value = currentSynthVoice;
+        }
+
         function triggerSongChange() {
             simulateTapeStopAndChange(() => {
+                // Instantly randomize composition rules upon skipping
+                randomizeSettings();
+
                 // Randomly rotate track details
                 const trackName = makeTrackTitle();
                 trackTitleDisplay.innerText = trackName;
@@ -952,7 +977,7 @@
             currentModeKey = e.target.value;
             const targetMode = modes[currentModeKey];
             scaleDisplay.innerText = `VIBE: ${targetMode.name}`;
-            activeProgression = targetMode.progressions[0];
+            activeProgression = targetMode.progressions[Math.floor(Math.random() * targetMode.progressions.length)];
             activeChordIndex = 0;
             generateMelodicMotif();
         });
@@ -1012,10 +1037,15 @@
         function animateVis(index, height, colorClass) {
             const bar = visualizerBars[index];
             if (!bar) return;
-            bar.style.height = `${height}px`;
+
+            // Map height safely to a scaleY factor (max height is 32px)
+            const targetHeight = Math.min(32, height);
+            const scaleY = targetHeight / 32;
+
+            bar.style.transform = `scaleY(${scaleY})`;
             bar.style.backgroundColor = colorClass;
             setTimeout(() => {
-                bar.style.height = '4px';
+                bar.style.transform = 'scaleY(0.125)';
                 bar.style.backgroundColor = 'rgba(63, 63, 70, 0.5)';
             }, 150);
         }
