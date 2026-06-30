@@ -4,123 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cozy Procedural Lo-Fi Radio</title>
-    <!-- Load Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #08070b;
-            background-image: radial-gradient(circle at center, #150f24 0%, #050407 100%);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #09080d;
+            background-image: radial-gradient(circle at center, #161122 0%, #060508 100%);
         }
-        
-        /* Force hardware compositing on animating elements to completely isolate them from layout calculations */
-        .hardware-accelerated {
-            transform: translate3d(0,0,0);
-            backface-visibility: hidden;
-            perspective: 1000px;
-            will-change: transform;
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
         }
-
-        /* Vinyl Spin animation with 3D translation to keep it on the GPU plane */
         @keyframes spin {
-            from { transform: translate3d(0,0,0) rotate(0deg); }
-            to { transform: translate3d(0,0,0) rotate(360deg); }
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         .vinyl-spin {
             animation: spin var(--spin-duration, 4s) linear infinite;
-            backface-visibility: hidden;
-            will-change: transform;
-        }
-
-        /* Strict visualizer boundaries with zero layout-shifting properties */
-        .visualizer-container {
-            height: 48px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            background-color: rgba(15, 15, 20, 0.9);
-            border: 1px solid rgba(63, 63, 70, 0.4);
-            border-radius: 12px;
-            padding: 8px 12px;
-            box-sizing: border-box;
-            overflow: hidden;
-            width: 100%;
-        }
-
-        /* Bars strictly use scaleY transforms and have NO CSS transitions to avoid fighting the JS engine */
-        .visualizer-container .bar {
-            flex: 1;
-            margin: 0 2px;
-            height: 32px;
-            background-color: rgba(63, 63, 70, 0.5);
-            border-radius: 4px;
-            transform-origin: bottom;
-            transform: scaleY(0.125);
-            will-change: transform;
-            backface-visibility: hidden;
         }
     </style>
 </head>
-<body class="min-h-screen text-amber-100 flex flex-col justify-center items-center p-4 overflow-y-auto">
+<body class="min-h-screen text-amber-50/90 flex flex-col justify-center items-center p-4 select-none">
 
-    <!-- Solid dark layout wrapper with hardware acceleration active to isolate repaint steps -->
-    <div class="w-full max-w-lg bg-zinc-950 border-2 border-zinc-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col gap-6 hardware-accelerated">
+    <!-- Rigidly dimensioned frame structure preventing all layout alterations -->
+    <div class="w-[370px] h-[640px] bg-zinc-950 border border-zinc-800 rounded-[28px] p-5 shadow-2xl flex flex-col justify-between relative overflow-hidden box-border">
         
-        <!-- Ambient Cassette Accent Header -->
-        <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
+        <!-- Header Strip -->
+        <div class="flex justify-between items-center border-b border-zinc-900 pb-3 h-6">
             <div class="flex items-center gap-2">
-                <span class="w-3.5 h-3.5 rounded-full bg-red-500 animate-ping"></span>
-                <span class="text-xs uppercase font-semibold text-zinc-500 tracking-wider mono-font">Procedural FM • Live Composition</span>
+                <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Procedural Audio Station</span>
             </div>
-            <div class="text-xs uppercase tracking-widest text-teal-400 font-bold mono-font" id="clock-display">
-                DECK: COMPILING
+            <div class="text-[10px] uppercase tracking-widest text-teal-400 font-bold mono-font tabular-nums" id="deck-status">
+                OFFLINE
             </div>
         </div>
 
-        <div class="flex flex-col md:flex-row items-center gap-6 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/50">
-            <!-- Rotating Vinyl Deck (isolated layer) -->
-            <div class="relative w-28 h-28 shrink-0 flex-none hardware-accelerated">
-                <div id="vinyl-disc" class="w-full h-full rounded-full bg-gradient-to-r from-zinc-800 via-black to-zinc-900 flex items-center justify-center shadow-lg relative border-4 border-zinc-950">
-                    <!-- Vinyl Grooves -->
-                    <div class="absolute inset-2 border border-zinc-800/40 rounded-full"></div>
-                    <div class="absolute inset-4 border border-zinc-800/30 rounded-full"></div>
-                    <div class="absolute inset-6 border border-zinc-800/20 rounded-full"></div>
-                    <!-- Vinyl Center Sticker -->
-                    <div class="w-10 h-10 rounded-full bg-amber-500/90 flex items-center justify-center border-2 border-zinc-950">
-                        <div class="w-2.5 h-2.5 rounded-full bg-zinc-950"></div>
+        <!-- Tape / Deck Bay -->
+        <div class="h-28 bg-zinc-900/40 rounded-2xl border border-zinc-900 p-3 flex items-center gap-4 box-border">
+            <!-- Vinyl Disk Layer -->
+            <div class="w-20 h-20 shrink-0 relative flex-none bg-black rounded-full shadow-inner flex items-center justify-center border border-zinc-800">
+                <div id="vinyl-disc" class="w-full h-full rounded-full bg-gradient-to-tr from-zinc-900 via-zinc-950 to-zinc-800 flex items-center justify-center relative">
+                    <div class="absolute inset-1.5 border border-zinc-900/50 rounded-full"></div>
+                    <div class="absolute inset-3.5 border border-zinc-900/40 rounded-full"></div>
+                    <div class="absolute inset-5 border border-zinc-900/20 rounded-full"></div>
+                    <div class="w-7 h-7 rounded-full bg-amber-500/90 flex items-center justify-center border border-black shadow">
+                        <div class="w-1.5 h-1.5 rounded-full bg-zinc-950"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Track Display Details -->
-            <div class="flex-grow w-full text-center md:text-left flex flex-col gap-1.5 min-w-0">
-                <div id="track-title" class="text-lg font-bold text-amber-400 truncate tracking-wide leading-snug">Station Off-Air</div>
-                <div class="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1 text-xs mono-font text-zinc-400">
-                    <span id="bpm-display">BPM: --</span>
-                    <span>•</span>
-                    <span id="scale-display" class="truncate max-w-[150px]">VIBE: --</span>
+            <!-- Meta text displays locked with monospacing and strict bounds -->
+            <div class="flex-grow min-w-0 flex flex-col justify-center h-full">
+                <div id="track-title" class="text-sm font-bold text-amber-400 truncate tracking-wide mb-1">Station Stopped</div>
+                <div class="flex gap-2 text-[10px] mono-font text-zinc-500 font-bold uppercase tracking-wider mb-2">
+                    <span id="bpm-display" class="tabular-nums">BPM: --</span>
+                    <span>|</span>
+                    <span id="scale-display" class="truncate max-w-[110px]">VIBE: --</span>
                 </div>
                 
-                <!-- Simulated Cassette Playback Playlist Progress Slider -->
-                <div class="mt-2 w-full">
-                    <div class="flex justify-between items-center text-[10px] text-zinc-500 uppercase tracking-wider mb-1 font-semibold mono-font">
-                        <span>Track Progress</span>
-                        <span id="time-left">04:00</span>
+                <!-- Playlist Progress Strip -->
+                <div class="w-full">
+                    <div class="flex justify-between items-center text-[9px] text-zinc-500 font-bold uppercase tracking-wider mb-1 mono-font">
+                        <span>Buffer Progress</span>
+                        <span id="time-left" class="tabular-nums">04:00</span>
                     </div>
-                    <div class="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
-                        <div id="track-progress-bar" class="w-0 h-full bg-gradient-to-r from-amber-500 to-teal-400 transition-all duration-1000 ease-linear rounded-full"></div>
+                    <div class="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+                        <div id="track-progress-bar" class="w-0 h-full bg-gradient-to-r from-amber-500 to-teal-400 rounded-full transition-all duration-1000 ease-linear"></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Vibe Mood Selector -->
+        <!-- Parameters Selector Grid -->
+        <div class="grid grid-cols-1 gap-3 box-border">
             <div class="flex flex-col gap-1">
-                <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Harmonic Vibe</label>
-                <select id="select-vibe" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer">
+                <label class="text-[9px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Harmonic Vibe</label>
+                <select id="select-vibe" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium w-full">
                     <option value="minor">Melancholic (Natural Minor)</option>
                     <option value="major">Warm & Cozy (Major)</option>
                     <option value="dorian">Hypnotic (Dorian Mode)</option>
@@ -128,10 +89,9 @@
                 </select>
             </div>
 
-            <!-- Drum Beat Pattern Selector -->
             <div class="flex flex-col gap-1">
-                <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Drum Rhythm Style</label>
-                <select id="select-beat" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer">
+                <label class="text-[9px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Drum Rhythm Style</label>
+                <select id="select-beat" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium w-full">
                     <option value="boombap">Classic Boom Bap (MPC Swing)</option>
                     <option value="chillhop">Slow Organic Chill Hop (Lazy Layout)</option>
                     <option value="garage">Garage Swing Grooves (Uptempo 2-Step)</option>
@@ -139,96 +99,51 @@
                 </select>
             </div>
 
-            <!-- Synth Voice Selector -->
             <div class="flex flex-col gap-1">
-                <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Synth Lead Voice</label>
-                <select id="select-synth" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer">
+                <label class="text-[9px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Synth Lead Voice</label>
+                <select id="select-synth" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium w-full">
                     <option value="rhodes">Warm Electric Rhodes</option>
                     <option value="sines">Floating Dream Sines</option>
                     <option value="bells">Filtered Square Bells</option>
                     <option value="plucks">Plucky Triangles</option>
                 </select>
             </div>
+        </div>
 
-            <!-- Radio Auto-skip Settings -->
+        <!-- Deck Core Interfaces -->
+        <div class="grid grid-cols-3 gap-2.5 h-11 shrink-0">
+            <button id="skip-btn" class="bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-400 transition-all px-2 rounded-xl font-bold uppercase tracking-wider text-[10px] border border-zinc-800 flex justify-center items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                Skip
+            </button>
+            <button id="play-btn" class="col-span-2 bg-gradient-to-r from-amber-500 to-orange-500 text-black active:scale-95 transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex justify-center items-center gap-1.5 shadow-lg">
+                <span id="play-btn-text">Tune In</span>
+            </button>
+        </div>
+
+        <!-- Analog Audio Strip Board -->
+        <div class="grid grid-cols-2 gap-x-4 gap-y-2 bg-zinc-900/20 p-2.5 rounded-xl border border-zinc-900 box-border text-[9px] text-zinc-500 font-bold uppercase tracking-wider mono-font">
             <div class="flex flex-col gap-1">
-                <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Radio Auto-Skip Interval</label>
-                <select id="select-interval" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer">
-                    <option value="30">30 Seconds (Fast Demo Mode)</option>
-                    <option value="120">2 Minutes</option>
-                    <option value="240" selected>4 Minutes (Standard Radio)</option>
-                    <option value="300">5 Minutes</option>
-                </select>
+                <div class="flex justify-between tabular-nums"><span>Volume</span><span id="vol-lbl">70%</span></div>
+                <input type="range" id="slider-volume" min="0" max="1" step="0.01" value="0.7" class="w-full accent-orange-500 h-1 bg-zinc-800 rounded-lg appearance-none outline-none">
+            </div>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between tabular-nums"><span>Rain FX</span><span id="rain-lbl">40%</span></div>
+                <input type="range" id="slider-rain" min="0" max="0.15" step="0.005" value="0.06" class="w-full accent-orange-500 h-1 bg-zinc-800 rounded-lg appearance-none outline-none">
+            </div>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between tabular-nums"><span>Crackle</span><span id="crackle-lbl">25%</span></div>
+                <input type="range" id="slider-crackle" min="0" max="0.04" step="0.002" value="0.01" class="w-full accent-orange-500 h-1 bg-zinc-800 rounded-lg appearance-none outline-none">
+            </div>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between tabular-nums"><span>Filter</span><span id="cutoff-lbl">1.8k</span></div>
+                <input type="range" id="slider-cutoff" min="500" max="4000" step="50" value="1800" class="w-full accent-orange-500 h-1 bg-zinc-800 rounded-lg appearance-none outline-none">
             </div>
         </div>
 
-        <div class="flex flex-col gap-4">
-            <div class="grid grid-cols-3 gap-3">
-                <!-- Transition/Skip Track -->
-                <button id="skip-btn" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 active:scale-95 transition-all py-3.5 px-4 rounded-2xl font-bold uppercase tracking-wider text-xs border border-zinc-800 flex justify-center items-center gap-2 cursor-pointer">
-                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-                    Skip Track
-                </button>
-
-                <!-- Primary Play Trigger Toggle -->
-                <button id="play-btn" class="col-span-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-black active:scale-95 transition-all py-3.5 px-6 rounded-2xl font-extrabold uppercase tracking-widest text-sm flex justify-center items-center gap-2 shadow-lg cursor-pointer">
-                    <span id="play-btn-icon" class="flex items-center">
-                        <svg class="w-4 h-4 fill-current mr-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    </span>
-                    <span id="play-btn-text">Tune In</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 border-t border-zinc-900 pt-4">
-            
-            <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
-                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase mono-font">
-                    <span>Master Gain</span>
-                    <span id="vol-lbl">70%</span>
-                </div>
-                <input type="range" id="slider-volume" class="cursor-pointer" min="0" max="1" step="0.01" value="0.7">
-            </div>
-
-            <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
-                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase mono-font">
-                    <span>Cozy Rain FX</span>
-                    <span id="rain-lbl">40%</span>
-                </div>
-                <input type="range" id="slider-rain" class="cursor-pointer" min="0" max="0.15" step="0.005" value="0.06">
-            </div>
-
-            <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
-                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase mono-font">
-                    <span>Vinyl Crackle</span>
-                    <span id="crackle-lbl">25%</span>
-                </div>
-                <input type="range" id="slider-crackle" class="cursor-pointer" min="0" max="0.04" step="0.002" value="0.01">
-            </div>
-
-            <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
-                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase mono-font">
-                    <span>Muffled Cutoff</span>
-                    <span id="cutoff-lbl">1.8k</span>
-                </div>
-                <input type="range" id="slider-cutoff" class="cursor-pointer" min="500" max="4000" step="50" value="1800">
-            </div>
-        </div>
-
-        <!-- Fixed-height isolated visualizer container preventing height bounces -->
-        <div class="visualizer-container" id="visualizer">
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
+        <!-- Isolated HTML5 Canvas Frame (Completely breaks out from Document Layout Flow) -->
+        <div class="w-full h-11 bg-black/40 border border-zinc-900 rounded-xl overflow-hidden box-border">
+            <canvas id="canvas-visualizer" class="w-full h-full block"></canvas>
         </div>
 
     </div>
@@ -238,131 +153,84 @@
         let masterGain;
         let lofiFilter;
         
-        // Channel strips
         let crackleSource, crackleGain;
         let rainSource, rainGain;
         let delayNode, delayFeedback;
-        let noiseBuffer; 
+        let noiseBuffer;
 
-        // State machine variables
         let isPlaying = false;
         let isTransitioning = false;
         let transitionTimeout = null;
 
-        // Playback Clock Settings
+        // Sequencing variables
         let currentStep = 0;
         let measureCount = 0;
         let nextNoteTime = 0.0;
         let bpm = 74;
-        const lookahead = 25.0; 
-        const scheduleAheadTime = 0.15; 
+        const lookahead = 25.0;
+        const scheduleAheadTime = 0.15;
         let timerID;
 
-        // Playlist progression timers
-        let songTimeElapsed = 0; 
-        let autoSkipDuration = 240; 
+        let songTimeElapsed = 0;
+        let autoSkipDuration = 240; // 4 minutes
         let timerIntervalID;
 
-        // Call-and-Response Melodic Motif State
-        let activeMotif = []; 
-        let motifDurationSteps = 16; 
-
-        // Visualizer Decay State Variables (Keeps frames updating smoothly on GPU)
-        let barScales = Array(12).fill(0.125);
-        let barTargetColors = Array(12).fill('rgba(63, 63, 70, 0.5)');
-        let decayLoopActive = false;
-
-        const modes = {
-            minor: {
-                name: "Natural Minor (Melancholic)",
-                scale: [
-                    65.41, 73.42, 77.78, 87.31, 98.00, 103.83, 116.54, 
-                    130.81, 146.83, 155.56, 174.61, 196.00, 207.65, 233.08, 
-                    261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 
-                    523.25, 587.33, 622.25, 698.46, 783.99, 830.61, 932.33  
-                ],
-                progressions: [
-                    { chords: [[7, 10, 14, 17], [10, 13, 17, 21], [11, 14, 18, 22], [9, 12, 16, 19]] },
-                    { chords: [[7, 10, 14, 17], [11, 14, 18, 22], [8, 11, 15, 18], [10, 13, 17, 21]] }
-                ]
-            },
-            major: {
-                name: "Warm Major (Sunny & Cozy)",
-                scale: [
-                    65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 123.47,
-                    130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94,
-                    261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88,
-                    523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77
-                ],
-                progressions: [
-                    { chords: [[7, 11, 14, 18], [10, 14, 17, 21], [8, 12, 15, 19], [9, 13, 16, 20]] },
-                    { chords: [[7, 11, 14, 18], [9, 13, 16, 20], [10, 14, 17, 21], [10, 14, 17, 21]] }
-                ]
-            },
-            dorian: {
-                name: "Dorian Mode (Jazzy Hypnotic)",
-                scale: [
-                    65.41, 73.42, 77.78, 87.31, 98.00, 110.00, 116.54,
-                    130.81, 146.83, 155.56, 174.61, 196.00, 220.00, 233.08,
-                    261.63, 293.66, 311.13, 349.23, 392.00, 440.00, 466.16,
-                    523.25, 587.33, 622.25, 698.46, 783.99, 880.00, 932.33
-                ],
-                progressions: [
-                    { chords: [[7, 10, 14, 19], [12, 16, 19, 23], [10, 13, 17, 21], [9, 12, 16, 19]] }
-                ]
-            },
-            phrygian: {
-                name: "Phrygian Mode (Mysterious Dark)",
-                scale: [
-                    65.41, 69.30, 77.78, 87.31, 98.00, 103.83, 116.54,
-                    130.81, 138.59, 155.56, 174.61, 196.00, 207.65, 233.08,
-                    261.63, 277.18, 311.13, 349.23, 392.00, 415.30, 466.16,
-                    523.25, 554.37, 622.25, 698.46, 783.99, 830.61, 932.33
-                ],
-                progressions: [
-                    { chords: [[7, 10, 14, 17], [8, 11, 14, 18], [10, 13, 17, 21], [7, 10, 14, 17]] }
-                ]
-            }
-        };
-
-        // TRACK NAME GENERATION
-        const adjectives = ["Midnight", "Autumn", "Distant", "Cozy", "Dreamy", "Rainy", "Tokyo", "Silent", "Lost", "Nostalgic", "Sleepless", "Subway", "Vintage", "Warm", "Urban", "Misty"];
-        const nouns = ["Coffee", "Skyline", "Transit", "Memory", "Raindrops", "Drive", "Loft", "Nostalgia", "Window", "Blanket", "Cafe", "Thoughts", "Whisper", "Walk", "Streets", "Station"];
-
-        function makeTrackTitle() {
-            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-            const noun = nouns[Math.floor(Math.random() * nouns.length)];
-            return `🎧 ${adj} ${noun}`;
-        }
-
+        // Melodic loop matrices
+        let activeMotif = [];
         let currentModeKey = "minor";
         let currentBeatStyle = "boombap";
         let currentSynthVoice = "rhodes";
         let activeProgression = null;
         let activeChordIndex = 0;
 
-        // Dom Elements binding
+        // Visualizer engine setup
+        const canvas = document.getElementById('canvas-visualizer');
+        const ctx = canvas.getContext('2d');
+        let visBarsArray = new Array(16).fill(0); // Cache heights inside JS memory space
+        let animationFrameId;
+
+        // DOM elements cache
         const selectVibe = document.getElementById('select-vibe');
         const selectBeat = document.getElementById('select-beat');
         const selectSynth = document.getElementById('select-synth');
-        const selectInterval = document.getElementById('select-interval');
         const playBtn = document.getElementById('play-btn');
         const playBtnText = document.getElementById('play-btn-text');
         const skipBtn = document.getElementById('skip-btn');
         const trackTitleDisplay = document.getElementById('track-title');
-        const clockDisplay = document.getElementById('clock-display');
+        const deckStatus = document.getElementById('deck-status');
         const bpmDisplay = document.getElementById('bpm-display');
         const scaleDisplay = document.getElementById('scale-display');
         const progressBar = document.getElementById('track-progress-bar');
         const timeLeftDisplay = document.getElementById('time-left');
         const vinylDisc = document.getElementById('vinyl-disc');
-        const visualizerBars = document.querySelectorAll('.bar');
 
-        // Parameter sliders mapping
         const sliderVolume = document.getElementById('slider-volume');
         const sliderRain = document.getElementById('slider-rain');
         const sliderCrackle = document.getElementById('slider-crackle');
         const sliderCutoff = document.getElementById('slider-cutoff');
+
+        // Dynamic Frequency Banks
+        const modes = {
+            minor: { name: "Minor", scale: [65.41, 73.42, 77.78, 87.31, 98.00, 103.83, 116.54, 130.81, 146.83, 155.56, 174.61, 196.00, 207.65, 233.08, 261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25, 587.33, 622.25, 698.46, 783.99, 830.61, 932.33], progressions: [{ chords: [[7, 10, 14, 17], [10, 13, 17, 21], [11, 14, 18, 22], [9, 12, 16, 19]] }] },
+            major: { name: "Major", scale: [65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 123.47, 130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77], progressions: [{ chords: [[7, 11, 14, 18], [10, 14, 17, 21], [8, 12, 15, 19], [9, 13, 16, 20]] }] },
+            dorian: { name: "Dorian", scale: [65.41, 73.42, 77.78, 87.31, 98.00, 110.00, 116.54, 130.81, 146.83, 155.56, 174.61, 196.00, 220.00, 233.08, 261.63, 293.66, 311.13, 349.23, 392.00, 440.00, 466.16, 523.25, 587.33, 622.25, 698.46, 783.99, 880.00, 932.33], progressions: [{ chords: [[7, 10, 14, 19], [12, 16, 19, 23], [10, 13, 17, 21], [9, 12, 16, 19]] }] },
+            phrygian: { name: "Phrygian", scale: [65.41, 69.30, 77.78, 87.31, 98.00, 103.83, 116.54, 130.81, 138.59, 155.56, 174.61, 196.00, 207.65, 233.08, 261.63, 277.18, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25, 554.37, 622.25, 698.46, 783.99, 830.61, 932.33], progressions: [{ chords: [[7, 10, 14, 17], [8, 11, 14, 18], [10, 13, 17, 21], [7, 10, 14, 17]] }] }
+        };
+
+        const adjectives = ["Midnight", "Autumn", "Distant", "Cozy", "Dreamy", "Rainy", "Tokyo", "Silent", "Warm", "Urban"];
+        const nouns = ["Coffee", "Skyline", "Transit", "Memory", "Raindrops", "Loft", "Nostalgia", "Window", "Cafe", "Station"];
+
+        function makeTrackTitle() {
+            return `🎧 ${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
+        }
+
+        // Adjust resolution on canvas to map exactly to layout sizes
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
         function initAudioPipeline() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -373,426 +241,199 @@
             lofiFilter = audioCtx.createBiquadFilter();
             lofiFilter.type = 'lowpass';
             lofiFilter.frequency.setValueAtTime(parseFloat(sliderCutoff.value), audioCtx.currentTime);
-            lofiFilter.Q.setValueAtTime(0.5, audioCtx.currentTime);
 
-            // Pre-cache white noise buffer once
             const bufferSize = audioCtx.sampleRate * 2;
             noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const channelData = noiseBuffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                channelData[i] = Math.random() * 2 - 1;
-            }
+            for (let i = 0; i < bufferSize; i++) channelData[i] = Math.random() * 2 - 1;
 
-            // Continuous vinyl noise channel
             crackleSource = audioCtx.createBufferSource();
             crackleSource.buffer = noiseBuffer;
             crackleSource.loop = true;
-            
             const crackleFilter = audioCtx.createBiquadFilter();
             crackleFilter.type = 'bandpass';
             crackleFilter.frequency.setValueAtTime(1600, audioCtx.currentTime);
             crackleFilter.Q.setValueAtTime(3.5, audioCtx.currentTime);
-
             crackleGain = audioCtx.createGain();
             crackleGain.gain.setValueAtTime(parseFloat(sliderCrackle.value), audioCtx.currentTime);
-
-            crackleSource.connect(crackleFilter);
-            crackleFilter.connect(crackleGain);
-            crackleGain.connect(masterGain);
+            crackleSource.connect(crackleFilter).connect(crackleGain).connect(masterGain);
             crackleSource.start();
 
-            // Continuous rain ambiance channel
             rainSource = audioCtx.createBufferSource();
             rainSource.buffer = noiseBuffer;
             rainSource.loop = true;
-
-            const rainFilterLow = audioCtx.createBiquadFilter();
-            rainFilterLow.type = 'lowpass';
-            rainFilterLow.frequency.setValueAtTime(450, audioCtx.currentTime);
-
-            const rainFilterHigh = audioCtx.createBiquadFilter();
-            rainFilterHigh.type = 'highpass';
-            rainFilterHigh.frequency.setValueAtTime(140, audioCtx.currentTime);
-
+            const rfL = audioCtx.createBiquadFilter(); rfL.type = 'lowpass'; rfL.frequency.setValueAtTime(450, audioCtx.currentTime);
+            const rfH = audioCtx.createBiquadFilter(); rfH.type = 'highpass'; rfH.frequency.setValueAtTime(140, audioCtx.currentTime);
             rainGain = audioCtx.createGain();
             rainGain.gain.setValueAtTime(parseFloat(sliderRain.value), audioCtx.currentTime);
-
-            rainSource.connect(rainFilterLow);
-            rainFilterLow.connect(rainFilterHigh);
-            rainFilterHigh.connect(rainGain);
-            rainGain.connect(masterGain);
+            rainSource.connect(rfL).connect(rfH).connect(rainGain).connect(masterGain);
             rainSource.start();
 
-            // Unified delay loop (Zero layout dependencies)
             delayNode = audioCtx.createDelay(3.0);
-            const secondsPerBeat = 60.0 / bpm;
-            delayNode.delayTime.setValueAtTime(secondsPerBeat * 0.75, audioCtx.currentTime);
-
+            delayNode.delayTime.setValueAtTime((60.0 / bpm) * 0.75, audioCtx.currentTime);
             delayFeedback = audioCtx.createGain();
             delayFeedback.gain.setValueAtTime(0.35, audioCtx.currentTime);
-
-            delayNode.connect(delayFeedback);
-            delayFeedback.connect(delayNode);
+            delayNode.connect(delayFeedback).connect(delayNode);
             delayNode.connect(lofiFilter);
 
-            lofiFilter.connect(masterGain);
-            masterGain.connect(audioCtx.destination);
+            lofiFilter.connect(masterGain).connect(audioCtx.destination);
         }
 
+        // --- AUDIO INSTRUMENT NETWORKS ---
         function synthKick(time) {
             if (isTransitioning) return;
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            
-            osc.connect(gainNode);
-            gainNode.connect(lofiFilter);
-
-            osc.frequency.setValueAtTime(135, time);
-            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.35);
-
-            gainNode.gain.setValueAtTime(1.0, time);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.35);
-
-            osc.start(time);
-            osc.stop(time + 0.35);
-
-            animateVis(0, 38, "#f59e0b");
-            animateVis(1, 32, "#f59e0b");
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain).connect(lofiFilter);
+            osc.frequency.setValueAtTime(130, time); osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.3);
+            gain.gain.setValueAtTime(1.0, time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+            osc.start(time); osc.stop(time + 0.3);
+            pokeBar(0, 0.95); pokeBar(1, 0.8);
         }
 
-        function synthSnare(time, isRimshot = false) {
+        function synthSnare(time, isRim = false) {
             if (isTransitioning) return;
-            
-            const osc = audioCtx.createOscillator();
-            const oscGain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.connect(oscGain);
-            oscGain.connect(lofiFilter);
+            const osc = audioCtx.createOscillator(); const oGain = audioCtx.createGain();
+            osc.type = 'triangle'; osc.connect(oGain).connect(lofiFilter);
+            osc.frequency.setValueAtTime(isRim ? 400 : 175, time);
+            oGain.gain.setValueAtTime(isRim ? 0.15 : 0.3, time);
+            oGain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+            osc.start(time); osc.stop(time + 0.15);
 
-            const snarePitch = isRimshot ? 450 : 175;
-            const toneVol = isRimshot ? 0.15 : 0.32;
-            const duration = isRimshot ? 0.08 : 0.16;
-
-            osc.frequency.setValueAtTime(snarePitch, time);
-            oscGain.gain.setValueAtTime(toneVol, time);
-            oscGain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-            osc.start(time);
-            osc.stop(time + duration);
-
-            const noise = audioCtx.createBufferSource();
-            noise.buffer = noiseBuffer;
-
-            const snareFilter = audioCtx.createBiquadFilter();
-            snareFilter.type = 'highpass';
-            snareFilter.frequency.setValueAtTime(isRimshot ? 2200 : 1200, time);
-
-            const snareGain = audioCtx.createGain();
-            snareGain.gain.setValueAtTime(isRimshot ? 0.08 : 0.28, time);
-            snareGain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
-            noise.connect(snareFilter);
-            snareFilter.connect(snareGain);
-            snareGain.connect(lofiFilter);
-
-            noise.start(time);
-            noise.stop(time + duration);
-
-            animateVis(3, isRimshot ? 15 : 28, "#10b981");
-            animateVis(4, isRimshot ? 12 : 24, "#10b981");
+            const noise = audioCtx.createBufferSource(); noise.buffer = noiseBuffer;
+            const filter = audioCtx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime(isRim ? 2000 : 1100, time);
+            const nGain = audioCtx.createGain(); nGain.gain.setValueAtTime(isRim ? 0.08 : 0.25, time);
+            nGain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+            noise.connect(filter).connect(nGain).connect(lofiFilter);
+            noise.start(time); noise.stop(time + 0.15);
+            pokeBar(4, 0.85); pokeBar(5, 0.75);
         }
 
-        function synthHiHat(time, isOpen = false, isAccent = false) {
+        function synthHiHat(time, isOpen = false) {
             if (isTransitioning) return;
-            const noise = audioCtx.createBufferSource();
-            noise.buffer = noiseBuffer;
-
-            const hpFilter = audioCtx.createBiquadFilter();
-            hpFilter.type = 'bandpass';
-            hpFilter.frequency.setValueAtTime(isOpen ? 6500 : 8000, time);
-
-            const hatGain = audioCtx.createGain();
-            const duration = isOpen ? 0.26 : 0.04;
-            let volume = isOpen ? 0.12 : 0.06;
-            if (isAccent) volume *= 1.8;
-
-            hatGain.gain.setValueAtTime(volume, time);
-            hatGain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
-            noise.connect(hpFilter);
-            hpFilter.connect(hatGain);
-            hatGain.connect(lofiFilter);
-
-            noise.start(time);
-            noise.stop(time + duration);
-
-            animateVis(isOpen ? 6 : 5, isOpen ? 22 : 12, "#14b8a6");
+            const noise = audioCtx.createBufferSource(); noise.buffer = noiseBuffer;
+            const filter = audioCtx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.setValueAtTime(isOpen ? 6500 : 8500, time);
+            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(isOpen ? 0.1 : 0.05, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + (isOpen ? 0.25 : 0.04));
+            noise.connect(filter).connect(gain).connect(lofiFilter);
+            noise.start(time); noise.stop(time + (isOpen ? 0.25 : 0.04));
+            pokeBar(isOpen ? 9 : 8, isOpen ? 0.6 : 0.35);
         }
 
         function synthChord(time, chordIndices) {
             if (isTransitioning) return;
-            const targetMode = modes[currentModeKey];
-            if (!targetMode) return;
+            const tMode = modes[currentModeKey]; if (!tMode) return;
+            chordIndices.forEach(index => {
+                const freq = tMode.scale[index] || 261.63;
+                for (let i = 0; i < 2; i++) {
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.type = currentSynthVoice === 'bells' ? 'square' : (currentSynthVoice === 'plucks' ? 'triangle' : 'sine');
+                    if (currentSynthVoice === 'rhodes' && i === 1) osc.type = 'triangle';
+                    
+                    osc.frequency.setValueAtTime(freq, time);
+                    osc.detune.setValueAtTime((Math.random() - 0.5) * 12, time);
+                    osc.connect(gain).connect(lofiFilter);
 
-            chordIndices.forEach((index) => {
-                const baseFreq = targetMode.scale[index] || 261.63;
-
-                for (let oscCount = 0; oscCount < 2; oscCount++) {
-                    const osc = audioCtx.createOscillator();
-                    const oscGain = audioCtx.createGain();
-
-                    if (currentSynthVoice === 'bells') {
-                        osc.type = 'square';
-                    } else if (currentSynthVoice === 'plucks') {
-                        osc.type = 'triangle';
-                    } else if (currentSynthVoice === 'sines') {
-                        osc.type = 'sine';
-                    } else { 
-                        osc.type = oscCount === 0 ? 'sine' : 'triangle';
-                    }
-
-                    osc.frequency.setValueAtTime(baseFreq, time);
-                    osc.detune.setValueAtTime((Math.random() - 0.5) * 14, time);
-
-                    osc.connect(oscGain);
-                    oscGain.connect(lofiFilter);
-
-                    if (currentSynthVoice === 'rhodes') {
-                        const tremoloLFO = audioCtx.createOscillator();
-                        tremoloLFO.frequency.setValueAtTime(4.8, time); 
-                        const tremoloGain = audioCtx.createGain();
-                        tremoloGain.gain.setValueAtTime(0.35, time); 
-
-                        tremoloLFO.connect(tremoloGain);
-                        tremoloGain.connect(oscGain.gain);
-                        tremoloLFO.start(time);
-                        tremoloLFO.stop(time + 3.8);
-                    }
-
-                    oscGain.gain.setValueAtTime(0, time);
+                    gain.gain.setValueAtTime(0, time);
                     if (currentSynthVoice === 'plucks') {
-                        oscGain.gain.linearRampToValueAtTime(0.07, time + 0.02);
-                        oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.7);
+                        gain.gain.linearRampToValueAtTime(0.06, time + 0.02); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
                     } else if (currentSynthVoice === 'bells') {
-                        oscGain.gain.linearRampToValueAtTime(0.06, time + 0.04);
-                        oscGain.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
-                    } else if (currentSynthVoice === 'sines') { 
-                        oscGain.gain.linearRampToValueAtTime(0.08, time + 0.8);
-                        oscGain.gain.setTargetAtTime(0, time + 2.0, 0.8);
-                    } else { 
-                        oscGain.gain.linearRampToValueAtTime(0.12, time + 0.25);
-                        oscGain.gain.setTargetAtTime(0, time + 1.8, 0.75);
+                        gain.gain.linearRampToValueAtTime(0.05, time + 0.04); gain.gain.exponentialRampToValueAtTime(0.001, time + 1.1);
+                    } else { // Rhodes / Sines
+                        gain.gain.linearRampToValueAtTime(0.1, time + 0.25); gain.gain.setTargetAtTime(0, time + 1.8, 0.7);
                     }
-
-                    osc.start(time);
-                    osc.stop(time + 3.8);
+                    osc.start(time); osc.stop(time + 3.5);
                 }
             });
-
-            animateVis(2, 25, "#f8c291");
+            pokeBar(2, 0.7); pokeBar(3, 0.65);
         }
 
-        function synthBass(time, baseIndex) {
+        function synthBass(time, bIdx) {
             if (isTransitioning) return;
-            const targetMode = modes[currentModeKey];
-            if (!targetMode) return;
-
-            const osc = audioCtx.createOscillator();
-            const bassGain = audioCtx.createGain();
-
-            osc.type = 'triangle';
-            const bassFreq = targetMode.scale[baseIndex - 7] || targetMode.scale[0];
-
-            osc.frequency.setValueAtTime(bassFreq, time);
-            osc.connect(bassGain);
-            bassGain.connect(lofiFilter);
-
-            bassGain.gain.setValueAtTime(0, time);
-            bassGain.gain.linearRampToValueAtTime(0.35, time + 0.08);
-            bassGain.gain.exponentialRampToValueAtTime(0.001, time + 1.8);
-
-            osc.start(time);
-            osc.stop(time + 1.8);
+            const tMode = modes[currentModeKey]; if (!tMode) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(tMode.scale[bIdx - 7] || tMode.scale[0], time);
+            osc.connect(gain).connect(lofiFilter);
+            gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.35, time + 0.1); gain.gain.exponentialRampToValueAtTime(0.001, time + 1.6);
+            osc.start(time); osc.stop(time + 1.6);
         }
 
-        function synthMelody(time, noteIndex) {
+        function synthMelody(time, nIdx) {
             if (isTransitioning) return;
-            const targetMode = modes[currentModeKey];
-            if (!targetMode) return;
-
-            const freq = targetMode.scale[noteIndex] || 523.25;
-
-            const osc = audioCtx.createOscillator();
-            const melGain = audioCtx.createGain();
-
-            if (currentSynthVoice === 'bells') {
-                osc.type = 'square';
-            } else if (currentSynthVoice === 'plucks') {
-                osc.type = 'triangle';
-            } else {
-                osc.type = 'sine';
-            }
-
-            osc.frequency.setValueAtTime(freq, time);
-
-            osc.connect(melGain);
-            melGain.connect(lofiFilter);
-            melGain.connect(delayNode); 
-
-            melGain.gain.setValueAtTime(0.0, time);
-            
-            if (currentSynthVoice === 'plucks' || currentSynthVoice === 'bells') {
-                melGain.gain.linearRampToValueAtTime(0.07, time + 0.01);
-                melGain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
-            } else {
-                melGain.gain.linearRampToValueAtTime(0.09, time + 0.08);
-                melGain.gain.exponentialRampToValueAtTime(0.001, time + 1.1);
-            }
-
-            osc.start(time);
-            osc.stop(time + 1.2);
-
-            animateVis(7, 24, "#14b8a6");
+            const tMode = modes[currentModeKey]; if (!tMode) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = currentSynthVoice === 'bells' ? 'square' : (currentSynthVoice === 'plucks' ? 'triangle' : 'sine');
+            osc.frequency.setValueAtTime(tMode.scale[nIdx] || 523.25, time);
+            osc.connect(gain).connect(lofiFilter); gain.connect(delayNode);
+            gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.08, time + 0.05); gain.gain.exponentialRampToValueAtTime(0.001, time + 1.0);
+            osc.start(time); osc.stop(time + 1.0);
+            pokeBar(13, 0.7); pokeBar(14, 0.6);
         }
 
         function generateMelodicMotif() {
-            const melodyRange = [14, 16, 17, 18, 19, 21, 23, 24]; 
-            activeMotif = [];
-            motifDurationSteps = 16; 
-
-            const phrases = [
-                [0, 3, 6, 8, 11],
-                [2, 4, 8, 10, 14],
-                [0, 2, 6, 9, 12],
-                [4, 6, 10, 12]
-            ];
-            const selectedSteps = phrases[Math.floor(Math.random() * phrases.length)];
-            
-            selectedSteps.forEach(step => {
-                const noteIdx = melodyRange[Math.floor(Math.random() * melodyRange.length)];
-                activeMotif.push({ step, noteIdx });
-            });
+            const range = [14, 16, 17, 18, 19, 21, 23, 24]; activeMotif = [];
+            const beats = [[0, 3, 6, 8, 11], [2, 4, 8, 10, 14], [0, 2, 6, 9, 12]][Math.floor(Math.random() * 3)];
+            beats.forEach(step => activeMotif.push({ step, idx: range[Math.floor(Math.random() * range.length)] }));
         }
 
-        function stepClock() {
-            const secondsPerBeat = 60.0 / bpm;
-            nextNoteTime += 0.25 * secondsPerBeat; 
-
-            currentStep++;
-            if (currentStep === 16) {
-                currentStep = 0;
-                measureCount++;
-
-                if (activeProgression) {
-                    activeChordIndex = (activeChordIndex + 1) % activeProgression.chords.length;
-                }
-
-                if (measureCount % 2 === 0) {
-                    generateMelodicMotif();
-                }
-            }
-        }
-
+        // --- SCHEDULER & PLAYLIST LIFE CYCLES ---
         function triggerProceduralStep(step, time) {
             if (!activeProgression) return;
-
-            let swingOffset = 0;
-            if (step % 2 !== 0) {
-                if (currentBeatStyle === "boombap") {
-                    swingOffset = 0.038 * (60.0 / bpm); 
-                } else if (currentBeatStyle === "garage") {
-                    swingOffset = 0.05 * (60.0 / bpm); 
-                }
-            }
-            const playTime = time + swingOffset;
+            let swing = (step % 2 !== 0) ? (((currentBeatStyle === "boombap") ? 0.035 : (currentBeatStyle === "garage" ? 0.05 : 0)) * (60.0 / bpm)) : 0;
+            const pTime = time + swing;
 
             if (step === 0) {
-                const currentChord = activeProgression.chords[activeChordIndex];
-                synthChord(playTime, currentChord);
-                synthBass(playTime, currentChord[0]);
+                const chord = activeProgression.chords[activeChordIndex];
+                synthChord(pTime, chord); synthBass(pTime, chord[0]);
             }
-
-            const motifEvent = activeMotif.find(m => m.step === step);
-            if (motifEvent && Math.random() < 0.85) {
-                synthMelody(playTime, motifEvent.noteIdx);
-            }
+            const motif = activeMotif.find(m => m.step === step);
+            if (motif && Math.random() < 0.8) synthMelody(pTime, motif.idx);
 
             if (currentBeatStyle === "boombap") {
-                if (step === 0 || step === 8 || (step === 11 && Math.random() < 0.45)) {
-                    synthKick(playTime);
-                }
-                if (step === 4 || step === 12) {
-                    synthSnare(playTime, false); 
-                }
-                if (step % 2 === 0) {
-                    synthHiHat(playTime, step === 14 && Math.random() < 0.4, step === 0 || step === 8);
-                }
+                if (step === 0 || step === 8 || (step === 11 && Math.random() < 0.4)) synthKick(pTime);
+                if (step === 4 || step === 12) synthSnare(pTime, false);
+                if (step % 2 === 0) synthHiHat(pTime, step === 14 && Math.random() < 0.3);
             } else if (currentBeatStyle === "chillhop") {
-                if (step === 0 || (step === 9 && Math.random() < 0.4)) {
-                    synthKick(playTime);
-                }
-                if (step === 4 || step === 12) {
-                    synthSnare(playTime, true); 
-                }
-                if (step % 4 === 0 || (step % 4 === 2 && Math.random() < 0.35)) {
-                    synthHiHat(playTime, step === 14 && Math.random() < 0.25, false);
-                }
+                if (step === 0 || (step === 9 && Math.random() < 0.35)) synthKick(pTime);
+                if (step === 4 || step === 12) synthSnare(pTime, true);
+                if (step % 4 === 0) synthHiHat(pTime, false);
             } else if (currentBeatStyle === "garage") {
-                if (step === 0 || step === 7 || step === 10 || (step === 14 && Math.random() < 0.3)) {
-                    synthKick(playTime);
-                }
-                if (step === 4 || step === 12) {
-                    synthSnare(playTime, false);
-                }
-                if (step === 0 || step === 3 || step === 6 || step === 9 || step === 12 || step === 15) {
-                    synthHiHat(playTime, step === 9 && Math.random() < 0.6, step === 3 || step === 9);
-                }
+                if (step === 0 || step === 7 || step === 10) synthKick(pTime);
+                if (step === 4 || step === 12) synthSnare(pTime, false);
+                if (step % 3 === 0) synthHiHat(pTime, step === 9);
             }
         }
 
         function scheduler() {
             while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
                 triggerProceduralStep(currentStep, nextNoteTime);
-                stepClock();
+                const sPerBeat = 60.0 / bpm; nextNoteTime += 0.25 * sPerBeat;
+                currentStep = (currentStep + 1) % 16;
+                if (currentStep === 0) {
+                    measureCount++;
+                    activeChordIndex = (activeChordIndex + 1) % activeProgression.chords.length;
+                    if (measureCount % 2 === 0) generateMelodicMotif();
+                }
             }
             timerID = setTimeout(scheduler, lookahead);
         }
 
-        function simulateTapeStopAndChange(onDone) {
-            if (isTransitioning) return;
-            isTransitioning = true;
-            clockDisplay.innerText = "DECK: RETRANSLATING";
-
-            const sweepTime = 1.6; 
-            if (lofiFilter && masterGain) {
-                lofiFilter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + sweepTime);
-                masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + sweepTime);
-            }
-
-            vinylDisc.classList.remove('vinyl-spin');
-
-            transitionTimeout = setTimeout(() => {
-                if (onDone) onDone();
-
-                if (lofiFilter && masterGain) {
-                    lofiFilter.frequency.setValueAtTime(100, audioCtx.currentTime);
-                    lofiFilter.frequency.exponentialRampToValueAtTime(parseFloat(sliderCutoff.value), audioCtx.currentTime + 1.2);
-                    masterGain.gain.linearRampToValueAtTime(parseFloat(sliderVolume.value), audioCtx.currentTime + 1.2);
-                }
-
-                vinylDisc.classList.add('vinyl-spin');
-                isTransitioning = false;
-                clockDisplay.innerText = "DECK: BROADCASTING";
-            }, sweepTime * 1000);
+        function applyStyleTempo() {
+            if (currentBeatStyle === "garage") bpm = Math.floor(Math.random() * 5) + 112;
+            else if (currentBeatStyle === "boombap") bpm = Math.floor(Math.random() * 5) + 80;
+            else if (currentBeatStyle === "chillhop") bpm = Math.floor(Math.random() * 5) + 68;
+            else bpm = Math.floor(Math.random() * 5) + 55;
+            bpmDisplay.innerText = `BPM: ${bpm}`;
+            vinylDisc.style.setProperty('--spin-duration', `${(60 / bpm) * 4}s`);
         }
 
         function randomizeSettings() {
-            const vibes = ["minor", "major", "dorian", "phrygian"];
-            const beats = ["boombap", "chillhop", "garage", "beatless"];
-            const synths = ["rhodes", "sines", "bells", "plucks"];
-
-            currentModeKey = vibes[Math.floor(Math.random() * vibes.length)];
-            currentBeatStyle = beats[Math.floor(Math.random() * beats.length)];
-            currentSynthVoice = synths[Math.floor(Math.random() * synths.length)];
+            const v = ["minor", "major", "dorian", "phrygian"];
+            const b = ["boombap", "chillhop", "garage", "beatless"];
+            const s = ["rhodes", "sines", "bells", "plucks"];
+            
+            currentModeKey = v[Math.floor(Math.random() * v.length)];
+            currentBeatStyle = b[Math.floor(Math.random() * b.length)];
+            currentSynthVoice = s[Math.floor(Math.random() * s.length)];
 
             selectVibe.value = currentModeKey;
             selectBeat.value = currentBeatStyle;
@@ -800,218 +441,131 @@
         }
 
         function triggerSongChange() {
-            simulateTapeStopAndChange(() => {
+            if (isTransitioning) return; isTransitioning = true;
+            deckStatus.innerText = "RETUNING";
+            
+            if (lofiFilter && masterGain) {
+                lofiFilter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 1.5);
+                masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.5);
+            }
+            vinylDisc.classList.remove('vinyl-spin');
+
+            transitionTimeout = setTimeout(() => {
                 randomizeSettings();
-
-                const trackName = makeTrackTitle();
-                trackTitleDisplay.innerText = trackName;
-
+                trackTitleDisplay.innerText = makeTrackTitle();
                 applyStyleTempo();
 
-                if (audioCtx && delayNode) {
-                    const secondsPerBeat = 60.0 / bpm;
-                    delayNode.delayTime.setTargetAtTime(secondsPerBeat * 0.75, audioCtx.currentTime, 1.0);
-                }
+                if (audioCtx && delayNode) delayNode.delayTime.setValueAtTime((60.0 / bpm) * 0.75, audioCtx.currentTime);
 
-                const targetMode = modes[currentModeKey];
-                scaleDisplay.innerText = `VIBE: ${targetMode.name}`;
-                activeProgression = targetMode.progressions[Math.floor(Math.random() * targetMode.progressions.length)];
+                const tMode = modes[currentModeKey];
+                scaleDisplay.innerText = `VIBE: ${tMode.name}`;
+                activeProgression = tMode.progressions[Math.floor(Math.random() * tMode.progressions.length)];
                 activeChordIndex = 0;
-
                 generateMelodicMotif();
 
-                songTimeElapsed = 0;
-                progressBar.style.width = `0%`;
-            });
+                songTimeElapsed = 0; progressBar.style.width = `0%`;
+
+                if (lofiFilter && masterGain) {
+                    lofiFilter.frequency.setValueAtTime(100, audioCtx.currentTime);
+                    lofiFilter.frequency.exponentialRampToValueAtTime(parseFloat(sliderCutoff.value), audioCtx.currentTime + 1.0);
+                    masterGain.gain.linearRampToValueAtTime(parseFloat(sliderVolume.value), audioCtx.currentTime + 1.0);
+                }
+                vinylDisc.classList.add('vinyl-spin');
+                isTransitioning = false; deckStatus.innerText = "ON AIR";
+            }, 1500);
         }
 
-        function applyStyleTempo() {
-            if (currentBeatStyle === "garage") {
-                bpm = Math.floor(Math.random() * 6) + 112; 
-            } else if (currentBeatStyle === "boombap") {
-                bpm = Math.floor(Math.random() * 6) + 80;  
-            } else if (currentBeatStyle === "chillhop") {
-                bpm = Math.floor(Math.random() * 6) + 68;  
-            } else { 
-                bpm = Math.floor(Math.random() * 6) + 55;  
+        // --- HARDWARE BITMAP VISUALIZER LOOP (ZERO REFLOW) ---
+        function pokeBar(index, amount) {
+            if (visBarsArray[index] !== undefined) visBarsArray[index] = amount;
+        }
+
+        function drawVisualizer() {
+            animationFrameId = requestAnimationFrame(drawVisualizer);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const barCount = 16;
+            const gap = 3;
+            const barWidth = (canvas.width - (gap * (barCount - 1))) / barCount;
+
+            for (let i = 0; i < barCount; i++) {
+                // Natural linear decay inside the JS thread space
+                visBarsArray[i] *= 0.92;
+                if (visBarsArray[i] < 0.05) visBarsArray[i] = 0.05;
+
+                const bH = visBarsArray[i] * (canvas.height - 8);
+                const x = i * (barWidth + gap);
+                const y = canvas.height - bH - 4;
+
+                // Alternate neon color profiles entirely in canvas pixel context
+                ctx.fillStyle = i % 4 === 0 ? '#e55039' : (i % 2 === 0 ? '#38ada9' : '#f8c291');
+                ctx.beginPath();
+                ctx.roundRect(x, y, barWidth, bH, 3);
+                ctx.fill();
             }
-            bpmDisplay.innerText = `BPM: ${bpm}`;
-            
-            const durationSec = 60 / bpm * 4; 
-            vinylDisc.style.setProperty('--spin-duration', `${durationSec}s`);
         }
 
         function startPlaylistTimer() {
             clearInterval(timerIntervalID);
             timerIntervalID = setInterval(() => {
                 if (!isPlaying || isTransitioning) return;
-
                 songTimeElapsed++;
-                const percentage = (songTimeElapsed / autoSkipDuration) * 100;
-                progressBar.style.width = `${percentage}%`;
+                progressBar.style.width = `${(songTimeElapsed / autoSkipDuration) * 100}%`;
 
-                const remaining = Math.max(0, autoSkipDuration - songTimeElapsed);
-                const mins = Math.floor(remaining / 60);
-                const secs = remaining % 60;
-                timeLeftDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
-                if (songTimeElapsed >= autoSkipDuration) {
-                    triggerSongChange();
-                }
+                const rem = Math.max(0, autoSkipDuration - songTimeElapsed);
+                timeLeftDisplay.innerText = `${Math.floor(rem / 60).toString().padStart(2, '0')}:${(rem % 60).toString().padStart(2, '0')}`;
+                if (songTimeElapsed >= autoSkipDuration) triggerSongChange();
             }, 1000);
         }
 
-        function handlePlayToggle() {
-            if (!audioCtx) {
-                initAudioPipeline();
-            }
-
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+        // --- TRIGGER EVENT BINDINGS ---
+        playBtn.addEventListener('click', () => {
+            if (!audioCtx) initAudioPipeline();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
 
             isPlaying = !isPlaying;
-
             if (isPlaying) {
-                playBtnText.innerText = "Pause Session";
-                playBtn.classList.remove('from-amber-500', 'to-orange-500');
-                playBtn.classList.add('from-teal-500', 'to-cyan-500');
-                clockDisplay.innerText = "DECK: BROADCASTING";
-                
+                playBtnText.innerText = "Pause Station"; deckStatus.innerText = "ON AIR";
                 vinylDisc.classList.add('vinyl-spin');
-
                 applyStyleTempo();
-
-                const targetMode = modes[currentModeKey];
-                activeProgression = targetMode.progressions[Math.floor(Math.random() * targetMode.progressions.length)];
-                activeChordIndex = 0;
-
-                trackTitleDisplay.innerText = makeTrackTitle();
-                scaleDisplay.innerText = `VIBE: ${targetMode.name}`;
-
-                generateMelodicMotif();
-
-                nextNoteTime = audioCtx.currentTime + 0.1;
-                scheduler();
-                startPlaylistTimer();
                 
-                // Initialize the visualizer's GPU decay loop safely
-                if (!decayLoopActive) {
-                    decayLoopActive = true;
-                    requestAnimationFrame(updateVisualizerDecay);
-                }
+                const tMode = modes[currentModeKey];
+                activeProgression = tMode.progressions[Math.floor(Math.random() * tMode.progressions.length)];
+                trackTitleDisplay.innerText = makeTrackTitle();
+                scaleDisplay.innerText = `VIBE: ${tMode.name}`;
+                
+                generateMelodicMotif();
+                nextNoteTime = audioCtx.currentTime + 0.05;
+                scheduler(); drawVisualizer(); startPlaylistTimer();
             } else {
-                playBtnText.innerText = "Tune In";
-                playBtn.classList.remove('from-teal-500', 'to-cyan-500');
-                playBtn.classList.add('from-amber-500', 'to-orange-500');
-                clockDisplay.innerText = "DECK: ON HOLD";
-
+                playBtnText.innerText = "Tune In"; deckStatus.innerText = "OFFLINE";
                 vinylDisc.classList.remove('vinyl-spin');
-                clearTimeout(timerID);
-                clearInterval(timerIntervalID);
+                clearTimeout(timerID); clearInterval(timerIntervalID); cancelAnimationFrame(animationFrameId);
             }
-        }
-
-        playBtn.addEventListener('click', handlePlayToggle);
+        });
 
         skipBtn.addEventListener('click', () => {
-            if (!isPlaying) {
-                handlePlayToggle();
-                return;
-            }
+            if (!isPlaying) { playBtn.click(); return; }
             triggerSongChange();
         });
 
+        // Parameters Value Selectors
         selectVibe.addEventListener('change', (e) => {
             currentModeKey = e.target.value;
-            const targetMode = modes[currentModeKey];
-            scaleDisplay.innerText = `VIBE: ${targetMode.name}`;
-            activeProgression = targetMode.progressions[Math.floor(Math.random() * targetMode.progressions.length)];
-            activeChordIndex = 0;
+            const t = modes[currentModeKey]; scaleDisplay.innerText = `VIBE: ${t.name}`;
+            activeProgression = t.progressions[Math.floor(Math.random() * t.progressions.length)]; activeChordIndex = 0;
             generateMelodicMotif();
         });
+        selectBeat.addEventListener('change', (e) => { currentBeatStyle = e.target.value; applyStyleTempo(); });
+        selectSynth.addEventListener('change', (e) => { currentSynthVoice = e.target.value; });
+        selectInterval.addEventListener('change', (e) => { autoSkipDuration = parseInt(e.target.value); songTimeElapsed = 0; });
 
-        selectBeat.addEventListener('change', (e) => {
-            currentBeatStyle = e.target.value;
-            applyStyleTempo();
-            if (audioCtx && delayNode) {
-                const secondsPerBeat = 60.0 / bpm;
-                delayNode.delayTime.setTargetAtTime(secondsPerBeat * 0.75, audioCtx.currentTime, 0.5);
-            }
-        });
-
-        selectSynth.addEventListener('change', (e) => {
-            currentSynthVoice = e.target.value;
-        });
-
-        selectInterval.addEventListener('change', (e) => {
-            autoSkipDuration = parseInt(e.target.value, 10);
-            songTimeElapsed = 0;
-            progressBar.style.width = `0%`;
-        });
-
-        sliderVolume.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            document.getElementById('vol-lbl').innerText = `${Math.round(val * 100)}%`;
-            if (masterGain && !isTransitioning) {
-                masterGain.gain.setValueAtTime(val, audioCtx.currentTime);
-            }
-        });
-
-        sliderRain.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            document.getElementById('rain-lbl').innerText = `${Math.round((val / 0.15) * 100)}%`;
-            if (rainGain) {
-                rainGain.gain.setValueAtTime(val, audioCtx.currentTime);
-            }
-        });
-
-        sliderCrackle.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            document.getElementById('crackle-lbl').innerText = `${Math.round((val / 0.04) * 100)}%`;
-            if (crackleGain) {
-                crackleGain.gain.setValueAtTime(val, audioCtx.currentTime);
-            }
-        });
-
-        sliderCutoff.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            document.getElementById('cutoff-lbl').innerText = `${(val / 1000).toFixed(1)}k`;
-            if (lofiFilter && !isTransitioning) {
-                lofiFilter.frequency.setValueAtTime(val, audioCtx.currentTime);
-            }
-        });
-
-        // Pure GPU Decay Loop — eliminates layout reflows and timer race conditions
-        function updateVisualizerDecay() {
-            if (!decayLoopActive) return;
-
-            for (let i = 0; i < 12; i++) {
-                // Smoothly decay scale factor back to the baseline of 0.125
-                barScales[i] += (0.125 - barScales[i]) * 0.12; 
-                
-                // Set scaleY transform on GPU composite plane
-                visualizerBars[i].style.transform = `scaleY(${barScales[i]})`;
-                
-                // Decay color transparency back to fallback gray
-                if (barScales[i] < 0.22) {
-                    visualizerBars[i].style.backgroundColor = 'rgba(63, 63, 70, 0.5)';
-                }
-            }
-            requestAnimationFrame(updateVisualizerDecay);
-        }
-
-        function animateVis(index, height, colorClass) {
-            const targetHeight = Math.min(32, height);
-            const scaleY = targetHeight / 32;
-
-            if (index < barScales.length) {
-                // Directly bump state values; the RAF loop handles smooth graphics rendering
-                barScales[index] = scaleY;
-                visualizerBars[index].style.backgroundColor = colorClass;
-            }
-        }
-
+        // Sliders Core Connections
+        sliderVolume.addEventListener('input', (e) => { masterGain.gain.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime); document.getElementById('vol-lbl').innerText = `${Math.round(e.target.value * 100)}%`; });
+        sliderRain.addEventListener('input', (e) => { rainGain.gain.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime); document.getElementById('rain-lbl').innerText = `${Math.round((e.target.value / 0.15) * 100)}%`; });
+        sliderCrackle.addEventListener('input', (e) => { crackleGain.gain.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime); document.getElementById('crackle-lbl').innerText = `${Math.round((e.target.value / 0.04) * 100)}%`; });
+        sliderCutoff.addEventListener('input', (e) => { lofiFilter.frequency.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime); document.getElementById('cutoff-lbl').innerText = `${(e.target.value / 1000).toFixed(1)}k`; });
     </script>
 </body>
 </html>
+```eof
