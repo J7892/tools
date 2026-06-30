@@ -11,52 +11,37 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0b0a0f;
-            background-image: radial-gradient(circle at center, #1e152a 0%, #08070b 100%);
+            background-color: #08070b;
+            background-image: radial-gradient(circle at center, #150f24 0%, #050407 100%);
         }
         
-        .glow-orange {
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
-            border-color: rgba(245, 158, 11, 0.4);
-        }
-        
-        .glow-teal {
-            box-shadow: 0 0 15px rgba(20, 184, 166, 0.2);
-            border-color: rgba(20, 184, 166, 0.4);
-        }
-        
-        .mono-font {
-            font-family: 'Share Tech Mono', monospace;
+        /* Force hardware compositing onAnimating elements to completely isolate them from layout calculations */
+        .hardware-accelerated {
+            transform: translate3d(0,0,0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+            will-change: transform;
         }
 
-        /* Vinyl Spin animation with speed adjustments dynamically via JS */
+        /* Vinyl Spin animation with 3D translation to keep it on the GPU plane */
         @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from { transform: translate3d(0,0,0) rotate(0deg); }
+            to { transform: translate3d(0,0,0) rotate(360deg); }
         }
         .vinyl-spin {
             animation: spin var(--spin-duration, 4s) linear infinite;
+            backface-visibility: hidden;
             will-change: transform;
-            transform: translateZ(0);
         }
 
-        /* Ambient subtle pulse */
-        @keyframes pulse-soft {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.02); }
-        }
-        .pulse-ambient {
-            animation: pulse-soft 3s infinite ease-in-out;
-        }
-
-        /* Strict visualizer boundaries to prevent layout shift */
+        /* Strict visualizer boundaries with zero layout-shifting properties */
         .visualizer-container {
-            height: 48px; /* Strict fixed height */
+            height: 48px;
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
-            background-color: rgba(9, 9, 11, 0.6);
-            border: 1px solid rgba(63, 63, 70, 0.3);
+            background-color: rgba(15, 15, 20, 0.9);
+            border: 1px solid rgba(63, 63, 70, 0.4);
             border-radius: 12px;
             padding: 8px 12px;
             box-sizing: border-box;
@@ -64,25 +49,27 @@
             width: 100%;
         }
 
+        /* Bars strictly use scaleY transforms and have NO CSS transitions to avoid fighting the JS engine */
         .visualizer-container .bar {
             flex: 1;
             margin: 0 2px;
-            height: 32px; /* Strict height of content area (48 - 16 padding) */
+            height: 32px;
             background-color: rgba(63, 63, 70, 0.5);
             border-radius: 4px;
             transform-origin: bottom;
-            transform: scaleY(0.125); /* Default 4px / 32px = 0.125 */
-            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.15), background-color 0.1s ease;
+            transform: scaleY(0.125);
             will-change: transform;
+            backface-visibility: hidden;
         }
     </style>
 </head>
 <body class="min-h-screen text-amber-100 flex flex-col justify-center items-center p-4 overflow-y-auto">
 
-    <div class="w-full max-w-lg bg-zinc-950/80 backdrop-blur-xl border-2 border-zinc-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col gap-6">
+    <!-- Solid dark layout wrapper with hardware acceleration active to isolate repaint steps -->
+    <div class="w-full max-w-lg bg-zinc-950 border-2 border-zinc-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col gap-6 hardware-accelerated">
         
         <!-- Ambient Cassette Accent Header -->
-        <div class="flex justify-between items-center border-b border-zinc-800/80 pb-4">
+        <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
             <div class="flex items-center gap-2">
                 <span class="w-3.5 h-3.5 rounded-full bg-red-500 animate-ping"></span>
                 <span class="text-xs uppercase font-semibold text-zinc-500 tracking-wider mono-font">Procedural FM • Live Composition</span>
@@ -93,8 +80,8 @@
         </div>
 
         <div class="flex flex-col md:flex-row items-center gap-6 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/50">
-            <!-- Rotating Vinyl Deck -->
-            <div class="relative w-28 h-28 shrink-0 flex-none">
+            <!-- Rotating Vinyl Deck (isolated layer) -->
+            <div class="relative w-28 h-28 shrink-0 flex-none hardware-accelerated">
                 <div id="vinyl-disc" class="w-full h-full rounded-full bg-gradient-to-r from-zinc-800 via-black to-zinc-900 flex items-center justify-center shadow-lg relative border-4 border-zinc-950">
                     <!-- Vinyl Grooves -->
                     <div class="absolute inset-2 border border-zinc-800/40 rounded-full"></div>
@@ -130,11 +117,10 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
             <!-- Vibe Mood Selector -->
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Harmonic Vibe</label>
-                <select id="select-vibe" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium">
+                <select id="select-vibe" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer">
                     <option value="minor">Melancholic (Natural Minor)</option>
                     <option value="major">Warm & Cozy (Major)</option>
                     <option value="dorian">Hypnotic (Dorian Mode)</option>
@@ -145,7 +131,7 @@
             <!-- Drum Beat Pattern Selector -->
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Drum Rhythm Style</label>
-                <select id="select-beat" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium">
+                <select id="select-beat" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer">
                     <option value="boombap">Classic Boom Bap (MPC Swing)</option>
                     <option value="chillhop">Slow Organic Chill Hop (Lazy Layout)</option>
                     <option value="garage">Garage Swing Grooves (Uptempo 2-Step)</option>
@@ -156,7 +142,7 @@
             <!-- Synth Voice Selector -->
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Synth Lead Voice</label>
-                <select id="select-synth" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium">
+                <select id="select-synth" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer">
                     <option value="rhodes">Warm Electric Rhodes</option>
                     <option value="sines">Floating Dream Sines</option>
                     <option value="bells">Filtered Square Bells</option>
@@ -167,7 +153,7 @@
             <!-- Radio Auto-skip Settings -->
             <div class="flex flex-col gap-1">
                 <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Radio Auto-Skip Interval</label>
-                <select id="select-interval" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium">
+                <select id="select-interval" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium cursor-pointer">
                     <option value="30">30 Seconds (Fast Demo Mode)</option>
                     <option value="120">2 Minutes</option>
                     <option value="240" selected>4 Minutes (Standard Radio)</option>
@@ -179,13 +165,13 @@
         <div class="flex flex-col gap-4">
             <div class="grid grid-cols-3 gap-3">
                 <!-- Transition/Skip Track -->
-                <button id="skip-btn" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 active:scale-95 transition-all py-3.5 px-4 rounded-2xl font-bold uppercase tracking-wider text-xs border border-zinc-800 flex justify-center items-center gap-2">
+                <button id="skip-btn" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 active:scale-95 transition-all py-3.5 px-4 rounded-2xl font-bold uppercase tracking-wider text-xs border border-zinc-800 flex justify-center items-center gap-2 cursor-pointer">
                     <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
                     Skip Track
                 </button>
 
                 <!-- Primary Play Trigger Toggle -->
-                <button id="play-btn" class="col-span-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-black active:scale-95 transition-all py-3.5 px-6 rounded-2xl font-extrabold uppercase tracking-widest text-sm flex justify-center items-center gap-2 shadow-lg">
+                <button id="play-btn" class="col-span-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-black active:scale-95 transition-all py-3.5 px-6 rounded-2xl font-extrabold uppercase tracking-widest text-sm flex justify-center items-center gap-2 shadow-lg cursor-pointer">
                     <span id="play-btn-icon" class="flex items-center">
                         <svg class="w-4 h-4 fill-current mr-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     </span>
@@ -201,7 +187,7 @@
                     <span>Master Gain</span>
                     <span id="vol-lbl">70%</span>
                 </div>
-                <input type="range" id="slider-volume" min="0" max="1" step="0.01" value="0.7">
+                <input type="range" id="slider-volume" class="cursor-pointer" min="0" max="1" step="0.01" value="0.7">
             </div>
 
             <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
@@ -209,7 +195,7 @@
                     <span>Cozy Rain FX</span>
                     <span id="rain-lbl">40%</span>
                 </div>
-                <input type="range" id="slider-rain" min="0" max="0.15" step="0.005" value="0.06">
+                <input type="range" id="slider-rain" class="cursor-pointer" min="0" max="0.15" step="0.005" value="0.06">
             </div>
 
             <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
@@ -217,7 +203,7 @@
                     <span>Vinyl Crackle</span>
                     <span id="crackle-lbl">25%</span>
                 </div>
-                <input type="range" id="slider-crackle" min="0" max="0.04" step="0.002" value="0.01">
+                <input type="range" id="slider-crackle" class="cursor-pointer" min="0" max="0.04" step="0.002" value="0.01">
             </div>
 
             <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
@@ -225,11 +211,11 @@
                     <span>Muffled Cutoff</span>
                     <span id="cutoff-lbl">1.8k</span>
                 </div>
-                <input type="range" id="slider-cutoff" min="500" max="4000" step="50" value="1800">
+                <input type="range" id="slider-cutoff" class="cursor-pointer" min="500" max="4000" step="50" value="1800">
             </div>
         </div>
 
-        <!-- Fixed-height visualizer container preventing height bounces -->
+        <!-- Fixed-height isolated visualizer container preventing height bounces -->
         <div class="visualizer-container" id="visualizer">
             <div class="bar"></div>
             <div class="bar"></div>
@@ -256,7 +242,7 @@
         let crackleSource, crackleGain;
         let rainSource, rainGain;
         let delayNode, delayFeedback;
-        let noiseBuffer; // Cached memory resource for performance
+        let noiseBuffer; 
 
         // State machine variables
         let isPlaying = false;
@@ -268,30 +254,33 @@
         let measureCount = 0;
         let nextNoteTime = 0.0;
         let bpm = 74;
-        const lookahead = 25.0; // ms
-        const scheduleAheadTime = 0.15; // s
+        const lookahead = 25.0; 
+        const scheduleAheadTime = 0.15; 
         let timerID;
 
         // Playlist progression timers
-        let songTimeElapsed = 0; // seconds
-        let autoSkipDuration = 240; // seconds (default 4 min)
+        let songTimeElapsed = 0; 
+        let autoSkipDuration = 240; 
         let timerIntervalID;
 
         // Call-and-Response Melodic Motif State
-        let activeMotif = []; // Array of { step, noteIdx }
-        let motifDurationSteps = 16; // Loop every 1 or 2 measures
+        let activeMotif = []; 
+        let motifDurationSteps = 16; 
 
-        // Custom Composition Parameter Presets (Emphasizing unique chord scales and structures)
+        // Visualizer Decay State Variables (Keeps frames updating smoothly on GPU)
+        let barScales = Array(12).fill(0.125);
+        let barTargetColors = Array(12).fill('rgba(63, 63, 70, 0.5)');
+        let decayLoopActive = false;
+
         const modes = {
             minor: {
                 name: "Natural Minor (Melancholic)",
                 scale: [
-                    65.41, 73.42, 77.78, 87.31, 98.00, 103.83, 116.54, // Octave 2
-                    130.81, 146.83, 155.56, 174.61, 196.00, 207.65, 233.08, // Octave 3 (Chord bases)
-                    261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, // Octave 4 (Melody)
-                    523.25, 587.33, 622.25, 698.46, 783.99, 830.61, 932.33  // Octave 5
+                    65.41, 73.42, 77.78, 87.31, 98.00, 103.83, 116.54, 
+                    130.81, 146.83, 155.56, 174.61, 196.00, 207.65, 233.08, 
+                    261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 
+                    523.25, 587.33, 622.25, 698.46, 783.99, 830.61, 932.33  
                 ],
-                // Melancholic progressions using rich Minor 9th / 11th voicings
                 progressions: [
                     { chords: [[7, 10, 14, 17], [10, 13, 17, 21], [11, 14, 18, 22], [9, 12, 16, 19]] },
                     { chords: [[7, 10, 14, 17], [11, 14, 18, 22], [8, 11, 15, 18], [10, 13, 17, 21]] }
@@ -305,7 +294,6 @@
                     261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88,
                     523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77
                 ],
-                // Uplifting chord voicings using Major 7th and Major 9th voicings
                 progressions: [
                     { chords: [[7, 11, 14, 18], [10, 14, 17, 21], [8, 12, 15, 19], [9, 13, 16, 20]] },
                     { chords: [[7, 11, 14, 18], [9, 13, 16, 20], [10, 14, 17, 21], [10, 14, 17, 21]] }
@@ -319,7 +307,6 @@
                     261.63, 293.66, 311.13, 349.23, 392.00, 440.00, 466.16,
                     523.25, 587.33, 622.25, 698.46, 783.99, 880.00, 932.33
                 ],
-                // Modal jazz style voicings (minor chords emphasizing the distinct major 6th)
                 progressions: [
                     { chords: [[7, 10, 14, 19], [12, 16, 19, 23], [10, 13, 17, 21], [9, 12, 16, 19]] }
                 ]
@@ -332,7 +319,6 @@
                     261.63, 277.18, 311.13, 349.23, 392.00, 415.30, 466.16,
                     523.25, 554.37, 622.25, 698.46, 783.99, 830.61, 932.33
                 ],
-                // Dark progressions emphasizing the tense flat-2nd interval
                 progressions: [
                     { chords: [[7, 10, 14, 17], [8, 11, 14, 18], [10, 13, 17, 21], [7, 10, 14, 17]] }
                 ]
@@ -349,7 +335,6 @@
             return `🎧 ${adj} ${noun}`;
         }
 
-        // Selected interactive dynamic presets
         let currentModeKey = "minor";
         let currentBeatStyle = "boombap";
         let currentSynthVoice = "rhodes";
@@ -390,7 +375,7 @@
             lofiFilter.frequency.setValueAtTime(parseFloat(sliderCutoff.value), audioCtx.currentTime);
             lofiFilter.Q.setValueAtTime(0.5, audioCtx.currentTime);
 
-            // Pre-cache white noise buffer to prevent memory exhaustion
+            // Pre-cache white noise buffer once
             const bufferSize = audioCtx.sampleRate * 2;
             noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const channelData = noiseBuffer.getChannelData(0);
@@ -398,7 +383,7 @@
                 channelData[i] = Math.random() * 2 - 1;
             }
 
-            // continuous Crackle vinyl simulator
+            // Continuous vinyl noise channel
             crackleSource = audioCtx.createBufferSource();
             crackleSource.buffer = noiseBuffer;
             crackleSource.loop = true;
@@ -416,7 +401,7 @@
             crackleGain.connect(masterGain);
             crackleSource.start();
 
-            // continuous Ambient rain generator
+            // Continuous rain ambiance channel
             rainSource = audioCtx.createBufferSource();
             rainSource.buffer = noiseBuffer;
             rainSource.loop = true;
@@ -438,7 +423,7 @@
             rainGain.connect(masterGain);
             rainSource.start();
 
-            // Create Unified Global Melodic Delay Loop (Prevents feedback memory leaks)
+            // Unified delay loop (Zero layout dependencies)
             delayNode = audioCtx.createDelay(3.0);
             const secondsPerBeat = 60.0 / bpm;
             delayNode.delayTime.setValueAtTime(secondsPerBeat * 0.75, audioCtx.currentTime);
@@ -450,7 +435,6 @@
             delayFeedback.connect(delayNode);
             delayNode.connect(lofiFilter);
 
-            // Final Master out
             lofiFilter.connect(masterGain);
             masterGain.connect(audioCtx.destination);
         }
@@ -463,7 +447,6 @@
             osc.connect(gainNode);
             gainNode.connect(lofiFilter);
 
-            // Heavy down-tempo punch
             osc.frequency.setValueAtTime(135, time);
             osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.35);
 
@@ -473,8 +456,8 @@
             osc.start(time);
             osc.stop(time + 0.35);
 
-            animateVis(0, 38, "var(--neon-orange)");
-            animateVis(1, 32, "var(--neon-orange)");
+            animateVis(0, 38, "#f59e0b");
+            animateVis(1, 32, "#f59e0b");
         }
 
         function synthSnare(time, isRimshot = false) {
@@ -486,7 +469,6 @@
             osc.connect(oscGain);
             oscGain.connect(lofiFilter);
 
-            // Rimshots are much softer and higher pitched (perfect for lazy chillhop)
             const snarePitch = isRimshot ? 450 : 175;
             const toneVol = isRimshot ? 0.15 : 0.32;
             const duration = isRimshot ? 0.08 : 0.16;
@@ -497,7 +479,6 @@
             osc.start(time);
             osc.stop(time + duration);
 
-            // Noise snare crack
             const noise = audioCtx.createBufferSource();
             noise.buffer = noiseBuffer;
 
@@ -516,8 +497,8 @@
             noise.start(time);
             noise.stop(time + duration);
 
-            animateVis(3, isRimshot ? 15 : 28, "var(--neon-green)");
-            animateVis(4, isRimshot ? 12 : 24, "var(--neon-green)");
+            animateVis(3, isRimshot ? 15 : 28, "#10b981");
+            animateVis(4, isRimshot ? 12 : 24, "#10b981");
         }
 
         function synthHiHat(time, isOpen = false, isAccent = false) {
@@ -544,7 +525,7 @@
             noise.start(time);
             noise.stop(time + duration);
 
-            animateVis(isOpen ? 6 : 5, isOpen ? 22 : 12, "var(--neon-teal)");
+            animateVis(isOpen ? 6 : 5, isOpen ? 22 : 12, "#14b8a6");
         }
 
         function synthChord(time, chordIndices) {
@@ -552,21 +533,20 @@
             const targetMode = modes[currentModeKey];
             if (!targetMode) return;
 
-            chordIndices.forEach((index, chordPos) => {
+            chordIndices.forEach((index) => {
                 const baseFreq = targetMode.scale[index] || 261.63;
 
                 for (let oscCount = 0; oscCount < 2; oscCount++) {
                     const osc = audioCtx.createOscillator();
                     const oscGain = audioCtx.createGain();
 
-                    // Map voice shapes dynamically
                     if (currentSynthVoice === 'bells') {
                         osc.type = 'square';
                     } else if (currentSynthVoice === 'plucks') {
                         osc.type = 'triangle';
                     } else if (currentSynthVoice === 'sines') {
                         osc.type = 'sine';
-                    } else { // Rhodes style
+                    } else { 
                         osc.type = oscCount === 0 ? 'sine' : 'triangle';
                     }
 
@@ -576,10 +556,9 @@
                     osc.connect(oscGain);
                     oscGain.connect(lofiFilter);
 
-                    // Dynamic tremolo LFO for Rhodes Warmth
                     if (currentSynthVoice === 'rhodes') {
                         const tremoloLFO = audioCtx.createOscillator();
-                        tremoloLFO.frequency.setValueAtTime(4.8, time); // 4.8 Hz wobble
+                        tremoloLFO.frequency.setValueAtTime(4.8, time); 
                         const tremoloGain = audioCtx.createGain();
                         tremoloGain.gain.setValueAtTime(0.35, time); 
 
@@ -589,7 +568,6 @@
                         tremoloLFO.stop(time + 3.8);
                     }
 
-                    // Dynamic envelope curves according to chosen voice
                     oscGain.gain.setValueAtTime(0, time);
                     if (currentSynthVoice === 'plucks') {
                         oscGain.gain.linearRampToValueAtTime(0.07, time + 0.02);
@@ -597,10 +575,10 @@
                     } else if (currentSynthVoice === 'bells') {
                         oscGain.gain.linearRampToValueAtTime(0.06, time + 0.04);
                         oscGain.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
-                    } else if (currentSynthVoice === 'sines') { // Floating slow pads
+                    } else if (currentSynthVoice === 'sines') { 
                         oscGain.gain.linearRampToValueAtTime(0.08, time + 0.8);
                         oscGain.gain.setTargetAtTime(0, time + 2.0, 0.8);
-                    } else { // Warm Rhodes
+                    } else { 
                         oscGain.gain.linearRampToValueAtTime(0.12, time + 0.25);
                         oscGain.gain.setTargetAtTime(0, time + 1.8, 0.75);
                     }
@@ -610,7 +588,7 @@
                 }
             });
 
-            animateVis(2, 25, "var(--neon-peach)");
+            animateVis(2, 25, "#f8c291");
         }
 
         function synthBass(time, baseIndex) {
@@ -622,7 +600,6 @@
             const bassGain = audioCtx.createGain();
 
             osc.type = 'triangle';
-            // Scale notes down 1 octave for robust bass frequencies
             const bassFreq = targetMode.scale[baseIndex - 7] || targetMode.scale[0];
 
             osc.frequency.setValueAtTime(bassFreq, time);
@@ -647,7 +624,6 @@
             const osc = audioCtx.createOscillator();
             const melGain = audioCtx.createGain();
 
-            // Melody voice reflects the chosen synthesis patch
             if (currentSynthVoice === 'bells') {
                 osc.type = 'square';
             } else if (currentSynthVoice === 'plucks') {
@@ -660,7 +636,7 @@
 
             osc.connect(melGain);
             melGain.connect(lofiFilter);
-            melGain.connect(delayNode); // Route into unified global delay loop
+            melGain.connect(delayNode); 
 
             melGain.gain.setValueAtTime(0.0, time);
             
@@ -675,16 +651,14 @@
             osc.start(time);
             osc.stop(time + 1.2);
 
-            animateVis(7, 24, "var(--neon-teal)");
+            animateVis(7, 24, "#14b8a6");
         }
 
-        // Generates cohesive, human-like melodic sequences (motifs) instead of random noise
         function generateMelodicMotif() {
-            const melodyRange = [14, 16, 17, 18, 19, 21, 23, 24]; // Safe mid-upper pentatonic keys
+            const melodyRange = [14, 16, 17, 18, 19, 21, 23, 24]; 
             activeMotif = [];
-            motifDurationSteps = 16; // 1 full measure
+            motifDurationSteps = 16; 
 
-            // Choose a rhythmic phrase (e.g., played on step steps with syncopation)
             const phrases = [
                 [0, 3, 6, 8, 11],
                 [2, 4, 8, 10, 14],
@@ -701,19 +675,17 @@
 
         function stepClock() {
             const secondsPerBeat = 60.0 / bpm;
-            nextNoteTime += 0.25 * secondsPerBeat; // Progression index increments by 16th steps
+            nextNoteTime += 0.25 * secondsPerBeat; 
 
             currentStep++;
             if (currentStep === 16) {
                 currentStep = 0;
                 measureCount++;
 
-                // Step forward chord structure progression
                 if (activeProgression) {
                     activeChordIndex = (activeChordIndex + 1) % activeProgression.chords.length;
                 }
 
-                // Periodically update the melody call-and-response motif (every 2 measures)
                 if (measureCount % 2 === 0) {
                     generateMelodicMotif();
                 }
@@ -723,67 +695,58 @@
         function triggerProceduralStep(step, time) {
             if (!activeProgression) return;
 
-            // Apply MPC style timing swing offset to offbeats (odd steps)
             let swingOffset = 0;
             if (step % 2 !== 0) {
                 if (currentBeatStyle === "boombap") {
-                    swingOffset = 0.038 * (60.0 / bpm); // Classic lazy grit
+                    swingOffset = 0.038 * (60.0 / bpm); 
                 } else if (currentBeatStyle === "garage") {
-                    swingOffset = 0.05 * (60.0 / bpm); // Shuffled UK garage 2-step shuffle
+                    swingOffset = 0.05 * (60.0 / bpm); 
                 }
             }
             const playTime = time + swingOffset;
 
-            // 1. Chords and Deep Bass on Downbeat
             if (step === 0) {
                 const currentChord = activeProgression.chords[activeChordIndex];
                 synthChord(playTime, currentChord);
                 synthBass(playTime, currentChord[0]);
             }
 
-            // 2. Play current step's notes if it matches the generated melodic motif
             const motifEvent = activeMotif.find(m => m.step === step);
             if (motifEvent && Math.random() < 0.85) {
                 synthMelody(playTime, motifEvent.noteIdx);
             }
 
-            // 3. Dynamic Drum Beats Generation based on Genre Profile
             if (currentBeatStyle === "boombap") {
-                // Classic solid Boom Bap swing
                 if (step === 0 || step === 8 || (step === 11 && Math.random() < 0.45)) {
                     synthKick(playTime);
                 }
                 if (step === 4 || step === 12) {
-                    synthSnare(playTime, false); // Thick snare backbeat
+                    synthSnare(playTime, false); 
                 }
                 if (step % 2 === 0) {
                     synthHiHat(playTime, step === 14 && Math.random() < 0.4, step === 0 || step === 8);
                 }
             } else if (currentBeatStyle === "chillhop") {
-                // Lazy organic chillhop (incorporates quiet rimshots instead of heavy snares)
                 if (step === 0 || (step === 9 && Math.random() < 0.4)) {
                     synthKick(playTime);
                 }
                 if (step === 4 || step === 12) {
-                    synthSnare(playTime, true); // Rimshots for a cozy layout
+                    synthSnare(playTime, true); 
                 }
                 if (step % 4 === 0 || (step % 4 === 2 && Math.random() < 0.35)) {
                     synthHiHat(playTime, step === 14 && Math.random() < 0.25, false);
                 }
             } else if (currentBeatStyle === "garage") {
-                // Syncopated uptempo shuffled 2-step garage
                 if (step === 0 || step === 7 || step === 10 || (step === 14 && Math.random() < 0.3)) {
                     synthKick(playTime);
                 }
                 if (step === 4 || step === 12) {
                     synthSnare(playTime, false);
                 }
-                // Intricate triplet swing hat placement
                 if (step === 0 || step === 3 || step === 6 || step === 9 || step === 12 || step === 15) {
                     synthHiHat(playTime, step === 9 && Math.random() < 0.6, step === 3 || step === 9);
                 }
             }
-            // "beatless" does not play any drum elements
         }
 
         function scheduler() {
@@ -799,29 +762,23 @@
             isTransitioning = true;
             clockDisplay.innerText = "DECK: RETRANSLATING";
 
-            // Sweep lofi cutoff all the way down and mute volume to simulate tape deceleration
-            const sweepTime = 1.6; // seconds
+            const sweepTime = 1.6; 
             if (lofiFilter && masterGain) {
                 lofiFilter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + sweepTime);
                 masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + sweepTime);
             }
 
-            // Temporarily stop vinyl movement visual
             vinylDisc.classList.remove('vinyl-spin');
 
-            // Apply modifications once muted
             transitionTimeout = setTimeout(() => {
-                // Run procedural update callback
                 if (onDone) onDone();
 
-                // Re-power deck
                 if (lofiFilter && masterGain) {
                     lofiFilter.frequency.setValueAtTime(100, audioCtx.currentTime);
                     lofiFilter.frequency.exponentialRampToValueAtTime(parseFloat(sliderCutoff.value), audioCtx.currentTime + 1.2);
                     masterGain.gain.linearRampToValueAtTime(parseFloat(sliderVolume.value), audioCtx.currentTime + 1.2);
                 }
 
-                // Restart vinyl movement
                 vinylDisc.classList.add('vinyl-spin');
                 isTransitioning = false;
                 clockDisplay.innerText = "DECK: BROADCASTING";
@@ -829,17 +786,14 @@
         }
 
         function randomizeSettings() {
-            // Option sets available for procedural generation
             const vibes = ["minor", "major", "dorian", "phrygian"];
             const beats = ["boombap", "chillhop", "garage", "beatless"];
             const synths = ["rhodes", "sines", "bells", "plucks"];
 
-            // Pick random choices
             currentModeKey = vibes[Math.floor(Math.random() * vibes.length)];
             currentBeatStyle = beats[Math.floor(Math.random() * beats.length)];
             currentSynthVoice = synths[Math.floor(Math.random() * synths.length)];
 
-            // Push choices back into HTML dropdown indicators
             selectVibe.value = currentModeKey;
             selectBeat.value = currentBeatStyle;
             selectSynth.value = currentSynthVoice;
@@ -847,32 +801,25 @@
 
         function triggerSongChange() {
             simulateTapeStopAndChange(() => {
-                // Instantly randomize composition rules upon skipping
                 randomizeSettings();
 
-                // Randomly rotate track details
                 const trackName = makeTrackTitle();
                 trackTitleDisplay.innerText = trackName;
 
-                // Lock BPM to distinct signature ranges based on active beat style
                 applyStyleTempo();
 
-                // Gently update delay feedback time to coordinate with the newly generated BPM
                 if (audioCtx && delayNode) {
                     const secondsPerBeat = 60.0 / bpm;
                     delayNode.delayTime.setTargetAtTime(secondsPerBeat * 0.75, audioCtx.currentTime, 1.0);
                 }
 
-                // Update UI layout parameters
                 const targetMode = modes[currentModeKey];
                 scaleDisplay.innerText = `VIBE: ${targetMode.name}`;
                 activeProgression = targetMode.progressions[Math.floor(Math.random() * targetMode.progressions.length)];
                 activeChordIndex = 0;
 
-                // Generate new motif for fresh track melody path
                 generateMelodicMotif();
 
-                // Reset auto-skip elapsed metrics
                 songTimeElapsed = 0;
                 progressBar.style.width = `0%`;
             });
@@ -880,15 +827,18 @@
 
         function applyStyleTempo() {
             if (currentBeatStyle === "garage") {
-                bpm = Math.floor(Math.random() * 6) + 112; // Uptempo garage shuffle (112-118 BPM)
+                bpm = Math.floor(Math.random() * 6) + 112; 
             } else if (currentBeatStyle === "boombap") {
-                bpm = Math.floor(Math.random() * 6) + 80;  // Classic midtempo boom bap grit (80-86 BPM)
+                bpm = Math.floor(Math.random() * 6) + 80;  
             } else if (currentBeatStyle === "chillhop") {
-                bpm = Math.floor(Math.random() * 6) + 68;  // Slow, lazy organic head-nod (68-74 BPM)
-            } else { // beatless
-                bpm = Math.floor(Math.random() * 6) + 55;  // Slowly evolving ambient drift (55-61 BPM)
+                bpm = Math.floor(Math.random() * 6) + 68;  
+            } else { 
+                bpm = Math.floor(Math.random() * 6) + 55;  
             }
             bpmDisplay.innerText = `BPM: ${bpm}`;
+            
+            const durationSec = 60 / bpm * 4; 
+            vinylDisc.style.setProperty('--spin-duration', `${durationSec}s`);
         }
 
         function startPlaylistTimer() {
@@ -900,7 +850,6 @@
                 const percentage = (songTimeElapsed / autoSkipDuration) * 100;
                 progressBar.style.width = `${percentage}%`;
 
-                // Calculate display countdown
                 const remaining = Math.max(0, autoSkipDuration - songTimeElapsed);
                 const mins = Math.floor(remaining / 60);
                 const secs = remaining % 60;
@@ -929,13 +878,10 @@
                 playBtn.classList.add('from-teal-500', 'to-cyan-500');
                 clockDisplay.innerText = "DECK: BROADCASTING";
                 
-                // Animate elements
                 vinylDisc.classList.add('vinyl-spin');
 
-                // Apply correct style-specific BPM
                 applyStyleTempo();
 
-                // Procedural target triggers
                 const targetMode = modes[currentModeKey];
                 activeProgression = targetMode.progressions[Math.floor(Math.random() * targetMode.progressions.length)];
                 activeChordIndex = 0;
@@ -943,12 +889,17 @@
                 trackTitleDisplay.innerText = makeTrackTitle();
                 scaleDisplay.innerText = `VIBE: ${targetMode.name}`;
 
-                // Generate primary melodic motif phrase
                 generateMelodicMotif();
 
                 nextNoteTime = audioCtx.currentTime + 0.1;
                 scheduler();
                 startPlaylistTimer();
+                
+                // Initialize the visualizer's GPU decay loop safely
+                if (!decayLoopActive) {
+                    decayLoopActive = true;
+                    requestAnimationFrame(updateVisualizerDecay);
+                }
             } else {
                 playBtnText.innerText = "Tune In";
                 playBtn.classList.remove('from-teal-500', 'to-cyan-500');
@@ -965,14 +916,12 @@
 
         skipBtn.addEventListener('click', () => {
             if (!isPlaying) {
-                // If not playing, instantly trigger tune in and randomize track
                 handlePlayToggle();
                 return;
             }
             triggerSongChange();
         });
 
-        // Dropdown Parameter Listeners
         selectVibe.addEventListener('change', (e) => {
             currentModeKey = e.target.value;
             const targetMode = modes[currentModeKey];
@@ -1001,7 +950,6 @@
             progressBar.style.width = `0%`;
         });
 
-        // Real-time parameter slider updates
         sliderVolume.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             document.getElementById('vol-lbl').innerText = `${Math.round(val * 100)}%`;
@@ -1034,20 +982,34 @@
             }
         });
 
-        function animateVis(index, height, colorClass) {
-            const bar = visualizerBars[index];
-            if (!bar) return;
+        // Pure GPU Decay Loop — eliminates layout reflows and timer race conditions
+        function updateVisualizerDecay() {
+            if (!decayLoopActive) return;
 
-            // Map height safely to a scaleY factor (max height is 32px)
+            for (let i = 0; i < 12; i++) {
+                // Smoothly decay scale factor back to the baseline of 0.125
+                barScales[i] += (0.125 - barScales[i]) * 0.12; 
+                
+                // Set scaleY transform on GPU composite plane
+                visualizerBars[i].style.transform = `scaleY(${barScales[i]})`;
+                
+                // Decay color transparency back to fallback gray
+                if (barScales[i] < 0.22) {
+                    visualizerBars[i].style.backgroundColor = 'rgba(63, 63, 70, 0.5)';
+                }
+            }
+            requestAnimationFrame(updateVisualizerDecay);
+        }
+
+        function animateVis(index, height, colorClass) {
             const targetHeight = Math.min(32, height);
             const scaleY = targetHeight / 32;
 
-            bar.style.transform = `scaleY(${scaleY})`;
-            bar.style.backgroundColor = colorClass;
-            setTimeout(() => {
-                bar.style.transform = 'scaleY(0.125)';
-                bar.style.backgroundColor = 'rgba(63, 63, 70, 0.5)';
-            }, 150);
+            if (index < barScales.length) {
+                // Directly bump state values; the RAF loop handles smooth graphics rendering
+                barScales[index] = scaleY;
+                visualizerBars[index].style.backgroundColor = colorClass;
+            }
         }
 
     </script>
