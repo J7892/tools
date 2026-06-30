@@ -15,7 +15,7 @@
             background-image: radial-gradient(circle at center, #150f24 0%, #050407 100%);
         }
         
-        /* Force hardware compositing onAnimating elements to completely isolate them from layout calculations */
+        /* Force hardware compositing on animating elements to completely isolate them from layout calculations */
         .hardware-accelerated {
             transform: translate3d(0,0,0);
             backface-visibility: hidden;
