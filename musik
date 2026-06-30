@@ -3,206 +3,1023 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generative Lo-Fi Player</title>
+    <title>Cozy Procedural Lo-Fi Radio</title>
+    <!-- Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
     <style>
         body {
-            background-color: #2b2a33;
-            color: #f8c291;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0a0f;
+            background-image: radial-gradient(circle at center, #1e152a 0%, #08070b 100%);
+        }
+        
+        .glow-orange {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+        
+        .glow-teal {
+            box-shadow: 0 0 15px rgba(20, 184, 166, 0.2);
+            border-color: rgba(20, 184, 166, 0.4);
+        }
+        
+        .mono-font {
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* Vinyl Spin animation with speed adjustments dynamically via JS */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .vinyl-spin {
+            animation: spin var(--spin-duration, 4s) linear infinite;
+        }
+
+        /* Ambient subtle pulse */
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+        .pulse-ambient {
+            animation: pulse-soft 3s infinite ease-in-out;
+        }
+
+        /* Strict visualizer boundaries to prevent layout shift */
+        .visualizer-container {
+            height: 48px; /* Strict fixed height */
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
-        #player-ui {
-            background: #1e1d23;
-            padding: 30px;
+            align-items: flex-end;
+            justify-content: space-between;
+            background-color: rgba(9, 9, 11, 0.6);
+            border: 1px solid rgba(63, 63, 70, 0.3);
             border-radius: 12px;
-            box-shadow: 0px 10px 30px rgba(0,0,0,0.5);
-            text-align: center;
-            width: 320px;
-            border: 1px solid #3a3942;
-        }
-        h1 {
-            font-size: 1.5rem;
-            margin-top: 0;
-            color: #e58e26;
-        }
-        #track-info {
-            background: #000;
-            color: #78e08f;
-            padding: 10px;
-            border-radius: 6px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-            border: 1px solid #38ada9;
-        }
-        button {
-            background: #e55039;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
+            padding: 8px 12px;
+            box-sizing: border-box;
+            overflow: hidden;
             width: 100%;
         }
-        button:hover {
-            background: #eb2f06;
-        }
-        .controls {
-            margin-top: 20px;
-            text-align: left;
-        }
-        .controls label {
-            display: block;
-            font-size: 0.85rem;
-            margin-bottom: 5px;
-            color: #b8b8b8;
-        }
-        input[type="range"] {
-            width: 100%;
-            accent-color: #e55039;
+
+        .visualizer-container .bar {
+            flex: 1;
+            margin: 0 2px;
+            height: 4px; /* Default height */
+            background-color: rgba(63, 63, 70, 0.5);
+            border-radius: 4px;
+            transition: height 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.15), background-color 0.1s ease;
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen text-amber-100 flex flex-col justify-center items-center p-4 overflow-y-auto">
 
-<div id="player-ui">
-    <h1>Lo-Fi Generator</h1>
-    <div id="track-info">Status: Paused<br>BPM: -- | Chords: --</div>
-    <button id="play-btn">Play</button>
-    
-    <div class="controls">
-        <label for="volume">Master Volume</label>
-        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7">
+    <div class="w-full max-w-lg bg-zinc-950/80 backdrop-blur-xl border-2 border-zinc-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden flex flex-col gap-6">
+        
+        <!-- Ambient Cassette Accent Header -->
+        <div class="flex justify-between items-center border-b border-zinc-800/80 pb-4">
+            <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-red-500 animate-ping"></span>
+                <span class="text-xs uppercase font-semibold text-zinc-500 tracking-wider mono-font">Procedural FM • Live Composition</span>
+            </div>
+            <div class="text-xs uppercase tracking-widest text-teal-400 font-bold mono-font" id="clock-display">
+                DECK: COMPILING
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row items-center gap-6 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800/50">
+            <!-- Rotating Vinyl Deck -->
+            <div class="relative w-28 h-28 shrink-0 flex-none">
+                <div id="vinyl-disc" class="w-full h-full rounded-full bg-gradient-to-r from-zinc-800 via-black to-zinc-900 flex items-center justify-center shadow-lg relative border-4 border-zinc-950">
+                    <!-- Vinyl Grooves -->
+                    <div class="absolute inset-2 border border-zinc-800/40 rounded-full"></div>
+                    <div class="absolute inset-4 border border-zinc-800/30 rounded-full"></div>
+                    <div class="absolute inset-6 border border-zinc-800/20 rounded-full"></div>
+                    <!-- Vinyl Center Sticker -->
+                    <div class="w-10 h-10 rounded-full bg-amber-500/90 flex items-center justify-center border-2 border-zinc-950">
+                        <div class="w-2.5 h-2.5 rounded-full bg-zinc-950"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Track Display Details -->
+            <div class="flex-grow w-full text-center md:text-left flex flex-col gap-1.5 min-w-0">
+                <div id="track-title" class="text-lg font-bold text-amber-400 truncate tracking-wide leading-snug">Station Off-Air</div>
+                <div class="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1 text-xs mono-font text-zinc-400">
+                    <span id="bpm-display">BPM: --</span>
+                    <span>•</span>
+                    <span id="scale-display" class="truncate max-w-[150px]">VIBE: --</span>
+                </div>
+                
+                <!-- Simulated Cassette Playback Playlist Progress Slider -->
+                <div class="mt-2 w-full">
+                    <div class="flex justify-between items-center text-[10px] text-zinc-500 uppercase tracking-wider mb-1 font-semibold mono-font">
+                        <span>Track Progress</span>
+                        <span id="time-left">04:00</span>
+                    </div>
+                    <div class="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                        <div id="track-progress-bar" class="w-0 h-full bg-gradient-to-r from-amber-500 to-teal-400 transition-all duration-1000 ease-linear rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- Vibe Mood Selector -->
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Harmonic Vibe</label>
+                <select id="select-vibe" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium">
+                    <option value="minor">Melancholic (Natural Minor)</option>
+                    <option value="major">Warm & Cozy (Major)</option>
+                    <option value="dorian">Hypnotic (Dorian Mode)</option>
+                    <option value="phrygian">Mysterious (Phrygian Mode)</option>
+                </select>
+            </div>
+
+            <!-- Drum Beat Pattern Selector -->
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Drum Rhythm Style</label>
+                <select id="select-beat" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium">
+                    <option value="boombap">Classic Boom Bap (MPC Swing)</option>
+                    <option value="chillhop">Slow Organic Chill Hop (Lazy Layout)</option>
+                    <option value="garage">Garage Swing Grooves (Uptempo 2-Step)</option>
+                    <option value="beatless">Atmospheric Beatless Ambient</option>
+                </select>
+            </div>
+
+            <!-- Synth Voice Selector -->
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Synth Lead Voice</label>
+                <select id="select-synth" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium">
+                    <option value="rhodes">Warm Electric Rhodes</option>
+                    <option value="sines">Floating Dream Sines</option>
+                    <option value="bells">Filtered Square Bells</option>
+                    <option value="plucks">Plucky Triangles</option>
+                </select>
+            </div>
+
+            <!-- Radio Auto-skip Settings -->
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider mono-font">Radio Auto-Skip Interval</label>
+                <select id="select-interval" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium">
+                    <option value="30">30 Seconds (Fast Demo Mode)</option>
+                    <option value="120">2 Minutes</option>
+                    <option value="240" selected>4 Minutes (Standard Radio)</option>
+                    <option value="300">5 Minutes</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-4">
+            <div class="grid grid-cols-3 gap-3">
+                <!-- Transition/Skip Track -->
+                <button id="skip-btn" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 active:scale-95 transition-all py-3.5 px-4 rounded-2xl font-bold uppercase tracking-wider text-xs border border-zinc-800 flex justify-center items-center gap-2">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                    Skip Track
+                </button>
+
+                <!-- Primary Play Trigger Toggle -->
+                <button id="play-btn" class="col-span-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:brightness-110 text-black active:scale-95 transition-all py-3.5 px-6 rounded-2xl font-extrabold uppercase tracking-widest text-sm flex justify-center items-center gap-2 shadow-lg">
+                    <span id="play-btn-icon" class="flex items-center">
+                        <svg class="w-4 h-4 fill-current mr-1" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </span>
+                    <span id="play-btn-text">Tune In</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 border-t border-zinc-900 pt-4">
+            
+            <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
+                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase mono-font">
+                    <span>Master Gain</span>
+                    <span id="vol-lbl">70%</span>
+                </div>
+                <input type="range" id="slider-volume" min="0" max="1" step="0.01" value="0.7">
+            </div>
+
+            <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
+                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase mono-font">
+                    <span>Cozy Rain FX</span>
+                    <span id="rain-lbl">40%</span>
+                </div>
+                <input type="range" id="slider-rain" min="0" max="0.15" step="0.005" value="0.06">
+            </div>
+
+            <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
+                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase mono-font">
+                    <span>Vinyl Crackle</span>
+                    <span id="crackle-lbl">25%</span>
+                </div>
+                <input type="range" id="slider-crackle" min="0" max="0.04" step="0.002" value="0.01">
+            </div>
+
+            <div class="flex flex-col gap-1 bg-zinc-950 p-2.5 rounded-xl border border-zinc-900/65">
+                <div class="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase mono-font">
+                    <span>Muffled Cutoff</span>
+                    <span id="cutoff-lbl">1.8k</span>
+                </div>
+                <input type="range" id="slider-cutoff" min="500" max="4000" step="50" value="1800">
+            </div>
+        </div>
+
+        <!-- Fixed-height visualizer container preventing height bounces -->
+        <div class="visualizer-container" id="visualizer">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+
     </div>
-</div>
 
-<script>
-    let audioCtx;
-    let masterGain;
-    let lofiFilter;
-    let isPlaying = false;
-    
-    // Sequencer variables
-    let currentStep = 0;
-    let measureCount = 0;
-    let nextNoteTime = 0.0;
-    let bpm = 75;
-    let lookahead = 25.0; // ms
-    let scheduleAheadTime = 0.1; // s
-    let timerID;
-
-    // Music Theory & Song Structure
-    // C Minor scale frequencies
-    const scales = {
-        c_minor: [130.81, 146.83, 155.56, 174.61, 196.00, 207.65, 233.08, 261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25]
-    };
-    
-    // Abstract chord progressions (indices of the scale array)
-    const progressions = [
-        [[0, 2, 4], [4, 6, 8], [5, 7, 9], [3, 5, 7]], // i - v - VI - iv
-        [[0, 2, 4], [5, 7, 9], [2, 4, 6], [4, 6, 8]], // i - VI - III - v
-        [[5, 7, 9], [3, 5, 7], [0, 2, 4], [4, 6, 8]]  // VI - iv - i - v
-    ];
-
-    let currentProgression = progressions[0];
-    let currentDrumDensity = 1;
-
-    const playBtn = document.getElementById('play-btn');
-    const volumeSlider = document.getElementById('volume');
-    const trackInfo = document.getElementById('track-info');
-
-    // Initialize Audio
-    function initAudio() {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    <script>
+        let audioCtx;
+        let masterGain;
+        let lofiFilter;
         
-        masterGain = audioCtx.createGain();
-        masterGain.gain.value = volumeSlider.value;
-        
-        // The magic lo-fi filter (cuts high frequencies)
-        lofiFilter = audioCtx.createBiquadFilter();
-        lofiFilter.type = 'lowpass';
-        lofiFilter.frequency.value = 2500; 
-        lofiFilter.Q.value = 1;
+        // Channel strips
+        let crackleSource, crackleGain;
+        let rainSource, rainGain;
+        let delayNode, delayFeedback;
+        let noiseBuffer; // Cached memory resource for performance
 
-        // Vinyl/Tape hiss logic (very subtle background noise)
-        const bufferSize = audioCtx.sampleRate * 2;
-        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1;
+        // State machine variables
+        let isPlaying = false;
+        let isTransitioning = false;
+        let transitionTimeout = null;
+
+        // Playback Clock Settings
+        let currentStep = 0;
+        let measureCount = 0;
+        let nextNoteTime = 0.0;
+        let bpm = 74;
+        const lookahead = 25.0; // ms
+        const scheduleAheadTime = 0.15; // s
+        let timerID;
+
+        // Playlist progression timers
+        let songTimeElapsed = 0; // seconds
+        let autoSkipDuration = 240; // seconds (default 4 min)
+        let timerIntervalID;
+
+        // Call-and-Response Melodic Motif State
+        let activeMotif = []; // Array of { step, noteIdx }
+        let motifDurationSteps = 16; // Loop every 1 or 2 measures
+
+        // Custom Composition Parameter Presets (Emphasizing unique chord scales and structures)
+        const modes = {
+            minor: {
+                name: "Natural Minor (Melancholic)",
+                scale: [
+                    65.41, 73.42, 77.78, 87.31, 98.00, 103.83, 116.54, // Octave 2
+                    130.81, 146.83, 155.56, 174.61, 196.00, 207.65, 233.08, // Octave 3 (Chord bases)
+                    261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, // Octave 4 (Melody)
+                    523.25, 587.33, 622.25, 698.46, 783.99, 830.61, 932.33  // Octave 5
+                ],
+                // Melancholic progressions using rich Minor 9th / 11th voicings
+                progressions: [
+                    { chords: [[7, 10, 14, 17], [10, 13, 17, 21], [11, 14, 18, 22], [9, 12, 16, 19]] },
+                    { chords: [[7, 10, 14, 17], [11, 14, 18, 22], [8, 11, 15, 18], [10, 13, 17, 21]] }
+                ]
+            },
+            major: {
+                name: "Warm Major (Sunny & Cozy)",
+                scale: [
+                    65.41, 73.42, 82.41, 87.31, 98.00, 110.00, 123.47,
+                    130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94,
+                    261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88,
+                    523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77
+                ],
+                // Uplifting chord voicings using Major 7th and Major 9th voicings
+                progressions: [
+                    { chords: [[7, 11, 14, 18], [10, 14, 17, 21], [8, 12, 15, 19], [9, 13, 16, 20]] },
+                    { chords: [[7, 11, 14, 18], [9, 13, 16, 20], [10, 14, 17, 21], [10, 14, 17, 21]] }
+                ]
+            },
+            dorian: {
+                name: "Dorian Mode (Jazzy Hypnotic)",
+                scale: [
+                    65.41, 73.42, 77.78, 87.31, 98.00, 110.00, 116.54,
+                    130.81, 146.83, 155.56, 174.61, 196.00, 220.00, 233.08,
+                    261.63, 293.66, 311.13, 349.23, 392.00, 440.00, 466.16,
+                    523.25, 587.33, 622.25, 698.46, 783.99, 880.00, 932.33
+                ],
+                // Modal jazz style voicings (minor chords emphasizing the distinct major 6th)
+                progressions: [
+                    { chords: [[7, 10, 14, 19], [12, 16, 19, 23], [10, 13, 17, 21], [9, 12, 16, 19]] }
+                ]
+            },
+            phrygian: {
+                name: "Phrygian Mode (Mysterious Dark)",
+                scale: [
+                    65.41, 69.30, 77.78, 87.31, 98.00, 103.83, 116.54,
+                    130.81, 138.59, 155.56, 174.61, 196.00, 207.65, 233.08,
+                    261.63, 277.18, 311.13, 349.23, 392.00, 415.30, 466.16,
+                    523.25, 554.37, 622.25, 698.46, 783.99, 830.61, 932.33
+                ],
+                // Dark progressions emphasizing the tense flat-2nd interval
+                progressions: [
+                    { chords: [[7, 10, 14, 17], [8, 11, 14, 18], [10, 13, 17, 21], [7, 10, 14, 17]] }
+                ]
+            }
+        };
+
+        // TRACK NAME GENERATION
+        const adjectives = ["Midnight", "Autumn", "Distant", "Cozy", "Dreamy", "Rainy", "Tokyo", "Silent", "Lost", "Nostalgic", "Sleepless", "Subway", "Vintage", "Warm", "Urban", "Misty"];
+        const nouns = ["Coffee", "Skyline", "Transit", "Memory", "Raindrops", "Drive", "Loft", "Nostalgia", "Window", "Blanket", "Cafe", "Thoughts", "Whisper", "Walk", "Streets", "Station"];
+
+        function makeTrackTitle() {
+            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+            const noun = nouns[Math.floor(Math.random() * nouns.length)];
+            return `🎧 ${adj} ${noun}`;
         }
-        let noiseSource = audioCtx.createBufferSource();
-        noiseSource.buffer = noiseBuffer;
-        noiseSource.loop = true;
-        
-        let noiseFilter = audioCtx.createBiquadFilter();
-        noiseFilter.type = 'bandpass';
-        noiseFilter.frequency.value = 1000;
-        
-        let noiseGain = audioCtx.createGain();
-        noiseGain.gain.value = 0.005; // Very quiet
-        
-        noiseSource.connect(noiseFilter);
-        noiseFilter.connect(noiseGain);
-        noiseGain.connect(lofiFilter);
-        noiseSource.start();
 
-        lofiFilter.connect(masterGain);
-        masterGain.connect(audioCtx.destination);
-    }
+        // Selected interactive dynamic presets
+        let currentModeKey = "minor";
+        let currentBeatStyle = "boombap";
+        let currentSynthVoice = "rhodes";
+        let activeProgression = null;
+        let activeChordIndex = 0;
 
-    // Drum Synths
-    function playKick(time) {
-        const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        osc.connect(gainNode);
-        gainNode.connect(lofiFilter);
+        // Dom Elements binding
+        const selectVibe = document.getElementById('select-vibe');
+        const selectBeat = document.getElementById('select-beat');
+        const selectSynth = document.getElementById('select-synth');
+        const selectInterval = document.getElementById('select-interval');
+        const playBtn = document.getElementById('play-btn');
+        const playBtnText = document.getElementById('play-btn-text');
+        const skipBtn = document.getElementById('skip-btn');
+        const trackTitleDisplay = document.getElementById('track-title');
+        const clockDisplay = document.getElementById('clock-display');
+        const bpmDisplay = document.getElementById('bpm-display');
+        const scaleDisplay = document.getElementById('scale-display');
+        const progressBar = document.getElementById('track-progress-bar');
+        const timeLeftDisplay = document.getElementById('time-left');
+        const vinylDisc = document.getElementById('vinyl-disc');
+        const visualizerBars = document.querySelectorAll('.bar');
 
-        osc.frequency.setValueAtTime(150, time);
-        osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
-        
-        gainNode.gain.setValueAtTime(1, time);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
-        
-        osc.start(time);
-        osc.stop(time + 0.5);
-    }
+        // Parameter sliders mapping
+        const sliderVolume = document.getElementById('slider-volume');
+        const sliderRain = document.getElementById('slider-rain');
+        const sliderCrackle = document.getElementById('slider-crackle');
+        const sliderCutoff = document.getElementById('slider-cutoff');
 
-    function playSnare(time) {
-        // Snare is composed of a tone and a noise burst
-        const osc = audioCtx.createOscillator();
-        const oscGain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.connect(oscGain);
-        oscGain.connect(lofiFilter);
-        
-        osc.frequency.setValueAtTime(250, time);
-        oscGain.gain.setValueAtTime(0.5, time);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
-        osc.start(time);
-        osc.stop(time + 0.2);
+        function initAudioPipeline() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            masterGain = audioCtx.createGain();
+            masterGain.gain.setValueAtTime(parseFloat(sliderVolume.value), audioCtx.currentTime);
 
-        // Noise
-        const bufferSize = audioCtx.sampleRate * 0.2; 
-        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
-        
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = noiseBuffer;
-        const noiseFilter = audioCtx.createBiquadFilter();
-        noiseFilter.type = 'highpass';
-        noiseFilter.frequency.value = 1000;
-        const noiseGain = audioCtx.createGain();
-        
-        noise.connect(noiseFilter);
-        noiseNormally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
+            lofiFilter = audioCtx.createBiquadFilter();
+            lofiFilter.type = 'lowpass';
+            lofiFilter.frequency.setValueAtTime(parseFloat(sliderCutoff.value), audioCtx.currentTime);
+            lofiFilter.Q.setValueAtTime(0.5, audioCtx.currentTime);
+
+            // Pre-cache white noise buffer to prevent memory exhaustion
+            const bufferSize = audioCtx.sampleRate * 2;
+            noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const channelData = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                channelData[i] = Math.random() * 2 - 1;
+            }
+
+            // continuous Crackle vinyl simulator
+            crackleSource = audioCtx.createBufferSource();
+            crackleSource.buffer = noiseBuffer;
+            crackleSource.loop = true;
+            
+            const crackleFilter = audioCtx.createBiquadFilter();
+            crackleFilter.type = 'bandpass';
+            crackleFilter.frequency.setValueAtTime(1600, audioCtx.currentTime);
+            crackleFilter.Q.setValueAtTime(3.5, audioCtx.currentTime);
+
+            crackleGain = audioCtx.createGain();
+            crackleGain.gain.setValueAtTime(parseFloat(sliderCrackle.value), audioCtx.currentTime);
+
+            crackleSource.connect(crackleFilter);
+            crackleFilter.connect(crackleGain);
+            crackleGain.connect(masterGain);
+            crackleSource.start();
+
+            // continuous Ambient rain generator
+            rainSource = audioCtx.createBufferSource();
+            rainSource.buffer = noiseBuffer;
+            rainSource.loop = true;
+
+            const rainFilterLow = audioCtx.createBiquadFilter();
+            rainFilterLow.type = 'lowpass';
+            rainFilterLow.frequency.setValueAtTime(450, audioCtx.currentTime);
+
+            const rainFilterHigh = audioCtx.createBiquadFilter();
+            rainFilterHigh.type = 'highpass';
+            rainFilterHigh.frequency.setValueAtTime(140, audioCtx.currentTime);
+
+            rainGain = audioCtx.createGain();
+            rainGain.gain.setValueAtTime(parseFloat(sliderRain.value), audioCtx.currentTime);
+
+            rainSource.connect(rainFilterLow);
+            rainFilterLow.connect(rainFilterHigh);
+            rainFilterHigh.connect(rainGain);
+            rainGain.connect(masterGain);
+            rainSource.start();
+
+            // Create Unified Global Melodic Delay Loop (Prevents feedback memory leaks)
+            delayNode = audioCtx.createDelay(3.0);
+            const secondsPerBeat = 60.0 / bpm;
+            delayNode.delayTime.setValueAtTime(secondsPerBeat * 0.75, audioCtx.currentTime);
+
+            delayFeedback = audioCtx.createGain();
+            delayFeedback.gain.setValueAtTime(0.35, audioCtx.currentTime);
+
+            delayNode.connect(delayFeedback);
+            delayFeedback.connect(delayNode);
+            delayNode.connect(lofiFilter);
+
+            // Final Master out
+            lofiFilter.connect(masterGain);
+            masterGain.connect(audioCtx.destination);
+        }
+
+        function synthKick(time) {
+            if (isTransitioning) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(lofiFilter);
+
+            // Heavy down-tempo punch
+            osc.frequency.setValueAtTime(135, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.35);
+
+            gainNode.gain.setValueAtTime(1.0, time);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.35);
+
+            osc.start(time);
+            osc.stop(time + 0.35);
+
+            animateVis(0, 38, "var(--neon-orange)");
+            animateVis(1, 32, "var(--neon-orange)");
+        }
+
+        function synthSnare(time, isRimshot = false) {
+            if (isTransitioning) return;
+            
+            const osc = audioCtx.createOscillator();
+            const oscGain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.connect(oscGain);
+            oscGain.connect(lofiFilter);
+
+            // Rimshots are much softer and higher pitched (perfect for lazy chillhop)
+            const snarePitch = isRimshot ? 450 : 175;
+            const toneVol = isRimshot ? 0.15 : 0.32;
+            const duration = isRimshot ? 0.08 : 0.16;
+
+            osc.frequency.setValueAtTime(snarePitch, time);
+            oscGain.gain.setValueAtTime(toneVol, time);
+            oscGain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+            osc.start(time);
+            osc.stop(time + duration);
+
+            // Noise snare crack
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer;
+
+            const snareFilter = audioCtx.createBiquadFilter();
+            snareFilter.type = 'highpass';
+            snareFilter.frequency.setValueAtTime(isRimshot ? 2200 : 1200, time);
+
+            const snareGain = audioCtx.createGain();
+            snareGain.gain.setValueAtTime(isRimshot ? 0.08 : 0.28, time);
+            snareGain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+            noise.connect(snareFilter);
+            snareFilter.connect(snareGain);
+            snareGain.connect(lofiFilter);
+
+            noise.start(time);
+            noise.stop(time + duration);
+
+            animateVis(3, isRimshot ? 15 : 28, "var(--neon-green)");
+            animateVis(4, isRimshot ? 12 : 24, "var(--neon-green)");
+        }
+
+        function synthHiHat(time, isOpen = false, isAccent = false) {
+            if (isTransitioning) return;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer;
+
+            const hpFilter = audioCtx.createBiquadFilter();
+            hpFilter.type = 'bandpass';
+            hpFilter.frequency.setValueAtTime(isOpen ? 6500 : 8000, time);
+
+            const hatGain = audioCtx.createGain();
+            const duration = isOpen ? 0.26 : 0.04;
+            let volume = isOpen ? 0.12 : 0.06;
+            if (isAccent) volume *= 1.8;
+
+            hatGain.gain.setValueAtTime(volume, time);
+            hatGain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+            noise.connect(hpFilter);
+            hpFilter.connect(hatGain);
+            hatGain.connect(lofiFilter);
+
+            noise.start(time);
+            noise.stop(time + duration);
+
+            animateVis(isOpen ? 6 : 5, isOpen ? 22 : 12, "var(--neon-teal)");
+        }
+
+        function synthChord(time, chordIndices) {
+            if (isTransitioning) return;
+            const targetMode = modes[currentModeKey];
+            if (!targetMode) return;
+
+            chordIndices.forEach((index, chordPos) => {
+                const baseFreq = targetMode.scale[index] || 261.63;
+
+                for (let oscCount = 0; oscCount < 2; oscCount++) {
+                    const osc = audioCtx.createOscillator();
+                    const oscGain = audioCtx.createGain();
+
+                    // Map voice shapes dynamically
+                    if (currentSynthVoice === 'bells') {
+                        osc.type = 'square';
+                    } else if (currentSynthVoice === 'plucks') {
+                        osc.type = 'triangle';
+                    } else if (currentSynthVoice === 'sines') {
+                        osc.type = 'sine';
+                    } else { // Rhodes style
+                        osc.type = oscCount === 0 ? 'sine' : 'triangle';
+                    }
+
+                    osc.frequency.setValueAtTime(baseFreq, time);
+                    osc.detune.setValueAtTime((Math.random() - 0.5) * 14, time);
+
+                    osc.connect(oscGain);
+                    oscGain.connect(lofiFilter);
+
+                    // Dynamic tremolo LFO for Rhodes Warmth
+                    if (currentSynthVoice === 'rhodes') {
+                        const tremoloLFO = audioCtx.createOscillator();
+                        tremoloLFO.frequency.setValueAtTime(4.8, time); // 4.8 Hz wobble
+                        const tremoloGain = audioCtx.createGain();
+                        tremoloGain.gain.setValueAtTime(0.35, time); 
+
+                        tremoloLFO.connect(tremoloGain);
+                        tremoloGain.connect(oscGain.gain);
+                        tremoloLFO.start(time);
+                        tremoloLFO.stop(time + 3.8);
+                    }
+
+                    // Dynamic envelope curves according to chosen voice
+                    oscGain.gain.setValueAtTime(0, time);
+                    if (currentSynthVoice === 'plucks') {
+                        oscGain.gain.linearRampToValueAtTime(0.07, time + 0.02);
+                        oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.7);
+                    } else if (currentSynthVoice === 'bells') {
+                        oscGain.gain.linearRampToValueAtTime(0.06, time + 0.04);
+                        oscGain.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
+                    } else if (currentSynthVoice === 'sines') { // Floating slow pads
+                        oscGain.gain.linearRampToValueAtTime(0.08, time + 0.8);
+                        oscGain.gain.setTargetAtTime(0, time + 2.0, 0.8);
+                    } else { // Warm Rhodes
+                        oscGain.gain.linearRampToValueAtTime(0.12, time + 0.25);
+                        oscGain.gain.setTargetAtTime(0, time + 1.8, 0.75);
+                    }
+
+                    osc.start(time);
+                    osc.stop(time + 3.8);
+                }
+            });
+
+            animateVis(2, 25, "var(--neon-peach)");
+        }
+
+        function synthBass(time, baseIndex) {
+            if (isTransitioning) return;
+            const targetMode = modes[currentModeKey];
+            if (!targetMode) return;
+
+            const osc = audioCtx.createOscillator();
+            const bassGain = audioCtx.createGain();
+
+            osc.type = 'triangle';
+            // Scale notes down 1 octave for robust bass frequencies
+            const bassFreq = targetMode.scale[baseIndex - 7] || targetMode.scale[0];
+
+            osc.frequency.setValueAtTime(bassFreq, time);
+            osc.connect(bassGain);
+            bassGain.connect(lofiFilter);
+
+            bassGain.gain.setValueAtTime(0, time);
+            bassGain.gain.linearRampToValueAtTime(0.35, time + 0.08);
+            bassGain.gain.exponentialRampToValueAtTime(0.001, time + 1.8);
+
+            osc.start(time);
+            osc.stop(time + 1.8);
+        }
+
+        function synthMelody(time, noteIndex) {
+            if (isTransitioning) return;
+            const targetMode = modes[currentModeKey];
+            if (!targetMode) return;
+
+            const freq = targetMode.scale[noteIndex] || 523.25;
+
+            const osc = audioCtx.createOscillator();
+            const melGain = audioCtx.createGain();
+
+            // Melody voice reflects the chosen synthesis patch
+            if (currentSynthVoice === 'bells') {
+                osc.type = 'square';
+            } else if (currentSynthVoice === 'plucks') {
+                osc.type = 'triangle';
+            } else {
+                osc.type = 'sine';
+            }
+
+            osc.frequency.setValueAtTime(freq, time);
+
+            osc.connect(melGain);
+            melGain.connect(lofiFilter);
+            melGain.connect(delayNode); // Route into unified global delay loop
+
+            melGain.gain.setValueAtTime(0.0, time);
+            
+            if (currentSynthVoice === 'plucks' || currentSynthVoice === 'bells') {
+                melGain.gain.linearRampToValueAtTime(0.07, time + 0.01);
+                melGain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
+            } else {
+                melGain.gain.linearRampToValueAtTime(0.09, time + 0.08);
+                melGain.gain.exponentialRampToValueAtTime(0.001, time + 1.1);
+            }
+
+            osc.start(time);
+            osc.stop(time + 1.2);
+
+            animateVis(7, 24, "var(--neon-teal)");
+        }
+
+        // Generates cohesive, human-like melodic sequences (motifs) instead of random noise
+        function generateMelodicMotif() {
+            const melodyRange = [14, 16, 17, 18, 19, 21, 23, 24]; // Safe mid-upper pentatonic keys
+            activeMotif = [];
+            motifDurationSteps = 16; // 1 full measure
+
+            // Choose a rhythmic phrase (e.g., played on step steps with syncopation)
+            const phrases = [
+                [0, 3, 6, 8, 11],
+                [2, 4, 8, 10, 14],
+                [0, 2, 6, 9, 12],
+                [4, 6, 10, 12]
+            ];
+            const selectedSteps = phrases[Math.floor(Math.random() * phrases.length)];
+            
+            selectedSteps.forEach(step => {
+                const noteIdx = melodyRange[Math.floor(Math.random() * melodyRange.length)];
+                activeMotif.push({ step, noteIdx });
+            });
+        }
+
+        function stepClock() {
+            const secondsPerBeat = 60.0 / bpm;
+            nextNoteTime += 0.25 * secondsPerBeat; // Progression index increments by 16th steps
+
+            currentStep++;
+            if (currentStep === 16) {
+                currentStep = 0;
+                measureCount++;
+
+                // Step forward chord structure progression
+                if (activeProgression) {
+                    activeChordIndex = (activeChordIndex + 1) % activeProgression.chords.length;
+                }
+
+                // Periodically update the melody call-and-response motif (every 2 measures)
+                if (measureCount % 2 === 0) {
+                    generateMelodicMotif();
+                }
+            }
+        }
+
+        function triggerProceduralStep(step, time) {
+            if (!activeProgression) return;
+
+            // Apply MPC style timing swing offset to offbeats (odd steps)
+            let swingOffset = 0;
+            if (step % 2 !== 0) {
+                if (currentBeatStyle === "boombap") {
+                    swingOffset = 0.038 * (60.0 / bpm); // Classic lazy grit
+                } else if (currentBeatStyle === "garage") {
+                    swingOffset = 0.05 * (60.0 / bpm); // Shuffled UK garage 2-step shuffle
+                }
+            }
+            const playTime = time + swingOffset;
+
+            // 1. Chords and Deep Bass on Downbeat
+            if (step === 0) {
+                const currentChord = activeProgression.chords[activeChordIndex];
+                synthChord(playTime, currentChord);
+                synthBass(playTime, currentChord[0]);
+            }
+
+            // 2. Play current step's notes if it matches the generated melodic motif
+            const motifEvent = activeMotif.find(m => m.step === step);
+            if (motifEvent && Math.random() < 0.85) {
+                synthMelody(playTime, motifEvent.noteIdx);
+            }
+
+            // 3. Dynamic Drum Beats Generation based on Genre Profile
+            if (currentBeatStyle === "boombap") {
+                // Classic solid Boom Bap swing
+                if (step === 0 || step === 8 || (step === 11 && Math.random() < 0.45)) {
+                    synthKick(playTime);
+                }
+                if (step === 4 || step === 12) {
+                    synthSnare(playTime, false); // Thick snare backbeat
+                }
+                if (step % 2 === 0) {
+                    synthHiHat(playTime, step === 14 && Math.random() < 0.4, step === 0 || step === 8);
+                }
+            } else if (currentBeatStyle === "chillhop") {
+                // Lazy organic chillhop (incorporates quiet rimshots instead of heavy snares)
+                if (step === 0 || (step === 9 && Math.random() < 0.4)) {
+                    synthKick(playTime);
+                }
+                if (step === 4 || step === 12) {
+                    synthSnare(playTime, true); // Rimshots for a cozy layout
+                }
+                if (step % 4 === 0 || (step % 4 === 2 && Math.random() < 0.35)) {
+                    synthHiHat(playTime, step === 14 && Math.random() < 0.25, false);
+                }
+            } else if (currentBeatStyle === "garage") {
+                // Syncopated uptempo shuffled 2-step garage
+                if (step === 0 || step === 7 || step === 10 || (step === 14 && Math.random() < 0.3)) {
+                    synthKick(playTime);
+                }
+                if (step === 4 || step === 12) {
+                    synthSnare(playTime, false);
+                }
+                // Intricate triplet swing hat placement
+                if (step === 0 || step === 3 || step === 6 || step === 9 || step === 12 || step === 15) {
+                    synthHiHat(playTime, step === 9 && Math.random() < 0.6, step === 3 || step === 9);
+                }
+            }
+            // "beatless" does not play any drum elements
+        }
+
+        function scheduler() {
+            while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
+                triggerProceduralStep(currentStep, nextNoteTime);
+                stepClock();
+            }
+            timerID = setTimeout(scheduler, lookahead);
+        }
+
+        function simulateTapeStopAndChange(onDone) {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            clockDisplay.innerText = "DECK: RETRANSLATING";
+
+            // Sweep lofi cutoff all the way down and mute volume to simulate tape deceleration
+            const sweepTime = 1.6; // seconds
+            if (lofiFilter && masterGain) {
+                lofiFilter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + sweepTime);
+                masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + sweepTime);
+            }
+
+            // Temporarily stop vinyl movement visual
+            vinylDisc.classList.remove('vinyl-spin');
+
+            // Apply modifications once muted
+            transitionTimeout = setTimeout(() => {
+                // Run procedural update callback
+                if (onDone) onDone();
+
+                // Re-power deck
+                if (lofiFilter && masterGain) {
+                    lofiFilter.frequency.setValueAtTime(100, audioCtx.currentTime);
+                    lofiFilter.frequency.exponentialRampToValueAtTime(parseFloat(sliderCutoff.value), audioCtx.currentTime + 1.2);
+                    masterGain.gain.linearRampToValueAtTime(parseFloat(sliderVolume.value), audioCtx.currentTime + 1.2);
+                }
+
+                // Restart vinyl movement
+                vinylDisc.classList.add('vinyl-spin');
+                isTransitioning = false;
+                clockDisplay.innerText = "DECK: BROADCASTING";
+            }, sweepTime * 1000);
+        }
+
+        function triggerSongChange() {
+            simulateTapeStopAndChange(() => {
+                // Randomly rotate track details
+                const trackName = makeTrackTitle();
+                trackTitleDisplay.innerText = trackName;
+
+                // Lock BPM to distinct signature ranges based on active beat style
+                applyStyleTempo();
+
+                // Gently update delay feedback time to coordinate with the newly generated BPM
+                if (audioCtx && delayNode) {
+                    const secondsPerBeat = 60.0 / bpm;
+                    delayNode.delayTime.setTargetAtTime(secondsPerBeat * 0.75, audioCtx.currentTime, 1.0);
+                }
+
+                // Update UI layout parameters
+                const targetMode = modes[currentModeKey];
+                scaleDisplay.innerText = `VIBE: ${targetMode.name}`;
+                activeProgression = targetMode.progressions[Math.floor(Math.random() * targetMode.progressions.length)];
+                activeChordIndex = 0;
+
+                // Generate new motif for fresh track melody path
+                generateMelodicMotif();
+
+                // Reset auto-skip elapsed metrics
+                songTimeElapsed = 0;
+                progressBar.style.width = `0%`;
+            });
+        }
+
+        function applyStyleTempo() {
+            if (currentBeatStyle === "garage") {
+                bpm = Math.floor(Math.random() * 6) + 112; // Uptempo garage shuffle (112-118 BPM)
+            } else if (currentBeatStyle === "boombap") {
+                bpm = Math.floor(Math.random() * 6) + 80;  // Classic midtempo boom bap grit (80-86 BPM)
+            } else if (currentBeatStyle === "chillhop") {
+                bpm = Math.floor(Math.random() * 6) + 68;  // Slow, lazy organic head-nod (68-74 BPM)
+            } else { // beatless
+                bpm = Math.floor(Math.random() * 6) + 55;  // Slowly evolving ambient drift (55-61 BPM)
+            }
+            bpmDisplay.innerText = `BPM: ${bpm}`;
+        }
+
+        function startPlaylistTimer() {
+            clearInterval(timerIntervalID);
+            timerIntervalID = setInterval(() => {
+                if (!isPlaying || isTransitioning) return;
+
+                songTimeElapsed++;
+                const percentage = (songTimeElapsed / autoSkipDuration) * 100;
+                progressBar.style.width = `${percentage}%`;
+
+                // Calculate display countdown
+                const remaining = Math.max(0, autoSkipDuration - songTimeElapsed);
+                const mins = Math.floor(remaining / 60);
+                const secs = remaining % 60;
+                timeLeftDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+                if (songTimeElapsed >= autoSkipDuration) {
+                    triggerSongChange();
+                }
+            }, 1000);
+        }
+
+        function handlePlayToggle() {
+            if (!audioCtx) {
+                initAudioPipeline();
+            }
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            isPlaying = !isPlaying;
+
+            if (isPlaying) {
+                playBtnText.innerText = "Pause Session";
+                playBtn.classList.remove('from-amber-500', 'to-orange-500');
+                playBtn.classList.add('from-teal-500', 'to-cyan-500');
+                clockDisplay.innerText = "DECK: BROADCASTING";
+                
+                // Animate elements
+                vinylDisc.classList.add('vinyl-spin');
+
+                // Apply correct style-specific BPM
+                applyStyleTempo();
+
+                // Procedural target triggers
+                const targetMode = modes[currentModeKey];
+                activeProgression = targetMode.progressions[Math.floor(Math.random() * targetMode.progressions.length)];
+                activeChordIndex = 0;
+
+                trackTitleDisplay.innerText = makeTrackTitle();
+                scaleDisplay.innerText = `VIBE: ${targetMode.name}`;
+
+                // Generate primary melodic motif phrase
+                generateMelodicMotif();
+
+                nextNoteTime = audioCtx.currentTime + 0.1;
+                scheduler();
+                startPlaylistTimer();
+            } else {
+                playBtnText.innerText = "Tune In";
+                playBtn.classList.remove('from-teal-500', 'to-cyan-500');
+                playBtn.classList.add('from-amber-500', 'to-orange-500');
+                clockDisplay.innerText = "DECK: ON HOLD";
+
+                vinylDisc.classList.remove('vinyl-spin');
+                clearTimeout(timerID);
+                clearInterval(timerIntervalID);
+            }
+        }
+
+        playBtn.addEventListener('click', handlePlayToggle);
+
+        skipBtn.addEventListener('click', () => {
+            if (!isPlaying) {
+                // If not playing, instantly trigger tune in and randomize track
+                handlePlayToggle();
+                return;
+            }
+            triggerSongChange();
+        });
+
+        // Dropdown Parameter Listeners
+        selectVibe.addEventListener('change', (e) => {
+            currentModeKey = e.target.value;
+            const targetMode = modes[currentModeKey];
+            scaleDisplay.innerText = `VIBE: ${targetMode.name}`;
+            activeProgression = targetMode.progressions[0];
+            activeChordIndex = 0;
+            generateMelodicMotif();
+        });
+
+        selectBeat.addEventListener('change', (e) => {
+            currentBeatStyle = e.target.value;
+            applyStyleTempo();
+            if (audioCtx && delayNode) {
+                const secondsPerBeat = 60.0 / bpm;
+                delayNode.delayTime.setTargetAtTime(secondsPerBeat * 0.75, audioCtx.currentTime, 0.5);
+            }
+        });
+
+        selectSynth.addEventListener('change', (e) => {
+            currentSynthVoice = e.target.value;
+        });
+
+        selectInterval.addEventListener('change', (e) => {
+            autoSkipDuration = parseInt(e.target.value, 10);
+            songTimeElapsed = 0;
+            progressBar.style.width = `0%`;
+        });
+
+        // Real-time parameter slider updates
+        sliderVolume.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('vol-lbl').innerText = `${Math.round(val * 100)}%`;
+            if (masterGain && !isTransitioning) {
+                masterGain.gain.setValueAtTime(val, audioCtx.currentTime);
+            }
+        });
+
+        sliderRain.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('rain-lbl').innerText = `${Math.round((val / 0.15) * 100)}%`;
+            if (rainGain) {
+                rainGain.gain.setValueAtTime(val, audioCtx.currentTime);
+            }
+        });
+
+        sliderCrackle.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('crackle-lbl').innerText = `${Math.round((val / 0.04) * 100)}%`;
+            if (crackleGain) {
+                crackleGain.gain.setValueAtTime(val, audioCtx.currentTime);
+            }
+        });
+
+        sliderCutoff.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('cutoff-lbl').innerText = `${(val / 1000).toFixed(1)}k`;
+            if (lofiFilter && !isTransitioning) {
+                lofiFilter.frequency.setValueAtTime(val, audioCtx.currentTime);
+            }
+        });
+
+        function animateVis(index, height, colorClass) {
+            const bar = visualizerBars[index];
+            if (!bar) return;
+            bar.style.height = `${height}px`;
+            bar.style.backgroundColor = colorClass;
+            setTimeout(() => {
+                bar.style.height = '4px';
+                bar.style.backgroundColor = 'rgba(63, 63, 70, 0.5)';
+            }, 150);
+        }
+
+    </script>
+</body>
+</html>
