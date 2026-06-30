@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative Lo-Fi Player</title>
+    <style>
+        body {
+            background-color: #2b2a33;
+            color: #f8c291;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #player-ui {
+            background: #1e1d23;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 320px;
+            border: 1px solid #3a3942;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-top: 0;
+            color: #e58e26;
+        }
+        #track-info {
+            background: #000;
+            color: #78e08f;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            border: 1px solid #38ada9;
+        }
+        button {
+            background: #e55039;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        button:hover {
+            background: #eb2f06;
+        }
+        .controls {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .controls label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            color: #b8b8b8;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #e55039;
+        }
+    </style>
+</head>
+<body>
+
+<div id="player-ui">
+    <h1>Lo-Fi Generator</h1>
+    <div id="track-info">Status: Paused<br>BPM: -- | Chords: --</div>
+    <button id="play-btn">Play</button>
+    
+    <div class="controls">
+        <label for="volume">Master Volume</label>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7">
+    </div>
+</div>
+
+<script>
+    let audioCtx;
+    let masterGain;
+    let lofiFilter;
+    let isPlaying = false;
+    
+    // Sequencer variables
+    let currentStep = 0;
+    let measureCount = 0;
+    let nextNoteTime = 0.0;
+    let bpm = 75;
+    let lookahead = 25.0; // ms
+    let scheduleAheadTime = 0.1; // s
+    let timerID;
+
+    // Music Theory & Song Structure
+    // C Minor scale frequencies
+    const scales = {
+        c_minor: [130.81, 146.83, 155.56, 174.61, 196.00, 207.65, 233.08, 261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25]
+    };
+    
+    // Abstract chord progressions (indices of the scale array)
+    const progressions = [
+        [[0, 2, 4], [4, 6, 8], [5, 7, 9], [3, 5, 7]], // i - v - VI - iv
+        [[0, 2, 4], [5, 7, 9], [2, 4, 6], [4, 6, 8]], // i - VI - III - v
+        [[5, 7, 9], [3, 5, 7], [0, 2, 4], [4, 6, 8]]  // VI - iv - i - v
+    ];
+
+    let currentProgression = progressions[0];
+    let currentDrumDensity = 1;
+
+    const playBtn = document.getElementById('play-btn');
+    const volumeSlider = document.getElementById('volume');
+    const trackInfo = document.getElementById('track-info');
+
+    // Initialize Audio
+    function initAudio() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = volumeSlider.value;
+        
+        // The magic lo-fi filter (cuts high frequencies)
+        lofiFilter = audioCtx.createBiquadFilter();
+        lofiFilter.type = 'lowpass';
+        lofiFilter.frequency.value = 2500; 
+        lofiFilter.Q.value = 1;
+
+        // Vinyl/Tape hiss logic (very subtle background noise)
+        const bufferSize = audioCtx.sampleRate * 2;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+        let noiseSource = audioCtx.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.loop = true;
+        
+        let noiseFilter = audioCtx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.value = 1000;
+        
+        let noiseGain = audioCtx.createGain();
+        noiseGain.gain.value = 0.005; // Very quiet
+        
+        noiseSource.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(lofiFilter);
+        noiseSource.start();
+
+        lofiFilter.connect(masterGain);
+        masterGain.connect(audioCtx.destination);
+    }
+
+    // Drum Synths
+    function playKick(time) {
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(lofiFilter);
+
+        osc.frequency.setValueAtTime(150, time);
+        osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
+        
+        gainNode.gain.setValueAtTime(1, time);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+        
+        osc.start(time);
+        osc.stop(time + 0.5);
+    }
+
+    function playSnare(time) {
+        // Snare is composed of a tone and a noise burst
+        const osc = audioCtx.createOscillator();
+        const oscGain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.connect(oscGain);
+        oscGain.connect(lofiFilter);
+        
+        osc.frequency.setValueAtTime(250, time);
+        oscGain.gain.setValueAtTime(0.5, time);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+        osc.start(time);
+        osc.stop(time + 0.2);
+
+        // Noise
+        const bufferSize = audioCtx.sampleRate * 0.2; 
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
+        
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        const noiseFilter = audioCtx.createBiquadFilter();
+        noiseFilter.type = 'highpass';
+        noiseFilter.frequency.value = 1000;
+        const noiseGain = audioCtx.createGain();
+        
+        noise.connect(noiseFilter);
+        noiseNormally I can help with things like this, but I don't seem to have access to that content. You can try again or ask me for something else.
