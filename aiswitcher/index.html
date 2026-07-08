@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Switcher</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f0f0f0" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1e1e1e" media="(prefers-color-scheme: dark)">
+    <style>
+        /* CSS Variables for Light/Dark Mode Sync */
+        :root {
+            --bg-color: #f0f0f0;
+            --topbar-bg: #ffffff;
+            --border-color: #eee;
+            --border-darker: #ccc;
+            --btn-bg: #f0f0f0;
+            --btn-hover: #e0e0e0;
+            --divider-color: #ddd;
+            --divider-hover: #999;
+            --handle-bg: #f9f9f9;
+            --handle-hover: #f0f0f0;
+            --pill-color: #ccc;
+            --pill-hover: #aaa;
+            --text-color: #000000;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1e1e1e;
+                --topbar-bg: #2d2d2d;
+                --border-color: #444;
+                --border-darker: #555;
+                --btn-bg: #3d3d3d;
+                --btn-hover: #4d4d4d;
+                --divider-color: #333;
+                --divider-hover: #666;
+                --handle-bg: #252525;
+                --handle-hover: #2a2a2a;
+                --pill-color: #555;
+                --pill-hover: #888;
+                --text-color: #ffffff;
+            }
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        /* Top Bar containing headers and drawer handle */
+        #topBar {
+            width: 100%;
+            background: var(--topbar-bg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #headerContent {
+            display: flex;
+            width: 100%;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #headerContent.hidden {
+            display: none !important;
+        }
+
+        .header-half {
+            flex: 1;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Drawer Handle */
+        .drawer-handle {
+            width: 100%;
+            height: 16px;
+            background: var(--handle-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+        
+        .drawer-handle:hover {
+            background: var(--handle-hover);
+        }
+
+        .drawer-handle .pill {
+            width: 40px;
+            height: 4px;
+            background: var(--pill-color);
+            border-radius: 2px;
+            transition: background 0.2s;
+        }
+
+        .drawer-handle:hover .pill {
+            background: var(--pill-hover);
+        }
+
+        select {
+            padding: 8px;
+            font-size: 14px;
+            width: 75%;
+            border-radius: 4px;
+            border: 1px solid var(--border-darker);
+            background: var(--topbar-bg);
+            color: var(--text-color);
+        }
+
+        .max-btn {
+            padding: 8px 12px;
+            font-size: 14px;
+            background: var(--btn-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-darker);
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .max-btn:hover {
+            background: var(--btn-hover);
+        }
+
+        /* Container for iframes */
+        .container {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            position: relative;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+
+        .iframe-container {
+            flex: 1;
+            position: relative;
+            background: var(--bg-color);
+        }
+
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            z-index: 5;
+        }
+
+        /* Draggable vertical divider */
+        .divider {
+            width: 8px;
+            background-color: var(--divider-color);
+            cursor: col-resize;
+            z-index: 20;
+            transition: background-color 0.2s;
+        }
+        
+        .divider:hover, .divider.active {
+            background-color: var(--divider-hover);
+        }
+
+        /* Transparent overlay to protect drag events */
+        .iframe-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: none; 
+            cursor: col-resize;
+        }
+
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--text-color);
+            opacity: 0.6;
+            padding: 20px;
+            font-size: 14px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="topBar">
+        <div id="headerContent">
+            <!-- Left Header -->
+            <div class="header-half" id="header1">
+                <select id="select1" onchange="updateFrame(1, this.value)">
+                    <option value="https://gemini.google.com/app">Gemini</option>
+                    <option value="https://m365.cloud.microsoft/chat">Copilot 365</option>
+                    <option value="https://copilot.microsoft.com/">Copilot</option>
+                    <option value="https://chatgpt.com/">ChatGPT</option>
+                    <option value="https://claude.ai/new">Claude</option>
+                    <option value="https://www.perplexity.ai/">Perplexity</option>
+                    <option value="https://duck.ai/">DuckDuckGo AI</option>
+                </select>
+                <button class="max-btn" id="maxBtn1" onclick="toggleMaximize(1)" title="Maximize Left Frame (Alt+1)">🗖</button>
+            </div>
+            
+            <!-- Right Header -->
+            <div class="header-half" id="header2">
+                <select id="select2" onchange="updateFrame(2, this.value)">
+                    <option value="https://gemini.google.com/app">Gemini</option>
+                    <option value="https://m365.cloud.microsoft/chat">Copilot 365</option>
+                    <option value="https://copilot.microsoft.com/">Copilot</option>
+                    <option value="https://chatgpt.com/">ChatGPT</option>
+                    <option value="https://claude.ai/new">Claude</option>
+                    <option value="https://www.perplexity.ai/">Perplexity</option>
+                    <option value="https://duck.ai/">DuckDuckGo AI</option>
+                </select>
+                <button class="max-btn" id="maxBtn2" onclick="toggleMaximize(2)" title="Maximize Right Frame (Alt+2)">🗖</button>
+            </div>
+        </div>
+        
+        <!-- Drawer Handle -->
+        <div class="drawer-handle" id="toggleToolbar" title="Show/Hide Menus (Esc)">
+            <div class="pill"></div>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <!-- Left Column -->
+        <div class="column" id="col1">
+            <div class="iframe-container">
+                <div class="error-message">If this stays blank, the service is blocking external iframes.</div>
+                <div class="iframe-overlay"></div>
+                <iframe id="frame1" src="https://gemini.google.com/app" title="AI Chat 1"></iframe>
+            </div>
+        </div>
+
+        <!-- Vertical Divider -->
+        <div class="divider" id="dragDivider" title="Double-click to reset to 50/50"></div>
+
+        <!-- Right Column -->
+        <div class="column" id="col2">
+            <div class="iframe-container">
+                <div class="error-message">If this stays blank, the service is blocking external iframes.</div>
+                <div class="iframe-overlay"></div>
+                <iframe id="frame2" src="https://m365.cloud.microsoft/chat" title="AI Chat 2"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const toggleBtn = document.getElementById('toggleToolbar');
+        const headerContent = document.getElementById('headerContent');
+        const divider = document.getElementById('dragDivider');
+        const col1 = document.getElementById('col1');
+        const col2 = document.getElementById('col2');
+        const overlays = document.querySelectorAll('.iframe-overlay');
+        const container = document.getElementById('mainContainer');
+        const select1 = document.getElementById('select1');
+        const select2 = document.getElementById('select2');
+        const frame1 = document.getElementById('frame1');
+        const frame2 = document.getElementById('frame2');
+        const header1 = document.getElementById('header1');
+        const header2 = document.getElementById('header2');
+        const maxBtn1 = document.getElementById('maxBtn1');
+        const maxBtn2 = document.getElementById('maxBtn2');
+
+        // State Variables
+        let toolbarsVisible = true;
+        let isDragging = false;
+        let savedWidth1 = localStorage.getItem('ai_width1') || '50%';
+        let savedWidth2 = localStorage.getItem('ai_width2') || '50%';
+        let maximizedColumn = null;
+
+        // Initialize State from Local Storage
+        function initializeApp() {
+            // Restore widths
+            col1.style.width = savedWidth1;
+            col2.style.width = savedWidth2;
+
+            // Restore selected models (or use defaults)
+            const savedModel1 = localStorage.getItem('ai_model1') || 'https://gemini.google.com/app';
+            const savedModel2 = localStorage.getItem('ai_model2') || 'https://m365.cloud.microsoft/chat';
+
+            select1.value = savedModel1;
+            select2.value = savedModel2;
+            frame1.src = savedModel1;
+            frame2.src = savedModel2;
+        }
+
+        // Update frame and save to Local Storage
+        function updateFrame(colNum, value) {
+            if (colNum === 1) {
+                frame1.src = value;
+                localStorage.setItem('ai_model1', value);
+            } else {
+                frame2.src = value;
+                localStorage.setItem('ai_model2', value);
+            }
+        }
+
+        // Toolbar Toggle
+        function toggleMenu() {
+            toolbarsVisible = !toolbarsVisible;
+            if (toolbarsVisible) {
+                headerContent.classList.remove('hidden');
+            } else {
+                headerContent.classList.add('hidden');
+            }
+        }
+        toggleBtn.addEventListener('click', toggleMenu);
+
+        // Vertical Drag Resizer
+        divider.addEventListener('mousedown', (e) => {
+            if (maximizedColumn) return; 
+            isDragging = true;
+            divider.classList.add('active');
+            overlays.forEach(overlay => overlay.style.display = 'block');
+            document.body.style.cursor = 'col-resize';
+        });
+
+        // Double-click to reset to 50/50
+        divider.addEventListener('dblclick', () => {
+            if (maximizedColumn) return;
+            
+            savedWidth1 = '50%';
+            savedWidth2 = '50%';
+            
+            col1.style.width = savedWidth1;
+            col2.style.width = savedWidth2;
+            
+            localStorage.setItem('ai_width1', savedWidth1);
+            localStorage.setItem('ai_width2', savedWidth2);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const containerWidth = container.offsetWidth;
+            const mouseX = e.clientX;
+            
+            let newLeftWidth = (mouseX / containerWidth) * 100;
+            if (newLeftWidth < 10) newLeftWidth = 10;
+            if (newLeftWidth > 90) newLeftWidth = 90;
+
+            savedWidth1 = newLeftWidth + '%';
+            savedWidth2 = (100 - newLeftWidth) + '%';
+
+            col1.style.width = savedWidth1;
+            col2.style.width = savedWidth2;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                divider.classList.remove('active');
+                overlays.forEach(overlay => overlay.style.display = 'none');
+                document.body.style.cursor = 'default';
+                
+                // Save widths to Local Storage
+                localStorage.setItem('ai_width1', savedWidth1);
+                localStorage.setItem('ai_width2', savedWidth2);
+            }
+        });
+
+        // Maximize / Restore Toggle
+        function toggleMaximize(colNum) {
+            if (maximizedColumn === colNum) {
+                col1.style.display = 'flex';
+                col2.style.display = 'flex';
+                header1.style.display = 'flex';
+                header2.style.display = 'flex';
+                divider.style.display = 'block';
+                
+                col1.style.width = savedWidth1;
+                col2.style.width = savedWidth2;
+                
+                maxBtn1.textContent = "🗖";
+                maxBtn2.textContent = "🗖";
+                maximizedColumn = null;
+            } else {
+                col1.style.display = 'flex';
+                col2.style.display = 'flex';
+                header1.style.display = 'flex';
+                header2.style.display = 'flex';
+                
+                if (colNum === 1) {
+                    col1.style.width = '100%';
+                    col2.style.display = 'none';
+                    header2.style.display = 'none';
+                    maxBtn1.textContent = "🗗";
+                    maxBtn2.textContent = "🗖";
+                } else {
+                    col2.style.width = '100%';
+                    col1.style.display = 'none';
+                    header1.style.display = 'none';
+                    maxBtn2.textContent = "🗗";
+                    maxBtn1.textContent = "🗖";
+                }
+                divider.style.display = 'none';
+                maximizedColumn = colNum;
+            }
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Escape to toggle menu
+            if (e.key === 'Escape') {
+                toggleMenu();
+            }
+            // Alt + 1 to toggle left max
+            if (e.altKey && e.key === '1') {
+                e.preventDefault();
+                toggleMaximize(1);
+            }
+            // Alt + 2 to toggle right max
+            if (e.altKey && e.key === '2') {
+                e.preventDefault();
+                toggleMaximize(2);
+            }
+        });
+
+        // Initialize App
+        initializeApp();
+
+        // PWA Configuration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => {
+                    console.log('Service Worker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

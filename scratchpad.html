@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratchpad</title>
+    
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --border-color: #ccc;
+            --toolbar-bg: #fff;
+            --max-narrow: 700px;
+            --highlight-color: #ffff00;
+            --highlight-red-color: #ffcccc;
+            --editor-font-size: 13px;
+            --link-color: #0000ee;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+        }
+
+        #app-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease-in-out;
+            margin: 0 auto;
+            background: #fff;
+            width: 100%; 
+            height: 100vh; 
+            overflow: hidden; 
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+
+        #app-wrapper.narrow-mode {
+            max-width: var(--max-narrow);
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            margin: 10px auto; 
+            height: calc(100vh - 20px);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            padding: 0; 
+        }
+
+        .ql-toolbar.ql-snow {
+            border: none !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap; 
+            padding: 8px !important;
+            flex-shrink: 0; 
+            overflow-x: auto; 
+            scrollbar-width: none; 
+        }
+        
+        .ql-toolbar.ql-snow::-webkit-scrollbar {
+            display: none; 
+        }
+
+        #editor {
+            flex-grow: 1;
+            font-size: var(--editor-font-size) !important;
+            border: none !important;
+            overflow-y: auto; 
+        }
+
+        .ql-container.ql-snow {
+            border: none !important;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ql-editor {
+            font-size: var(--editor-font-size) !important;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .ql-editor a {
+            color: var(--link-color) !important;
+            text-decoration: underline !important;
+        }
+
+        .ql-editor p {
+            margin-bottom: 0.6em !important;
+        }
+
+        #status-bar {
+            background: var(--toolbar-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 8px 15px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            gap: 10px;
+            z-index: 10;
+            flex-shrink: 0; 
+        }
+
+        .stats-group {
+            display: flex;
+            gap: 12px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .ql-background.ql-picker { display: none !important; }
+        
+        .custom-highlighter {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 3px 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .custom-highlighter:hover { background-color: #f0f0f0; }
+        .custom-highlighter svg { width: 18px; height: 18px; }
+
+        .toolbar-group-container {
+            margin-left: 15px;
+            padding-left: 15px;
+            border-left: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        
+        .custom-highlighter + .toolbar-group-container {
+            margin-left: 10px;
+            padding-left: 10px;
+        }
+
+        .toolbar-group-container select {
+            padding: 2px 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .slot-btn {
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s ease;
+            box-sizing: border-box;
+        }
+
+        .slot-btn:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .slot-btn.active {
+            background: #e6f2ff;
+            color: #0056b3;
+            border: 2px solid #0056b3;
+            text-decoration: underline;
+            box-shadow: 0 0 4px rgba(0, 86, 179, 0.3);
+        }
+
+        button.action-btn {
+            padding: 4px 10px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button.action-btn:hover {
+            background: #e9ecef;
+        }
+
+        /* --- Zen Mode Styles --- */
+        body.zen-mode .ql-toolbar.ql-snow {
+            display: none !important;
+        }
+        body.zen-mode #status-bar {
+            display: none !important;
+        }
+
+        .floating-zen-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.15);
+            color: #333;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 18px;
+            cursor: pointer;
+            display: none; 
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(2px);
+            transition: all 0.2s ease;
+        }
+
+        .floating-zen-btn:hover {
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+        }
+
+        body.zen-mode .floating-zen-btn {
+            display: flex;
+        }
+
+        @media (max-width: 600px) {
+            .toggle-group {
+                display: none !important;
+            }
+            #app-wrapper.narrow-mode, #app-wrapper {
+                width: 100% !important;
+                margin: 0 !important;
+                height: 100vh !important;
+                max-width: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-wrapper" class="narrow-mode">
+    <div id="editor"></div>
+    
+    <div id="status-bar">
+        <div class="stats-group">
+            <span id="char-count">Chars: 0</span>
+            <span id="word-count">Words: 0</span>
+            <span id="line-calc">Lines: ~0</span>
+        </div>
+
+        <div class="toggle-group">
+            <label><input type="radio" name="width-toggle" value="wide" onchange="toggleWidth('wide')"> <span>Wide</span></label>
+            <label><input type="radio" name="width-toggle" value="narrow" checked onchange="toggleWidth('narrow')"> <span>Narrow</span></label>
+        </div>
+
+        <div class="actions-group">
+            <button class="action-btn" onclick="fixParagraphs()">Fix Paragraphs</button>
+            <button class="action-btn" onclick="copyToClipboard()">Copy</button>
+            <button class="action-btn" onclick="exportToEmail()">Email</button>
+            <button class="action-btn" onclick="exportToFile()">Export</button>
+            <button class="action-btn" onclick="toggleZenMode()" title="Hide Toolbars" style="font-size: 14px;">⤢</button>
+        </div>
+    </div>
+</div>
+
+<button class="floating-zen-btn" onclick="toggleZenMode()" title="Show Toolbars">⤢</button>
+
+<template id="toolbar-extras">
+    <button class="custom-highlighter" title="Highlight Yellow" onclick="applyHighlight()">
+        <svg viewBox="0 0 18 18">
+            <path class="ql-fill" d="M15.527,2.473a2.41,2.41,0,0,0-3.411,0L5.45,9.138A.494.494,0,0,0,5.305,9.5L5,13a.5.5,0,0,0,.572.572L9.073,13.2a.5.5,0,0,0,.364-.145l6.091-6.091A2.41,2.41,0,0,0,15.527,2.473ZM8.773,12.2,5.7,12.473,6.23,9.7l6.091-6.091,2.536,2.536Z"></path>
+            <rect class="ql-fill" height="2" rx="0.5" ry="0.5" width="12" x="3" y="15" style="fill: var(--highlight-color);"></rect>
+        </svg>
+    </button>
+
+    <button class="custom-highlighter" title="Highlight Red" onclick="applyRedHighlight()">
+        <svg viewBox="0 0 18 18">
+            <path class="ql-fill" d="M15.527,2.473a2.41,2.41,0,0,0-3.411,0L5.45,9.138A.494.494,0,0,0,5.305,9.5L5,13a.5.5,0,0,0,.572.572L9.073,13.2a.5.5,0,0,0,.364-.145l6.091-6.091A2.41,2.41,0,0,0,15.527,2.473ZM8.773,12.2,5.7,12.473,6.23,9.7l6.091-6.091,2.536,2.536Z"></path>
+            <rect class="ql-fill" height="2" rx="0.5" ry="0.5" width="12" x="3" y="15" style="fill: #ff3b30;"></rect>
+        </svg>
+    </button>
+
+    <button class="custom-highlighter" title="Strikethrough" onclick="applyStrike()">
+        <svg viewBox="0 0 18 18" style="fill: none; stroke: #444; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;">
+            <path d="M12,5c0-1.66-1.34-3-3-3S6,3.34,6,5c0,1.5,1.5,2.5,3,2.5s3,1,3,2.5c0,1.66-1.34,3-3,3s-3-1.34-3-3"></path>
+            <line x1="2" y1="9" x2="16" y2="9"></line>
+        </svg>
+    </button>
+    
+    <div class="toolbar-group-container" id="slot-container">
+        <button class="slot-btn" data-slot="1" onclick="switchSlot('1')" title="Slot 1">1</button>
+        <button class="slot-btn" data-slot="2" onclick="switchSlot('2')" title="Slot 2">2</button>
+        <button class="slot-btn" data-slot="3" onclick="switchSlot('3')" title="Slot 3">3</button>
+    </div>
+
+    <div class="toolbar-group-container">
+        <select id="size-select" onchange="updateTextSize(this.value)" title="Text Size">
+            <option value="11px">Small</option>
+            <option value="13px" selected>Normal</option>
+            <option value="16px">Large</option>
+            <option value="20px">Huge</option>
+        </select>
+    </div>
+</template>
+
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<script>
+    const Embed = Quill.import('blots/embed');
+    class SoftBreak extends Embed {
+        static create(value) {
+            return super.create(value);
+        }
+    }
+    SoftBreak.blotName = 'softBreak';
+    SoftBreak.tagName = 'BR';
+    Quill.register(SoftBreak);
+
+    const quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [], 
+            keyboard: {
+                bindings: {
+                    softBreak: {
+                        key: 13, 
+                        shiftKey: true, 
+                        handler: function(range, context) {
+                            this.quill.insertEmbed(range.index, 'softBreak', true, 'user');
+                            this.quill.setSelection(range.index + 1, Quill.sources.SILENT);
+                        }
+                    }
+                }
+            }
+        },
+        placeholder: 'Write something...'
+    });
+
+    const toolbar = document.querySelector('.ql-toolbar');
+    const template = document.getElementById('toolbar-extras');
+    toolbar.appendChild(template.content.cloneNode(true));
+
+    function applyHighlight() {
+        const range = quill.getSelection();
+        if (range) {
+            const currentFormat = quill.getFormat(range);
+            const isHighlighted = currentFormat.background === '#ffff00' || currentFormat.background === 'yellow';
+            quill.format('background', isHighlighted ? false : '#ffff00');
+        }
+    }
+
+    function applyRedHighlight() {
+        const range = quill.getSelection();
+        if (range) {
+            const currentFormat = quill.getFormat(range);
+            const isHighlighted = currentFormat.background === '#ffcccc' || currentFormat.background === 'rgb(255, 204, 204)';
+            quill.format('background', isHighlighted ? false : '#ffcccc');
+        }
+    }
+
+    function applyStrike() {
+        const range = quill.getSelection();
+        if (range) {
+            const currentFormat = quill.getFormat(range);
+            quill.format('strike', !currentFormat.strike);
+        }
+    }
+
+    quill.root.addEventListener('paste', (e) => {
+        const selection = quill.getSelection();
+        if (selection && selection.length > 0) {
+            const clipboardData = e.clipboardData || window.clipboardData;
+            const pastedText = clipboardData.getData('text');
+            const urlPattern = /^(https?:\/\/[^\s]+)$/i;
+            if (urlPattern.test(pastedText.trim())) {
+                e.preventDefault();
+                quill.format('link', pastedText.trim());
+            }
+        }
+    }, true);
+
+    function updateTextSize(size) {
+        document.documentElement.style.setProperty('--editor-font-size', size);
+        localStorage.setItem('scratchpad_text_size', size);
+        document.getElementById('size-select').value = size;
+    }
+
+    const savedSize = localStorage.getItem('scratchpad_text_size');
+    if (savedSize) {
+        updateTextSize(savedSize);
+    }
+
+    function toggleWidth(mode) {
+        const wrapper = document.getElementById('app-wrapper');
+        if (mode === 'narrow') {
+            wrapper.classList.add('narrow-mode');
+        } else {
+            wrapper.classList.remove('narrow-mode');
+        }
+    }
+
+    function toggleZenMode() {
+        document.body.classList.toggle('zen-mode');
+    }
+
+    // --- Save Slot Logic ---
+    let currentSlot = String(localStorage.getItem('scratchpad_current_slot') || '1');
+    let isSwitchingSlot = false;
+    let saveTimeout; // Used for debouncing the saves
+    
+    if (['1', '2', '3'].indexOf(currentSlot) === -1) {
+        currentSlot = '1';
+        localStorage.setItem('scratchpad_current_slot', currentSlot);
+    }
+    
+    function updateSlotUI() {
+        document.querySelectorAll('.slot-btn').forEach(btn => {
+            if (btn.dataset.slot === currentSlot) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    function getStorageKey() {
+        return 'scratchpad_content_slot_' + currentSlot;
+    }
+
+    function loadSlotContent() {
+        const savedContent = localStorage.getItem(getStorageKey());
+        if (savedContent) {
+            quill.setContents(JSON.parse(savedContent));
+        } else {
+            quill.setContents([]);
+        }
+        updateStats();
+    }
+
+    function switchSlot(slotNumber) {
+        if (currentSlot === String(slotNumber)) return; // Prevent unnecessary reloading
+        
+        // If a save is pending from recent typing, execute it immediately before switching
+        clearTimeout(saveTimeout);
+        if (!isSwitchingSlot) {
+            localStorage.setItem(getStorageKey(), JSON.stringify(quill.getContents()));
+        }
+
+        isSwitchingSlot = true; 
+        currentSlot = String(slotNumber);
+        localStorage.setItem('scratchpad_current_slot', currentSlot);
+        updateSlotUI();
+        loadSlotContent();
+        
+        // Let the DOM breathe before re-enabling save triggers
+        setTimeout(() => {
+            isSwitchingSlot = false; 
+        }, 50);
+    }
+
+    setTimeout(() => {
+        updateSlotUI();
+        loadSlotContent();
+    }, 10);
+
+    // Auto-save logic with 400ms Debounce
+    quill.on('text-change', (delta, oldDelta, source) => {
+        if (source === 'user') { handleMarkdownHighlight(); }
+        
+        if (!isSwitchingSlot) {
+            clearTimeout(saveTimeout);
+            
+            // Wait 400ms after the user stops typing to process the stats and save
+            saveTimeout = setTimeout(() => {
+                updateStats();
+                localStorage.setItem(getStorageKey(), JSON.stringify(quill.getContents()));
+            }, 400); 
+        }
+    });
+
+    function handleMarkdownHighlight() {
+        let text = quill.getText();
+        let index = text.indexOf('//');
+        
+        while (index !== -1) {
+            const range = quill.getSelection();
+            const format = quill.getFormat(index, 2);
+            const isHighlighted = format.background === '#ffff00' || format.background === 'yellow';
+            
+            quill.removeFormat(index, 2);
+            quill.deleteText(index, 2);
+            quill.format('background', isHighlighted ? false : '#ffff00');
+            
+            if (range) {
+                const newPos = Math.max(0, range.index - 2);
+                setTimeout(() => {
+                    quill.focus();
+                    quill.setSelection(newPos, 0);
+                }, 1);
+            }
+
+            text = quill.getText();
+            index = text.indexOf('//');
+        }
+    }
+
+    function fixParagraphs() {
+        const delta = quill.getContents();
+        const newDelta = { ops: [] };
+
+        delta.ops.forEach((op, i) => {
+            if (typeof op.insert === 'string') {
+                let newString = op.insert.replace(/\n\n+/g, '\n');
+                if (i === 0) newString = newString.replace(/^\n+/, '');
+                
+                newDelta.ops.push({
+                    insert: newString,
+                    attributes: op.attributes
+                });
+            } else {
+                newDelta.ops.push(op);
+            }
+        });
+
+        quill.setContents(newDelta);
+        
+        const btn = document.querySelector('button[onclick="fixParagraphs()"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Fixed!";
+        setTimeout(() => btn.innerText = originalText, 1500);
+    }
+
+    function updateStats() {
+        const text = quill.getText().trim();
+        const words = text.length > 0 ? text.split(/\s+/).length : 0;
+        const lineCalc = Math.ceil((words / 5) / 5) * 5;
+        document.getElementById('char-count').innerText = `Chars: ${text.length}`;
+        document.getElementById('word-count').innerText = `Words: ${words}`;
+        document.getElementById('line-calc').innerText = `Lines: ~${lineCalc}`;
+    }
+
+    function copyToClipboard() {
+        navigator.clipboard.writeText(quill.getText()).then(() => {
+            const btn = document.querySelector('button[onclick="copyToClipboard()"]');
+            const originalText = btn.innerText;
+            btn.innerText = "Copied!";
+            setTimeout(() => btn.innerText = originalText, 1500);
+        });
+    }
+
+    function exportToEmail() {
+        const body = encodeURIComponent(quill.getText());
+        window.location.href = `mailto:?subject=Scratchpad Export&body=${body}`;
+    }
+
+    function exportToFile() {
+        const currentSize = getComputedStyle(document.documentElement).getPropertyValue('--editor-font-size');
+        const htmlContent = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:20px;font-size:${currentSize};}.ql-editor p{margin-bottom:0.6em;} .ql-editor a { color: #0000ee !important; text-decoration: underline !important; }</style></head><body>${quill.root.innerHTML}</body></html>`;
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `scratchpad_slot_${currentSlot}.html`;
+        a.click();
+    }
+
+    updateStats();
+</script>
+
+</body>
+</html>

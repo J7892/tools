@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Counter</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            margin-top: 0;
+            text-align: center;
+            color: #2c3e50;
+        }
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 15px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+            font-size: 14px;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.4);
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: #ecf0f1;
+            padding: 1.5rem;
+            border-radius: 6px;
+            gap: 10px;
+        }
+        .stat-box {
+            text-align: center;
+            flex: 1;
+        }
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2980b9;
+            display: block;
+        }
+        .stat-label {
+            display: block;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Word Counter</h1>
+        <textarea id="textInput" placeholder="Type or paste your text here..."></textarea>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <span id="wordCount" class="stat-number">0</span>
+                <span class="stat-label">Words</span>
+            </div>
+            <div class="stat-box">
+                <span id="charCount" class="stat-number">0</span>
+                <span class="stat-label">Characters</span>
+            </div>
+            <div class="stat-box">
+                <span id="lineCount" class="stat-number">~0</span>
+                <span class="stat-label">Lines</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const wordCountDisplay = document.getElementById('wordCount');
+        const charCountDisplay = document.getElementById('charCount');
+        const lineCountDisplay = document.getElementById('lineCount');
+
+        textInput.addEventListener('input', () => {
+            const text = textInput.value;
+            
+            // Character Count
+            charCountDisplay.textContent = text.length;
+
+            // Word Count
+            const words = text.trim().split(/\s+/);
+            const validWords = words.filter(word => word.length > 0);
+            const totalWords = validWords.length;
+            wordCountDisplay.textContent = totalWords;
+
+            // Approximate Line Count (Words / 5, always rounded up to nearest 5)
+            if (totalWords === 0) {
+                lineCountDisplay.textContent = "~0";
+            } else {
+                const rawLines = totalWords / 5;
+                // Math.ceil divides by 5, rounds up to the next integer, then multiplies back
+                const ceiledLines = Math.ceil(rawLines / 5) * 5;
+                lineCountDisplay.textContent = `~${ceiledLines}`;
+            }
+        });
+    </script>
+
+</body>
+</html>

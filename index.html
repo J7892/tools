@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tools</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --muted: #666666;
+            --border: #e5e5e5;
+            --hover: #f9f9f9;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding-top: 15vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            padding: 0 20px;
+        }
+
+        header {
+            border-bottom: 2px solid var(--text);
+            padding-bottom: 12px;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 0;
+        }
+
+        nav {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background-color: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .tool-link {
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            text-decoration: none;
+            color: var(--text);
+            transition: background-color 0.15s ease;
+        }
+
+        .tool-link:hover {
+            background-color: var(--hover);
+        }
+
+        .tool-name {
+            font-weight: 500;
+            font-size: 1.05rem;
+        }
+
+        .tool-meta {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+            font-size: 0.75rem;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .arrow {
+            font-size: 1rem;
+            opacity: 0.4;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .tool-link:hover .arrow {
+            opacity: 1;
+            transform: translateX(4px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Tools</h1>
+        </header>
+
+        <nav>
+            <a href="/sidebar/" class="tool-link">
+                <span class="tool-name">Sidebar</span>
+                <div class="tool-meta">
+                    sidebar.html <span class="arrow">→</span>
+                </div>
+            </a>
+
+   <a href="/aiswitcher/" class="tool-link">
+                <span class="tool-name">AI Switcher</span>
+                <div class="tool-meta">
+                    /aiswitcher/ <span class="arrow">→</span>
+                </div>
+            </a>
+            
+            <a href="scratchpad.html" class="tool-link">
+                <span class="tool-name">Scratchpad</span>
+                <div class="tool-meta">
+                    scratchpad.html <span class="arrow">→</span>
+                </div>
+            </a>
+
+            <a href="diffcheck.html" class="tool-link">
+                <span class="tool-name">Diff Checker</span>
+                <div class="tool-meta">
+                    diffcheck.html <span class="arrow">→</span>
+                </div>
+            </a>
+
+            <a href="wordcount.html" class="tool-link">
+                <span class="tool-name">Word Counter</span>
+                <div class="tool-meta">
+                    wordcount.html <span class="arrow">→</span>
+                </div>
+            </a>
+
+            <a href="convertcase.html" class="tool-link">
+                <span class="tool-name">Convert Case</span>
+                <div class="tool-meta">
+                    convertcase.html <span class="arrow">→</span>
+                </div>
+            </a>
+
+            
+            <a href="paragraph.html" class="tool-link">
+                <span class="tool-name">Paragraph Fixer</span>
+                <div class="tool-meta">
+                    paragraph.html <span class="arrow">→</span>
+                </div>
+            </a>
+        </nav>
+    </div>
+
+</body>
+</html>

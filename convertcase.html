@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Converter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        textarea {
+            width: 100%;
+            height: 250px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px 2px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* Subtle tonal variations for distinction */
+        .btn-1 { background-color: #2980b9; }
+        .btn-2 { background-color: #2e86c1; }
+        .btn-3 { background-color: #3498db; }
+        .btn-4 { background-color: #5dade2; }
+        .btn-5 { background-color: #85c1e9; }
+
+        .copy-btn {
+            background-color: #27ae60;
+            margin-top: 15px;
+            width: 100%;
+            font-size: 16px;
+            padding: 12px;
+        }
+
+        .copy-btn:hover {
+            background-color: #219150;
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            .button-group {
+                flex-wrap: wrap;
+            }
+            button {
+                flex: 1 1 45%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Case Converter</h1>
+        
+        <textarea id="textInput" placeholder="Type or paste your content here..."></textarea>
+
+        <div class="button-group">
+            <button class="btn-1" onclick="convert('sentence')">Sentence case</button>
+            <button class="btn-2" onclick="convert('title')">Title Case</button>
+            <button class="btn-3" onclick="convert('lower')">lowercase</button>
+            <button class="btn-4" onclick="convert('upper')">UPPERCASE</button>
+            <button class="btn-5" onclick="convert('capitalized')">Capitalized</button>
+        </div>
+
+        <button class="copy-btn" onclick="copyText()">Copy to Clipboard</button>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+
+        const transformers = {
+            sentence: (str) => {
+                return str.toLowerCase().replace(/(^\s*\w|[.!?]\s+\w)/g, (match) => match.toUpperCase());
+            },
+            lower: (str) => str.toLowerCase(),
+            upper: (str) => str.toUpperCase(),
+            capitalized: (str) => {
+                return str.toLowerCase().replace(/\b\w/g, (match) => match.toUpperCase());
+            },
+            title: (str) => {
+                const minorWords = ['a', 'an', 'and', 'as', 'at', 'but', 'by', 'en', 'for', 'if', 'in', 'of', 'on', 'or', 'the', 'to', 'v', 'via', 'vs'];
+                return str.toLowerCase().split(' ').map((word, index, array) => {
+                    if (index > 0 && index < array.length - 1 && minorWords.includes(word)) {
+                        return word;
+                    }
+                    return word.charAt(0).toUpperCase() + word.slice(1);
+                }).join(' ');
+            }
+        };
+
+        function convert(type) {
+            const currentText = textInput.value;
+            if (!currentText) return;
+            textInput.value = transformers[type](currentText);
+        }
+
+        function copyText() {
+            if (!textInput.value) return;
+            textInput.select();
+            document.execCommand('copy');
+            
+            const copyBtn = document.querySelector('.copy-btn');
+            const originalText = copyBtn.innerText;
+            copyBtn.innerText = 'Copied!';
+            setTimeout(() => {
+                copyBtn.innerText = originalText;
+            }, 2000);
+        }
+    </script>
+
+</body>
+</html>
