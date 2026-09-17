@@ -50,9 +50,68 @@
         }
         .sidebar.open { margin-left: 0; }
         
-        .sidebar-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        .sidebar-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
         #sidebar-search { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; outline: none; font-size: 0.85em; }
         
+        /* Tag Filter Container */
+        .tag-filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .tag-filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75em;
+            color: var(--secondary-text);
+            font-weight: 600;
+        }
+        .tag-filter-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-height: 72px;
+            overflow-y: auto;
+            padding: 2px 0;
+        }
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #eef2f7;
+            color: #495057;
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            user-select: none;
+            border: 1px solid #ced4da;
+            transition: all 0.15s ease;
+        }
+        .tag-chip:hover {
+            background: #dee2e6;
+        }
+        .tag-chip.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .clear-filters-btn {
+            background: none;
+            border: none;
+            color: #007bff;
+            font-size: 0.75em;
+            cursor: pointer;
+            padding: 0;
+        }
+        .clear-filters-btn:hover {
+            text-decoration: underline;
+        }
+
         .sort-container { display: flex; align-items: center; justify-content: space-between; font-size: 0.75em; color: var(--secondary-text); padding: 0 2px; }
         #sort-select { border: none; background: transparent; color: var(--text-color); font-weight: 600; cursor: pointer; outline: none; }
 
@@ -115,7 +174,60 @@
         .native-new-btn { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 0 16px; font-weight: 600; font-size: 12px; cursor: pointer; height: 32px; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
         .toggle-sidebar { background: #333; color: white; padding: 0 12px; cursor: pointer; border-radius: 4px; border: none; font-size: 1.1em; height: 32px; display: flex; align-items: center; justify-content: center; }
 
-        .ql-container.ql-snow { flex: 1; border: 1px solid var(--border-color) !important; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
+        /* Tag Bar in Editor */
+        .editor-tag-bar {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            background: #fafafa;
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 6px 12px;
+            min-height: 36px;
+        }
+        .note-tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #e3f2fd;
+            color: #0d47a1;
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 12px;
+            border: 1px solid #bbdefb;
+            font-weight: 500;
+        }
+        .note-tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            line-height: 1;
+            color: #1976d2;
+        }
+        .note-tag-remove:hover {
+            color: var(--danger);
+        }
+        .add-tag-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        #tag-input {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.75em;
+            outline: none;
+            background: #fff;
+            width: 120px;
+        }
+        #tag-input:focus {
+            border-color: #007bff;
+        }
+
+        .ql-container.ql-snow { flex: 1; border: 1px solid var(--border-color) !important; border-top: none !important; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
         
         /* Font size dynamically linked to CSS variable */
         .ql-editor { flex: 1; overflow-y: auto; padding: 20px; line-height: 1.4; font-size: var(--editor-font-size) !important; }
@@ -138,7 +250,7 @@
         .btn-tool { background: var(--item-hover); color: var(--text-color); font-size: 0.75em; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;}
 
         /* Sidebar Note Items */
-        .note-list { flex-grow: 1; overflow-y: auto; margin-top: 10px; }
+        .note-list { flex-grow: 1; overflow-y: auto; margin-top: 6px; }
         .note-item { padding: 6px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; border-radius: 4px; position: relative; }
         .note-item:hover { background: var(--item-hover); }
         .note-item.active { background: var(--item-hover); border-left: 4px solid #007bff; }
@@ -151,6 +263,21 @@
             text-overflow: ellipsis; 
             color: var(--text-color);
             flex-grow: 1;
+        }
+        
+        .note-item-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            margin-top: 3px;
+        }
+        .note-item-tag {
+            font-size: 0.65em;
+            background: #e9ecef;
+            color: #495057;
+            padding: 1px 5px;
+            border-radius: 8px;
+            line-height: 1.2;
         }
 
         .delete-btn { color: var(--secondary-text); font-weight: bold; padding: 2px 8px; display: none; cursor: pointer; font-size: 18px; z-index: 10; }
@@ -236,6 +363,7 @@
 
         /* Zen Mode State Triggers */
         .editor-area.zen-mode .custom-toolbar-wrapper,
+        .editor-area.zen-mode .editor-tag-bar,
         .editor-area.zen-mode .bottom-bar {
             display: none !important;
         }
@@ -278,6 +406,7 @@
             .editor-area { padding: 0; } 
             .editor-content-wrapper { margin-top: 0; }
             .custom-toolbar-wrapper { border-top: none; border-left: none; border-right: none; border-radius: 0; }
+            .editor-tag-bar { border-left: none; border-right: none; }
             .ql-container.ql-snow { border-left: none; border-right: none; border-radius: 0; border-bottom: none; }
             .bottom-bar { padding: 10px; } 
 
@@ -296,6 +425,15 @@
         <div class="sidebar-controls">
             <button class="native-new-btn" style="width:100%; margin-left: 0;" onclick="createNewNote()">+ New Note</button>
             <input type="text" id="sidebar-search" placeholder="Search titles & content..." oninput="renderNoteList()">
+            
+            <div class="tag-filter-section" id="tag-filter-section">
+                <div class="tag-filter-header">
+                    <span>Filter by tags:</span>
+                    <button class="clear-filters-btn" id="clear-tags-btn" onclick="clearSelectedFilterTags()" style="display:none;">Clear</button>
+                </div>
+                <div class="tag-filter-chips" id="tag-filter-chips"></div>
+            </div>
+
             <div class="sort-container">
                 <span>Sort by:</span>
                 <select id="sort-select" onchange="changeSort(this.value)">
@@ -330,6 +468,15 @@
                         <div id="toolbar-container"></div>
                         <button class="native-new-btn" onclick="createNewNote()">+ <span class="btn-text">NEW NOTE</span></button>
                     </div>
+                    
+                    <div class="editor-tag-bar">
+                        <div id="active-note-tags" style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;"></div>
+                        <div class="add-tag-wrapper">
+                            <input type="text" id="tag-input" placeholder="+ Add tag..." list="existing-tags-datalist" onkeydown="handleTagInputKey(event)">
+                            <datalist id="existing-tags-datalist"></datalist>
+                        </div>
+                    </div>
+
                     <div id="editor-container"></div>
                 </div>
                 <div class="bottom-bar">
@@ -369,12 +516,14 @@
 
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
-    const APP_VERSION = 1.1;
+    const APP_VERSION = 1.2;
     let currentNoteId = null;
+    let currentNoteTags = [];
+    let selectedFilterTags = new Set();
     let saveTimeout = null;
     let currentGlobalSize = localStorage.getItem('global-display-size') || 'false';
     let sortMode = localStorage.getItem('sort-pref') || 'date';
-    let pendingImportNotes = []; // Holds data for the import modal
+    let pendingImportNotes = [];
 
     const Embed = Quill.import('blots/embed');
     class SoftBreak extends Embed {
@@ -409,7 +558,7 @@
             keyboard: {
                 bindings: {
                     softBreak: {
-                        key: 13, // 13 is the Enter key
+                        key: 13,
                         shiftKey: true,
                         handler: function(range, context) {
                             this.quill.insertEmbed(range.index, 'softbreak', true, 'user');
@@ -527,7 +676,9 @@
     
     function createNewNote() { 
         currentNoteId = Date.now(); 
+        currentNoteTags = [];
         quill.setText(`\n`, 'user'); 
+        renderActiveNoteTags();
         quill.focus(); 
     }
     
@@ -558,18 +709,136 @@
         );
     }
 
-    function getNotesSafely() { try { const raw = localStorage.getItem('my-github-notes'); if (!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : (parsed.data || []); } catch (e) { return []; } }
+    function getNotesSafely() { 
+        try { 
+            const raw = localStorage.getItem('my-github-notes'); 
+            if (!raw) return []; 
+            const parsed = JSON.parse(raw); 
+            const list = Array.isArray(parsed) ? parsed : (parsed.data || []); 
+            return list.map(n => ({ ...n, tags: Array.isArray(n.tags) ? n.tags : [] }));
+        } catch (e) { 
+            return []; 
+        } 
+    }
     
     function saveNotesInternal(notes) { 
         try {
             localStorage.setItem('my-github-notes', JSON.stringify({ version: APP_VERSION, data: notes })); 
+            renderTagFilters();
             renderNoteList(); 
+            updateTagDatalist();
             return true;
         } catch (e) {
             console.error("Storage Error:", e);
             alert("CRITICAL WARNING: Your browser's local storage is full. This note could NOT be saved. Please click 'Backup Database', then delete old notes to free up space.");
             return false; 
         }
+    }
+
+    function getAllExistingTags() {
+        const notes = getNotesSafely();
+        const tagSet = new Set();
+        notes.forEach(note => {
+            (note.tags || []).forEach(t => tagSet.add(t));
+        });
+        return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+    }
+
+    function updateTagDatalist() {
+        const datalist = document.getElementById('existing-tags-datalist');
+        if (!datalist) return;
+        datalist.innerHTML = '';
+        getAllExistingTags().forEach(tag => {
+            const option = document.createElement('option');
+            option.value = tag;
+            datalist.appendChild(option);
+        });
+    }
+
+    function renderTagFilters() {
+        const container = document.getElementById('tag-filter-chips');
+        const clearBtn = document.getElementById('clear-tags-btn');
+        const filterSection = document.getElementById('tag-filter-section');
+        if (!container) return;
+
+        const allTags = getAllExistingTags();
+
+        // Prune deleted tags from current selection
+        selectedFilterTags.forEach(tag => {
+            if (!allTags.includes(tag)) selectedFilterTags.delete(tag);
+        });
+
+        if (allTags.length === 0) {
+            filterSection.style.display = 'none';
+            return;
+        } else {
+            filterSection.style.display = 'flex';
+        }
+
+        container.innerHTML = '';
+        allTags.forEach(tag => {
+            const chip = document.createElement('span');
+            chip.className = `tag-chip ${selectedFilterTags.has(tag) ? 'active' : ''}`;
+            chip.innerText = `#${tag}`;
+            chip.onclick = () => toggleFilterTag(tag);
+            container.appendChild(chip);
+        });
+
+        clearBtn.style.display = selectedFilterTags.size > 0 ? 'inline' : 'none';
+    }
+
+    function toggleFilterTag(tag) {
+        if (selectedFilterTags.has(tag)) {
+            selectedFilterTags.delete(tag);
+        } else {
+            selectedFilterTags.add(tag);
+        }
+        renderTagFilters();
+        renderNoteList();
+    }
+
+    function clearSelectedFilterTags() {
+        selectedFilterTags.clear();
+        renderTagFilters();
+        renderNoteList();
+    }
+
+    function renderActiveNoteTags() {
+        const container = document.getElementById('active-note-tags');
+        if (!container) return;
+        container.innerHTML = '';
+        currentNoteTags.forEach(tag => {
+            const chip = document.createElement('span');
+            chip.className = 'note-tag-chip';
+            chip.innerHTML = `#${escapeHTML(tag)} <span class="note-tag-remove" onclick="removeTagFromCurrentNote('${escapeHTML(tag)}')">&times;</span>`;
+            container.appendChild(chip);
+        });
+    }
+
+    function handleTagInputKey(e) {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const input = document.getElementById('tag-input');
+            const val = input.value.trim().replace(/^#/, '').toLowerCase();
+            if (val) {
+                addTagToCurrentNote(val);
+                input.value = '';
+            }
+        }
+    }
+
+    function addTagToCurrentNote(tag) {
+        if (!currentNoteTags.includes(tag)) {
+            currentNoteTags.push(tag);
+            renderActiveNoteTags();
+            autoSave();
+        }
+    }
+
+    function removeTagFromCurrentNote(tag) {
+        currentNoteTags = currentNoteTags.filter(t => t !== tag);
+        renderActiveNoteTags();
+        autoSave();
     }
 
     function movePin(noteId, direction) {
@@ -645,6 +914,7 @@
                 title: firstLine, 
                 content: quill.getContents(), 
                 plainText: quill.getText(), 
+                tags: currentNoteTags,
                 lastModified: now 
             };
             notes[existingIdx] = noteData;
@@ -655,6 +925,7 @@
                 title: firstLine, 
                 content: quill.getContents(), 
                 plainText: quill.getText(), 
+                tags: currentNoteTags,
                 date: now, 
                 lastModified: now,
                 pinned: false
@@ -696,18 +967,34 @@
         });
 
         notes.forEach(note => {
+            const noteTags = note.tags || [];
+
+            // Multi-tag match filter: Note must contain all selected filter tags
+            if (selectedFilterTags.size > 0) {
+                const hasAllTags = Array.from(selectedFilterTags).every(tag => noteTags.includes(tag));
+                if (!hasAllTags) return;
+            }
+
             if (searchTerm && !(note.title || "").toLowerCase().includes(searchTerm) && !(note.plainText || "").toLowerCase().includes(searchTerm)) return;
+            
             const div = document.createElement('div');
             div.className = `note-item ${note.id === currentNoteId ? 'active' : ''}`;
             const displayDate = new Date(note[sortMode] || note.date).toLocaleDateString();
             
             const isPinned = note.pinned;
             const pinIcon = isPinned ? '📌 ' : '';
+
+            const tagsHTML = noteTags.length > 0 ? `
+                <div class="note-item-tags">
+                    ${noteTags.map(t => `<span class="note-item-tag">#${escapeHTML(t)}</span>`).join('')}
+                </div>
+            ` : '';
             
             div.innerHTML = `
                 <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:0px;" onclick="loadNote(${note.id})">
                     <div class="note-title">${pinIcon}${escapeHTML(note.title || "Untitled")}</div>
                     <div style="font-size:0.65em; color:var(--secondary-text);">${displayDate}</div>
+                    ${tagsHTML}
                 </div>
                 ${isPinned ? `
                     <div class="pin-controls" onclick="event.stopPropagation()">
@@ -728,14 +1015,24 @@
         renderNoteList();
     }
 
-    function deleteNote(id) { if (confirm("Delete note?")) { let notes = getNotesSafely().filter(n => n.id !== id); saveNotesInternal(notes); if (currentNoteId === id) { if (notes.length > 0) loadNote(notes[0].id); else createNewNote(); } } }
+    function deleteNote(id) { 
+        if (confirm("Delete note?")) { 
+            let notes = getNotesSafely().filter(n => n.id !== id); 
+            saveNotesInternal(notes); 
+            if (currentNoteId === id) { 
+                if (notes.length > 0) loadNote(notes[0].id); 
+                else createNewNote(); 
+            } 
+        } 
+    }
     
     function loadNote(id) { 
         const note = getNotesSafely().find(n => n.id === id); 
         if (note) { 
             currentNoteId = note.id; 
+            currentNoteTags = [...(note.tags || [])];
             quill.setContents(note.content); 
-            
+            renderActiveNoteTags();
             renderNoteList(); 
         } 
     }
@@ -743,7 +1040,7 @@
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function setWidth(mode) { document.getElementById('width-wrapper').className = `content-width-wrapper ${mode}`; localStorage.setItem('width-pref', mode); }
 
-    // --- NEW SMART IMPORT LOGIC ---
+    // --- SMART IMPORT LOGIC ---
     function importNotes(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -757,7 +1054,7 @@
             } catch (err) { 
                 alert("Invalid backup file."); 
             }
-            event.target.value = ''; // Reset input
+            event.target.value = '';
         };
         FileReaderObj.readAsText(file);
     }
@@ -781,7 +1078,8 @@
         const listEl = document.getElementById('import-list');
         listEl.innerHTML = '';
 
-        importedNotes.forEach(note => {
+        importedNotes.forEach(rawNote => {
+            const note = { ...rawNote, tags: Array.isArray(rawNote.tags) ? rawNote.tags : [] };
             const ext = existingMap.get(note.id);
             let status = 'new';
             let label = 'New Note';
@@ -789,7 +1087,9 @@
             let badgeClass = 'badge-new';
 
             if (ext) {
-                const isIdentical = ext.plainText === note.plainText && ext.title === note.title;
+                const isIdentical = ext.plainText === note.plainText && 
+                                    ext.title === note.title && 
+                                    JSON.stringify(ext.tags || []) === JSON.stringify(note.tags || []);
                 if (isIdentical) {
                     status = 'identical';
                     label = 'Identical (Unchanged)';
@@ -884,7 +1184,10 @@
         const sortSelect = document.getElementById('sort-select');
         if (sortSelect) sortSelect.value = sortMode;
 
+        updateTagDatalist();
+        renderTagFilters();
         renderNoteList();
+
         const savedHeight = localStorage.getItem('ticktick-height');
         const savedWidth = localStorage.getItem('ticktick-width');
         if (window.innerWidth < 1000 && savedHeight) todoContainer.style.height = savedHeight + '%';
