@@ -53,6 +53,73 @@
         .sidebar-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
         #sidebar-search { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; outline: none; font-size: 0.85em; }
         
+        /* Batch Mode Bar */
+        .batch-controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75em;
+            color: var(--secondary-text);
+            padding: 2px 0;
+        }
+        .batch-btn-link {
+            background: none;
+            border: none;
+            color: #007bff;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            font-size: 1em;
+        }
+        .batch-btn-link:hover { text-decoration: underline; }
+
+        .batch-action-panel {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 6px;
+        }
+        .batch-action-panel.visible { display: flex; }
+        .batch-action-row {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .batch-action-panel input[type="text"] {
+            flex: 1;
+            padding: 4px 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.75em;
+            outline: none;
+            background: #fff;
+        }
+        .btn-batch-action {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.75em;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-color);
+            white-space: nowrap;
+        }
+        .btn-batch-action:hover { background: var(--item-hover); }
+        .btn-batch-action.danger {
+            background: #fff5f5;
+            color: var(--danger);
+            border-color: #ffc9c9;
+        }
+        .btn-batch-action.danger:hover {
+            background: var(--danger);
+            color: #fff;
+        }
+
         /* Tag Filter Container */
         .tag-filter-section {
             display: flex;
@@ -251,10 +318,21 @@
 
         /* Sidebar Note Items */
         .note-list { flex-grow: 1; overflow-y: auto; margin-top: 6px; }
-        .note-item { padding: 6px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; border-radius: 4px; position: relative; }
+        .note-item { padding: 6px 10px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; border-radius: 4px; position: relative; gap: 8px; }
         .note-item:hover { background: var(--item-hover); }
         .note-item.active { background: var(--item-hover); border-left: 4px solid #007bff; }
         
+        .note-select-checkbox {
+            cursor: pointer;
+            margin: 0;
+            display: none;
+            accent-color: #007bff;
+        }
+        .sidebar.batch-mode .note-select-checkbox { display: inline-block; }
+        .sidebar.batch-mode .pin-toggle,
+        .sidebar.batch-mode .pin-controls,
+        .sidebar.batch-mode .delete-btn { display: none !important; }
+
         .note-title { 
             font-size: 0.85em; 
             font-weight: bold; 
@@ -426,6 +504,25 @@
             <button class="native-new-btn" style="width:100%; margin-left: 0;" onclick="createNewNote()">+ New Note</button>
             <input type="text" id="sidebar-search" placeholder="Search titles & content..." oninput="renderNoteList()">
             
+            <div class="batch-controls-bar">
+                <span id="batch-selected-count">0 selected</span>
+                <div style="display:flex; gap:8px;">
+                    <button class="batch-btn-link" id="batch-select-all-btn" onclick="batchSelectAllToggle()" style="display:none;">Select All</button>
+                    <button class="batch-btn-link" id="batch-toggle-btn" onclick="toggleBatchMode()">Select</button>
+                </div>
+            </div>
+
+            <div class="batch-action-panel" id="batch-action-panel">
+                <div class="batch-action-row">
+                    <input type="text" id="batch-tag-input" placeholder="Tag name..." list="existing-tags-datalist">
+                    <button class="btn-batch-action" onclick="applyBatchTagAction('add')">+ Tag</button>
+                    <button class="btn-batch-action" onclick="applyBatchTagAction('remove')">- Tag</button>
+                </div>
+                <div class="batch-action-row" style="justify-content: flex-end;">
+                    <button class="btn-batch-action danger" onclick="batchDeleteSelected()">Delete Selected</button>
+                </div>
+            </div>
+
             <div class="tag-filter-section" id="tag-filter-section">
                 <div class="tag-filter-header">
                     <span>Filter by tags:</span>
@@ -516,10 +613,12 @@
 
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
-    const APP_VERSION = 1.2;
+    const APP_VERSION = 1.3;
     let currentNoteId = null;
     let currentNoteTags = [];
     let selectedFilterTags = new Set();
+    let selectedBatchNoteIds = new Set();
+    let isBatchMode = false;
     let saveTimeout = null;
     let currentGlobalSize = localStorage.getItem('global-display-size') || 'false';
     let sortMode = localStorage.getItem('sort-pref') || 'date';
@@ -763,7 +862,6 @@
 
         const allTags = getAllExistingTags();
 
-        // Prune deleted tags from current selection
         selectedFilterTags.forEach(tag => {
             if (!allTags.includes(tag)) selectedFilterTags.delete(tag);
         });
@@ -839,6 +937,150 @@
         currentNoteTags = currentNoteTags.filter(t => t !== tag);
         renderActiveNoteTags();
         autoSave();
+    }
+
+    // --- BATCH SELECTION & ACTIONS ---
+    function toggleBatchMode() {
+        isBatchMode = !isBatchMode;
+        const sidebar = document.getElementById('sidebar');
+        const batchPanel = document.getElementById('batch-action-panel');
+        const toggleBtn = document.getElementById('batch-toggle-btn');
+        const selectAllBtn = document.getElementById('batch-select-all-btn');
+
+        if (isBatchMode) {
+            sidebar.classList.add('batch-mode');
+            batchPanel.classList.add('visible');
+            toggleBtn.innerText = 'Done';
+            selectAllBtn.style.display = 'inline';
+        } else {
+            sidebar.classList.remove('batch-mode');
+            batchPanel.classList.remove('visible');
+            toggleBtn.innerText = 'Select';
+            selectAllBtn.style.display = 'none';
+            selectedBatchNoteIds.clear();
+        }
+        updateBatchSelectedCount();
+        renderNoteList();
+    }
+
+    function updateBatchSelectedCount() {
+        const label = document.getElementById('batch-selected-count');
+        label.innerText = `${selectedBatchNoteIds.size} selected`;
+    }
+
+    function toggleBatchNoteSelection(id, checked) {
+        if (checked) {
+            selectedBatchNoteIds.add(id);
+        } else {
+            selectedBatchNoteIds.delete(id);
+        }
+        updateBatchSelectedCount();
+    }
+
+    function getCurrentlyFilteredNoteIds() {
+        const notes = getNotesSafely();
+        const searchTerm = document.getElementById('sidebar-search').value.toLowerCase().trim();
+
+        return notes.filter(note => {
+            const noteTags = note.tags || [];
+            if (selectedFilterTags.size > 0) {
+                const hasAllTags = Array.from(selectedFilterTags).every(tag => noteTags.includes(tag));
+                if (!hasAllTags) return false;
+            }
+            if (searchTerm && !(note.title || "").toLowerCase().includes(searchTerm) && !(note.plainText || "").toLowerCase().includes(searchTerm)) {
+                return false;
+            }
+            return true;
+        }).map(n => n.id);
+    }
+
+    function batchSelectAllToggle() {
+        const visibleIds = getCurrentlyFilteredNoteIds();
+        const allSelected = visibleIds.every(id => selectedBatchNoteIds.has(id));
+
+        if (allSelected) {
+            visibleIds.forEach(id => selectedBatchNoteIds.delete(id));
+        } else {
+            visibleIds.forEach(id => selectedBatchNoteIds.add(id));
+        }
+        updateBatchSelectedCount();
+        renderNoteList();
+    }
+
+    function batchDeleteSelected() {
+        if (selectedBatchNoteIds.size === 0) {
+            alert("No notes selected.");
+            return;
+        }
+
+        if (!confirm(`Delete ${selectedBatchNoteIds.size} selected note(s)?`)) return;
+
+        let notes = getNotesSafely().filter(n => !selectedBatchNoteIds.has(n.id));
+        saveNotesInternal(notes);
+
+        if (selectedBatchNoteIds.has(currentNoteId)) {
+            if (notes.length > 0) {
+                loadNote(notes[0].id);
+            } else {
+                createNewNote();
+            }
+        }
+
+        selectedBatchNoteIds.clear();
+        updateBatchSelectedCount();
+    }
+
+    function applyBatchTagAction(action) {
+        if (selectedBatchNoteIds.size === 0) {
+            alert("No notes selected.");
+            return;
+        }
+
+        const tagInput = document.getElementById('batch-tag-input');
+        const rawTag = tagInput.value.trim().replace(/^#/, '').toLowerCase();
+
+        if (!rawTag) {
+            alert("Please enter a tag name.");
+            return;
+        }
+
+        const now = new Date().toISOString();
+        let notes = getNotesSafely();
+        let updatedCount = 0;
+
+        notes = notes.map(note => {
+            if (selectedBatchNoteIds.has(note.id)) {
+                let noteTags = Array.isArray(note.tags) ? [...note.tags] : [];
+                let modified = false;
+
+                if (action === 'add') {
+                    if (!noteTags.includes(rawTag)) {
+                        noteTags.push(rawTag);
+                        modified = true;
+                    }
+                } else if (action === 'remove') {
+                    if (noteTags.includes(rawTag)) {
+                        noteTags = noteTags.filter(t => t !== rawTag);
+                        modified = true;
+                    }
+                }
+
+                if (modified) {
+                    updatedCount++;
+                    if (note.id === currentNoteId) {
+                        currentNoteTags = noteTags;
+                        renderActiveNoteTags();
+                    }
+                    return { ...note, tags: noteTags, lastModified: now };
+                }
+            }
+            return note;
+        });
+
+        if (updatedCount > 0) {
+            saveNotesInternal(notes);
+            tagInput.value = '';
+        }
     }
 
     function movePin(noteId, direction) {
@@ -969,7 +1211,6 @@
         notes.forEach(note => {
             const noteTags = note.tags || [];
 
-            // Multi-tag match filter: Note must contain all selected filter tags
             if (selectedFilterTags.size > 0) {
                 const hasAllTags = Array.from(selectedFilterTags).every(tag => noteTags.includes(tag));
                 if (!hasAllTags) return;
@@ -990,7 +1231,10 @@
                 </div>
             ` : '';
             
+            const isSelected = selectedBatchNoteIds.has(note.id);
+
             div.innerHTML = `
+                <input type="checkbox" class="note-select-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleBatchNoteSelection(${note.id}, this.checked)">
                 <div style="flex-grow:1; overflow:hidden; display:flex; flex-direction:column; gap:0px;" onclick="loadNote(${note.id})">
                     <div class="note-title">${pinIcon}${escapeHTML(note.title || "Untitled")}</div>
                     <div style="font-size:0.65em; color:var(--secondary-text);">${displayDate}</div>
@@ -1018,6 +1262,8 @@
     function deleteNote(id) { 
         if (confirm("Delete note?")) { 
             let notes = getNotesSafely().filter(n => n.id !== id); 
+            selectedBatchNoteIds.delete(id);
+            updateBatchSelectedCount();
             saveNotesInternal(notes); 
             if (currentNoteId === id) { 
                 if (notes.length > 0) loadNote(notes[0].id); 
