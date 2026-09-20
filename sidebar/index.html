@@ -510,7 +510,7 @@
                     <button class="btn-batch-action" onclick="applyBatchTagAction('remove')">- Tag</button>
                 </div>
                 <div class="batch-action-row" style="justify-content: flex-end;">
-                    <button class="btn-batch-action danger" onclick="batchDeleteSelected()">Delete Selected</button>
+                    <button class="btn-batch-action danger" id="batch-delete-btn" onclick="batchDeleteSelected()">Delete Selected</button>
                 </div>
             </div>
 
@@ -770,6 +770,7 @@
         currentNoteTags = [];
         clearBatchSelection();
         quill.setText(`\n`, 'user'); 
+        localStorage.setItem('last-note-id', currentNoteId);
         renderActiveNoteTags();
         quill.focus(); 
     }
@@ -982,11 +983,15 @@
     function updateBatchUI() {
         const panel = document.getElementById('batch-action-panel');
         const countLabel = document.getElementById('batch-selected-count');
+        const deleteBtn = document.getElementById('batch-delete-btn');
         const count = selectedBatchNoteIds.size;
 
         if (count > 1) {
             panel.classList.add('visible');
             countLabel.innerText = `${count} notes selected`;
+            if (deleteBtn) {
+                deleteBtn.innerText = `Delete ${count} Selected`;
+            }
         } else {
             panel.classList.remove('visible');
         }
@@ -1008,12 +1013,16 @@
     function batchDeleteSelected() {
         if (selectedBatchNoteIds.size === 0) return;
 
-        if (!confirm(`Delete ${selectedBatchNoteIds.size} selected note(s)?`)) return;
+        const count = selectedBatchNoteIds.size;
+        if (!confirm(`Delete ${count} selected note${count > 1 ? 's' : ''}?`)) return;
 
-        let notes = getNotesSafely().filter(n => !selectedBatchNoteIds.has(n.id));
+        clearTimeout(saveTimeout);
+        const toDeleteIds = new Set(Array.from(selectedBatchNoteIds).map(String));
+        let notes = getNotesSafely().filter(n => !toDeleteIds.has(String(n.id)));
+        
         saveNotesInternal(notes);
 
-        if (selectedBatchNoteIds.has(currentNoteId)) {
+        if (toDeleteIds.has(String(currentNoteId))) {
             if (notes.length > 0) {
                 loadNote(notes[0].id);
             } else {
@@ -1257,12 +1266,17 @@
     }
 
     function deleteNote(id) { 
+        if (selectedBatchNoteIds.has(id) && selectedBatchNoteIds.size > 1) {
+            batchDeleteSelected();
+            return;
+        }
         if (confirm("Delete note?")) { 
-            let notes = getNotesSafely().filter(n => n.id !== id); 
+            clearTimeout(saveTimeout);
+            let notes = getNotesSafely().filter(n => String(n.id) !== String(id)); 
             selectedBatchNoteIds.delete(id);
             updateBatchUI();
             saveNotesInternal(notes); 
-            if (currentNoteId === id) { 
+            if (String(currentNoteId) === String(id)) { 
                 if (notes.length > 0) loadNote(notes[0].id); 
                 else createNewNote(); 
             } 
@@ -1270,12 +1284,13 @@
     }
     
     function loadNote(id) { 
-        const note = getNotesSafely().find(n => n.id === id); 
+        const note = getNotesSafely().find(n => String(n.id) === String(id)); 
         if (note) { 
             currentNoteId = note.id; 
             lastClickedNoteId = note.id;
             currentNoteTags = [...(note.tags || [])];
             quill.setContents(note.content); 
+            localStorage.setItem('last-note-id', currentNoteId);
             renderActiveNoteTags();
             renderNoteList(); 
         } 
@@ -1461,6 +1476,18 @@
             });
             observer.observe(sizeLabel, { attributes: true, attributeFilter: ['data-value'] });
         }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                const active = document.activeElement;
+                const tag = active ? active.tagName.toLowerCase() : '';
+                const isEditing = tag === 'input' || tag === 'textarea' || (active && active.isContentEditable);
+                if (!isEditing && selectedBatchNoteIds.size > 1) {
+                    e.preventDefault();
+                    batchDeleteSelected();
+                }
+            }
+        });
     });
 </script>
 </body>
